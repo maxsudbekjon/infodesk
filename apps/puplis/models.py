@@ -47,7 +47,7 @@ class Student(TimeStampedModel):
         return self.lead.user.phone_number
     
 
-class Parents(models.Model):
+class Parent(models.Model):
     name = models.CharField(
         max_length=255
     )
