@@ -1,7 +1,7 @@
 from datetime import date
 from django.db import models
 from django.conf import settings
-from apps import managers
+# from apps import managers
 from apps.base_models import TimeStampedModel
 
 
@@ -85,7 +85,7 @@ class Branch(TimeStampedModel):
     )
 
     objects = models.Manager()
-    exists = managers.ExistsManager()
+    # exists = managers.ExistsManager()
     class Meta:
         ordering = ('-created_at',)
         unique_together = ('center', 'title')
