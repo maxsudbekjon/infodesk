@@ -42,6 +42,10 @@ class Student(TimeStampedModel):
                 name='student_attendance_between_0_and_100',
             ),
         ]
+        indexes = [
+            models.Index(fields=['payment_status', 'next_payment_date'], name='student_pay_date_idx'),
+            models.Index(fields=['next_payment_date'], name='student_next_pay_idx'),
+        ]
 
     def __str__(self):
         return self.lead.user.phone_number

@@ -108,6 +108,10 @@ class Group(models.Model):
                 name='group_start_before_end_lesson',
             ),
         ]
+        indexes = [
+            models.Index(fields=['status', 'create_at'], name='group_status_date_idx'),
+            models.Index(fields=['teacher', 'status'], name='group_teacher_status_idx'),
+        ]
 
     def __str__(self):
         return self.title

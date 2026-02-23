@@ -61,6 +61,12 @@ class Lead(TimeStampedModel):
     temperature=models.CharField(max_length=20,choices=LEAD_TEMPERATURE.choices,default=LEAD_TEMPERATURE.HOT)
     comment = models.TextField()
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='lead_user_created_idx'),
+            models.Index(fields=['user', 'status'], name='lead_user_status_idx'),
+        ]
+
     def __str__(self):
         return self.user.phone_number
 
