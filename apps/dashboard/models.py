@@ -1,10 +1,11 @@
-from datetime import datetime
+from datetime import date
 from django.db import models
 from django.conf import settings
 from apps import managers
+from apps.base_models import TimeStampedModel
 
 
-class Center(models.Model):
+class Center(TimeStampedModel):
     # class PAYMENT_TYPE(models.TextChoices):
     #     ROLLING_MONTH='polling month','Rolling Month' #Rolling Month = pay every 30 days from your start date.
     #     LESSON_12_PACKAGE='lesson 12 package','Lesson 12 package' # pay per 12 classes.
@@ -48,7 +49,7 @@ class Center(models.Model):
     #     null=True,
     #     blank=True,
     #     help_text="O'quvchi to'lovidan o'qituvchi ulushi (%)")
-    payday=models.DateField(default=12-12-2012)
+    payday=models.DateField(default=date.today)
     class Meta:
         ordering = ('-created_at',)
         unique_together = ('owner', 'title')
@@ -58,7 +59,7 @@ class Center(models.Model):
         return self.title
 
 
-class Branch(models.Model):
+class Branch(TimeStampedModel):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -85,7 +86,6 @@ class Branch(models.Model):
 
     objects = models.Manager()
     exists = managers.ExistsManager()
-
     class Meta:
         ordering = ('-created_at',)
         unique_together = ('center', 'title')

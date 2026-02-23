@@ -1,20 +1,24 @@
 from django.db import models
+from apps.base_models import TimeStampedModel
 from apps.groups.choices import GROUP_DAYS_CHOICES
-from apps.groups.models import Days
 from apps.leads.choices import LEAD_SOURCE, LEAD_STATUS, LEAD_TEMPERATURE
+from config import settings
 
-# Create your models here.
+
 
 class Situation(models.Model):
-    title = models.CharField(max_length=255)
-
+    # o'quv markaz yoki ceo acounti bog'lanadi. user/center (men yaratgan lead uchun bo'lim boshqalarda ko'rinmasligi uchun.)
+    title = models.CharField(
+        max_length=255
+    )
+    is_static  = models.BooleanField(default=False)
     def __str__(self):
         return self.title
 
 
-class Lead(models.Model):
+class Lead(TimeStampedModel):
     user = models.ForeignKey(
-        'user.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
     )
     group = models.ForeignKey(
@@ -30,7 +34,7 @@ class Lead(models.Model):
         blank=True
     )
     days = models.ManyToManyField(
-        'groups.Days',
+        'groups.Day',
         related_name='leads'
     )
     days_choice = models.CharField(
@@ -55,17 +59,10 @@ class Lead(models.Model):
         choices=LEAD_SOURCE.choices
     )
     temperature=models.CharField(max_length=20,choices=LEAD_TEMPERATURE.choices,default=LEAD_TEMPERATURE.HOT)
-    commit = models.TextField()
-
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True
-    )
+    comment = models.TextField()
 
     def __str__(self):
-        return self.user.username
+        return self.user.phone_number
 
 
 class Note(models.Model):
@@ -86,4 +83,4 @@ class Note(models.Model):
     )
 
     def __str__(self):
-        return self.date
+        return self.text

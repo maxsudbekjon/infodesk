@@ -1,5 +1,7 @@
 from django.db import models
+from apps.base_models import TimeStampedModel
 
+from config import settings
 
 
 
@@ -13,14 +15,14 @@ class Specialty(models.Model):
         return self.title
 
 
-# Create your models here.
-class Teacher(models.Model):
+class Teacher(TimeStampedModel):
 
     user = models.ForeignKey(
-        'user.User',
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
+        related_name='teachers'
     )
     specialty = models.ManyToManyField(
         Specialty,
@@ -57,12 +59,9 @@ class Teacher(models.Model):
         blank=True,
         null=True
     )
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
     is_archived  = models.BooleanField(
         default=False
     )
 
     def __str__(self):
-        return self.user.usename
+        return self.user.phone_number

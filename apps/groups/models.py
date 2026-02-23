@@ -1,8 +1,9 @@
 from django.db import models
-
 from apps.groups.choices import GROUP_DAYS_CHOICES, GROUP_STATUS
 
-# Create your models here.
+
+
+
 class Course(models.Model):
 
     title = models.CharField(
@@ -18,7 +19,8 @@ class Course(models.Model):
     def __str__(self):
         return self.title
     
-class Days(models.Model):
+
+class Day(models.Model):
 
     day = models.CharField(
         max_length=255
@@ -38,25 +40,31 @@ class Room(models.Model):
         return self.title
     
 
-class Groups(models.Model):
+class Group(models.Model):
 
+    title = models.CharField(
+        max_length=255
+    )
     course = models.ForeignKey(
         Course,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
+        related_name='groups'
     )
     teacher = models.ForeignKey(
         'teacher.Teacher',
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
+        related_name='main_groups'
     )
     assistant_teacher=models.ForeignKey(
         'teacher.Teacher',
         on_delete=models.SET_NULL,
         null=True,
-        blank=True 
+        blank=True,
+        related_name='assistant_group'
     )
     room=models.ForeignKey(
         Room,
@@ -70,10 +78,14 @@ class Groups(models.Model):
         null=True,
         blank=True
     )
+    status=models.CharField(
+        max_length=30,
+        choices=GROUP_STATUS.choices,
+        default=GROUP_STATUS.ACTIVE
+    )
     lessons_days=models.ManyToManyField(
-        Days,
+        Day,
         related_name='groups',
-        null=True,
         blank=True
     )
     start_lesson=models.TimeField()
@@ -85,10 +97,17 @@ class Groups(models.Model):
         auto_now_add=True
     )
     closed_at=models.DateField(
-        auto_now_add=True
+        null=True,
+        blank=True
     )
-    status=models.CharField(max_length=30,choices=GROUP_STATUS.choices,default=GROUP_STATUS.ACTIVE)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(start_lesson__lt=models.F('end_lesson')),
+                name='group_start_before_end_lesson',
+            ),
+        ]
 
-
-
+    def __str__(self):
+        return self.title
