@@ -13,6 +13,8 @@ class Course(models.Model):
         max_digits=20,
         decimal_places=2,
         null=True,
+
+
         blank=True
     )
 
