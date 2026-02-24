@@ -23,9 +23,9 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "drf_spectacular",
     "apps.teacher",
-    "apps.puplis",
-    "apps.leads",
-    "apps.groups",
+    "apps.pupil",
+    "apps.lead",
+    "apps.group",
     "apps.dashboard",
     "apps.user",
 ]

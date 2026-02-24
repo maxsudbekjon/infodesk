@@ -1,5 +1,5 @@
 from django.db import models
-from apps.groups.choices import GROUP_DAYS_CHOICES, GROUP_STATUS
+from apps.group.choices import GROUP_DAYS_CHOICES, GROUP_STATUS
 
 
 
@@ -33,14 +33,13 @@ class Day(models.Model):
 
 
 class Room(models.Model):
+	branch = models.ForeignKey('settings.Branch', related_name="rooms", on_delete=models.CASCADE)
+	name = models.CharField(max_length=255)
+	capacity = models.PositiveIntegerField(default=0)
+	created_at = models.DateTimeField(auto_now_add=True)
 
-    title=models.CharField(
-        max_length=255
-    )
-    
-    def __str__(self):
-        return self.title
-    
+	def __str__(self):
+		return f"{self.name} ({self.branch.name})"
 
 class Group(models.Model):
 

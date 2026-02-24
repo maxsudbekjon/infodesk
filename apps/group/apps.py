@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class PuplisConfig(AppConfig):
+class GroupConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.puplis'
+    name = 'apps.group'

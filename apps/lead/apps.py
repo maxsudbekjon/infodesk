@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class GroupsConfig(AppConfig):
+class LeadConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.groups'
+    name = 'apps.lead'

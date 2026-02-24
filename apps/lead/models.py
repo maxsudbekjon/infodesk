@@ -1,7 +1,7 @@
 from django.db import models
 from apps.base_models import TimeStampedModel
-from apps.groups.choices import GROUP_DAYS_CHOICES
-from apps.leads.choices import LEAD_SOURCE, LEAD_STATUS, LEAD_TEMPERATURE
+from apps.group.choices import GROUP_DAYS_CHOICES
+from apps.lead.choices import LEAD_SOURCE, LEAD_STATUS, LEAD_TEMPERATURE
 from config import settings
 
 
@@ -22,13 +22,13 @@ class Lead(TimeStampedModel):
         on_delete=models.CASCADE,
     )
     group = models.ForeignKey(
-        'groups.Group',
+        'group.Group',
         on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
     course = models.ForeignKey(
-        'groups.Course',
+        'group.Course',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -48,7 +48,7 @@ class Lead(TimeStampedModel):
         blank=True,
     )
     days = models.ManyToManyField(
-        'groups.Day',
+        'group.Day',
         related_name='leads'
     )
     days_choice = models.CharField(

@@ -1,13 +1,13 @@
 from django.db import models
 from apps.base_models import TimeStampedModel
-from apps.puplis.choices import STUDENT_PAYMENT
+from apps.pupil.choices import STUDENT_PAYMENT
 
 
 
 
 class Student(TimeStampedModel):
     lead = models.ForeignKey(
-        'leads.Lead',
+        'lead.Lead',
         on_delete=models.CASCADE
     )
     grade = models.DecimalField(
@@ -16,7 +16,7 @@ class Student(TimeStampedModel):
     )
     next_payment_date = models.DateField()
     groups = models.ManyToManyField(
-        'groups.Group',
+        'group.Group',
         related_name='students'
     )
     balance = models.DecimalField(
