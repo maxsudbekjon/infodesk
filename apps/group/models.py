@@ -1,26 +1,30 @@
 from django.db import models
+from apps.base_models import TimeStampedModel
 from apps.group.choices import GROUP_DAYS_CHOICES, GROUP_STATUS
 
 
 
 
-class Course(models.Model):
+class CourseTemplate(TimeStampedModel):
+	GRADING_CHOICES = [
+		("point", "Point"),
+		("percent", "Percent"),
+		("ielts", "IELTS"),
+	]
 
-    title = models.CharField(
-        max_length=255
-    )
-    price = models.DecimalField(
-        max_digits=20,
-        decimal_places=2,
-        null=True,
+	name = models.CharField(max_length=255)
+	note = models.TextField(blank=True)
+	price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+	duration_months = models.PositiveIntegerField(default=1)
+	grading_system = models.CharField(max_length=50, choices=GRADING_CHOICES, default="point")
+	branch = models.ForeignKey('settings.Branch', null=True, blank=True, on_delete=models.CASCADE, related_name="course_templates")
+	color_bg = models.CharField(max_length=7, default="#FFFFFF", help_text="Hex color for course background")
+	color_text = models.CharField(max_length=7, default="#000000", help_text="Hex color for course text")
+	price_effective_from = models.DateField(null=True, blank=True)
+	apply_price_from_month = models.BooleanField(default=False, help_text="If true, apply price change from start of month for related groups")
+	def __str__(self):
+		return f"{self.name} — {self.branch.name if self.branch else 'Global'}"
 
-
-        blank=True
-    )
-
-    def __str__(self):
-        return self.title
-    
 
 class Day(models.Model):
 
@@ -32,22 +36,24 @@ class Day(models.Model):
         return self.day
 
 
-class Room(models.Model):
+class Room(TimeStampedModel):
+      
 	branch = models.ForeignKey('settings.Branch', related_name="rooms", on_delete=models.CASCADE)
 	name = models.CharField(max_length=255)
 	capacity = models.PositiveIntegerField(default=0)
-	created_at = models.DateTimeField(auto_now_add=True)
+
 
 	def __str__(self):
 		return f"{self.name} ({self.branch.name})"
 
-class Group(models.Model):
+
+class Group(TimeStampedModel):
 
     title = models.CharField(
         max_length=255
     )
     course = models.ForeignKey(
-        Course,
+        CourseTemplate,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -94,9 +100,7 @@ class Group(models.Model):
     students_count=models.IntegerField(
         default=0
     )
-    create_at=models.DateField(
-        auto_now_add=True
-    )
+
     closed_at=models.DateField(
         null=True,
         blank=True

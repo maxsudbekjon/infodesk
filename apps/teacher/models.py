@@ -1,6 +1,5 @@
 from django.db import models
 from apps.base_models import TimeStampedModel
-
 from config import settings
 
 
@@ -54,10 +53,6 @@ class Teacher(TimeStampedModel):
         decimal_places=2,
         null=True,
         blank=True
-    )
-    birthday = models.DateField(
-        blank=True,
-        null=True
     )
     is_archived  = models.BooleanField(
         default=False

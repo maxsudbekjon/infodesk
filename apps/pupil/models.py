@@ -6,6 +6,7 @@ from apps.pupil.choices import STUDENT_PAYMENT
 
 
 class Student(TimeStampedModel):
+
     lead = models.ForeignKey(
         'lead.Lead',
         on_delete=models.CASCADE
@@ -15,10 +16,11 @@ class Student(TimeStampedModel):
         decimal_places=2
     )
     next_payment_date = models.DateField()
-    groups = models.ManyToManyField(
-        'group.Group',
-        related_name='students'
-    )
+    # Lead da ham groups bor. 
+    # groups = models.ManyToManyField(
+    #     'group.Group',
+    #     related_name='students'
+    # )
     balance = models.DecimalField(
         max_digits=20,
         decimal_places=2

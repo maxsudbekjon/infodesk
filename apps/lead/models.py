@@ -7,16 +7,20 @@ from config import settings
 
 
 class Situation(models.Model):
-    # o'quv markaz yoki ceo acounti bog'lanadi. user/center (men yaratgan lead uchun bo'lim boshqalarda ko'rinmasligi uchun.)
+
+    organization = models.ForeignKey('settings.Organization',on_delete=models.CASCADE)
     title = models.CharField(
         max_length=255
     )
     is_static  = models.BooleanField(default=False)
+
+
     def __str__(self):
         return self.title
 
 
 class Lead(TimeStampedModel):
+    
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

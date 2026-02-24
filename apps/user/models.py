@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 import re
 from apps.base_models import TimeStampedModel
-from apps.user.choices import GENDER
+from apps.user.choices import GENDER, ROLE
 
 
 
@@ -47,6 +47,7 @@ class User(AbstractUser):
         null=True,
         blank=True
     )
+    role = models.CharField(max_length=30,choices=ROLE.choices,default=ROLE.USER)
     birthday = models.DateField(
         blank=True,
         null=True
@@ -62,6 +63,7 @@ class User(AbstractUser):
 
 
 class Operator(TimeStampedModel):
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -79,7 +81,9 @@ class Operator(TimeStampedModel):
         null=True,
         blank=True
     )
-    kpi = models.IntegerField(
+    kpi = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
         null=True,
         blank=True
     )

@@ -1,8 +1,0 @@
-
-Business integrity uchun constraintlar qo‘shing.
-Masalan:
-start_lesson < end_lesson (models.py (line 86)-87) uchun CheckConstraint.
-attendance 0..100 yoki 0..1 oralig‘ini constraint bilan ushlash (models.py (line 30)).
-
-Arxitektura yaxshilash.
-Ko‘p modelda vaqt maydonlari bor; created_at/updated_at uchun abstract TimeStampedModel bazasini joriy qilsangiz kod toza bo‘ladi.

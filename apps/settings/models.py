@@ -3,7 +3,10 @@ from django.db import models
 from apps.base_models import TimeStampedModel
 
 
+
+
 class Organization(TimeStampedModel):
+
 	owner  = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
 	organization_phone = models.CharField(max_length=255,null=True,blank=True)
 	name = models.CharField(max_length=255)
@@ -16,11 +19,14 @@ class Organization(TimeStampedModel):
 	bank_accounts = models.JSONField(blank=True, null=True, help_text="Optional bank account details JSON")
 	cash_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 	terminal_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+
 	def __str__(self):
 		return self.name
 
 
 class Branch(TimeStampedModel):
+
 	organization = models.ForeignKey(Organization, related_name="branches", on_delete=models.CASCADE)
 	name = models.CharField(max_length=255)
 	phone = models.CharField(max_length=50, blank=True)
@@ -33,6 +39,8 @@ class Branch(TimeStampedModel):
 	bank_accounts = models.JSONField(blank=True, null=True, help_text="Optional bank account details JSON")
 	cash_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 	terminal_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+
 	class Meta:
 		verbose_name = "Branch"
 		verbose_name_plural = "Branches"
@@ -40,8 +48,9 @@ class Branch(TimeStampedModel):
 	def __str__(self):
 		return f"{self.name} ({'Active' if self.is_active else 'Inactive'})"
 
-
+# Bu model haqida maslahatlashib chiqish kerak. Fieldlari bo'yicha
 class ReceiptSettings(TimeStampedModel):
+
 	LOGO_POSITION_TOP = "top"
 	LOGO_POSITION_BOTTOM = "bottom"
 	LOGO_POSITION_CHOICES = [
@@ -87,11 +96,29 @@ class ReceiptSettings(TimeStampedModel):
 
 
 class PaymentMethod(TimeStampedModel):
+
 	name = models.CharField(max_length=100)
 	code = models.SlugField(max_length=50, unique=True)
-	is_active = models.BooleanField(default=True)
+	is_active = models.BooleanField(default=False)
+
+
 	def __str__(self):
 		return self.name
+
+
+class Weekend(TimeStampedModel):
+
+	branch = models.ForeignKey(Branch, related_name="weekends", on_delete=models.CASCADE, null=True, blank=True)
+	date = models.DateField()
+	reason = models.TextField(blank=True)
+	created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+
+
+	class Meta:
+		unique_together = ("branch", "date")
+
+	def __str__(self):
+		return f"{self.date} — {self.branch.name if self.branch else 'Global'}"
 
 
 # class FeatureToggle(models.Model):
@@ -105,40 +132,6 @@ class PaymentMethod(TimeStampedModel):
 # 	def __str__(self):
 # 		scope = self.branch.name if self.branch else "Global"
 # 		return f"{self.key} ({scope}) — {'On' if self.enabled else 'Off'}"
-
-
-class CourseTemplate(TimeStampedModel):
-	GRADING_CHOICES = [
-		("point", "Point"),
-		("percent", "Percent"),
-		("ielts", "IELTS"),
-	]
-
-	name = models.CharField(max_length=255)
-	note = models.TextField(blank=True)
-	price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-	duration_months = models.PositiveIntegerField(default=1)
-	grading_system = models.CharField(max_length=50, choices=GRADING_CHOICES, default="point")
-	branch = models.ForeignKey(Branch, null=True, blank=True, on_delete=models.CASCADE, related_name="course_templates")
-	color_bg = models.CharField(max_length=7, default="#FFFFFF", help_text="Hex color for course background")
-	color_text = models.CharField(max_length=7, default="#000000", help_text="Hex color for course text")
-	price_effective_from = models.DateField(null=True, blank=True)
-	apply_price_from_month = models.BooleanField(default=False, help_text="If true, apply price change from start of month for related groups")
-	def __str__(self):
-		return f"{self.name} — {self.branch.name if self.branch else 'Global'}"
-
-
-
-class Weekend(TimeStampedModel):
-	branch = models.ForeignKey(Branch, related_name="weekends", on_delete=models.CASCADE, null=True, blank=True)
-	date = models.DateField()
-	reason = models.CharField(max_length=255, blank=True)
-	created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
-	class Meta:
-		unique_together = ("branch", "date")
-
-	def __str__(self):
-		return f"{self.date} — {self.branch.name if self.branch else 'Global'}"
 
 
 # class IntegrationSetting(models.Model):
