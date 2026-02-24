@@ -27,11 +27,25 @@ class Lead(TimeStampedModel):
         null=True,
         blank=True
     )
+    course = models.ForeignKey(
+        'groups.Course',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='leads'
+    )
     operator = models.ForeignKey(
         'user.Operator',
         on_delete=models.SET_NULL,
         null=True,
         blank=True
+    )
+    center = models.ForeignKey(
+        'dashboard.Center',
+        on_delete=models.CASCADE,
+        related_name='leads',
+        null=True,
+        blank=True,
     )
     days = models.ManyToManyField(
         'groups.Day',
@@ -54,11 +68,11 @@ class Lead(TimeStampedModel):
         choices=LEAD_STATUS.choices,
         default=LEAD_STATUS.NEW
     )
-    source=models.CharField(
+    source = models.CharField(
         max_length=30,
         choices=LEAD_SOURCE.choices
     )
-    temperature=models.CharField(max_length=20,choices=LEAD_TEMPERATURE.choices,default=LEAD_TEMPERATURE.HOT)
+    temperature = models.CharField(max_length=20, choices=LEAD_TEMPERATURE.choices, default=LEAD_TEMPERATURE.HOT)
     comment = models.TextField()
 
     class Meta:
