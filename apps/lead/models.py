@@ -61,6 +61,7 @@ class Lead(TimeStampedModel):
         null=True,
         blank=True
     )
+    prefer_time = models.TimeField(null=True,blank=True)
     situation = models.ForeignKey(
         Situation,
         on_delete=models.SET_NULL,
