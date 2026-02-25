@@ -66,7 +66,7 @@ class User(AbstractUser):
 
 class Operator(TimeStampedModel):
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         null=True,
