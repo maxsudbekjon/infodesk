@@ -41,6 +41,8 @@ class User(AbstractUser):
     username = None
 
     phone_number = models.CharField(max_length=20, unique=True)
+    phone_number2 = models.CharField(max_length=20, unique=True,null=True,blank=True)
+
     gender=models.CharField(
         max_length=30,
         choices=GENDER.choices,
