@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "apps.group",
     "apps.dashboard",
     "apps.user",
+    "apps.settings"
 ]
 
 MIDDLEWARE = [

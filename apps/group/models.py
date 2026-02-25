@@ -109,12 +109,12 @@ class Group(TimeStampedModel):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                check=models.Q(start_lesson__lt=models.F('end_lesson')),
+                condition=models.Q(start_lesson__lt=models.F('end_lesson')),
                 name='group_start_before_end_lesson',
             ),
         ]
         indexes = [
-            models.Index(fields=['status', 'create_at'], name='group_status_date_idx'),
+            models.Index(fields=['status', 'created_at'], name='group_status_date_idx'),
             models.Index(fields=['teacher', 'status'], name='group_teacher_status_idx'),
         ]
 

@@ -40,7 +40,7 @@ class Student(TimeStampedModel):
     class Meta:
         constraints = [
             models.CheckConstraint(
-                check=models.Q(attendance__gte=0) & models.Q(attendance__lte=100),
+                condition=models.Q(attendance__gte=0) & models.Q(attendance__lte=100),
                 name='student_attendance_between_0_and_100',
             ),
         ]

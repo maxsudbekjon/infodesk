@@ -32,7 +32,7 @@ class Lead(TimeStampedModel):
         blank=True
     )
     course = models.ForeignKey(
-        'group.Course',
+        'group.CourseTemplate',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -45,7 +45,7 @@ class Lead(TimeStampedModel):
         blank=True
     )
     center = models.ForeignKey(
-        'dashboard.Center',
+        'settings.Organization',
         on_delete=models.CASCADE,
         related_name='leads',
         null=True,
@@ -84,7 +84,7 @@ class Lead(TimeStampedModel):
             models.Index(fields=['user', '-created_at'], name='lead_user_created_idx'),
             models.Index(fields=['user', 'status'], name='lead_user_status_idx'),
             models.Index(fields=['center', '-created_at'], name='lead_center_created_idx'),
-            models.index(fields=['center', 'status'], name='lead_center_status_idx'),
+            models.Index(fields=['center', 'status'], name='lead_center_status_idx'),
         ]
 
     def __str__(self):
