@@ -3,12 +3,14 @@ from apps.base_models import TimeStampedModel
 from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.lead.choices import LEAD_SOURCE, LEAD_STATUS, LEAD_TEMPERATURE
 from config import settings
+from django.db.models import Q
+
 
 
 
 class Situation(models.Model):
 
-    organization = models.ForeignKey('settings.Organization',on_delete=models.CASCADE)
+    organization = models.ForeignKey('settings.Organization',on_delete=models.CASCADE,null=True,blank=True)
     title = models.CharField(
         max_length=255
     )
@@ -53,7 +55,9 @@ class Lead(TimeStampedModel):
     )
     days = models.ManyToManyField(
         'group.Day',
-        related_name='leads'
+        related_name='leads',
+        null=True,
+        blank=True
     )
     days_choice = models.CharField(
         max_length=30,
@@ -78,15 +82,24 @@ class Lead(TimeStampedModel):
         choices=LEAD_SOURCE.choices
     )
     temperature = models.CharField(max_length=20, choices=LEAD_TEMPERATURE.choices, default=LEAD_TEMPERATURE.HOT)
-    comment = models.TextField()
+    comment = models.TextField(null=True,blank=True)
+    is_active = models.BooleanField(default=False)
+    is_archived = models.BooleanField(default=False)
 
     class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(is_active=True, is_archived=True),
+                name="prevent_active_and_archived_true"
+            )
+        ]
         indexes = [
             models.Index(fields=['user', '-created_at'], name='lead_user_created_idx'),
             models.Index(fields=['user', 'status'], name='lead_user_status_idx'),
             models.Index(fields=['center', '-created_at'], name='lead_center_created_idx'),
             models.Index(fields=['center', 'status'], name='lead_center_status_idx'),
         ]
+        
 
     def __str__(self):
         return self.user.phone_number
