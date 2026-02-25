@@ -81,3 +81,10 @@ class LeadListModelSerializer(serializers.ModelSerializer):
             return f"{operator_user.first_name} {operator_user.last_name}"
         return None
 
+
+
+class LeadSourceMonthlyComparisonSerializer(serializers.Serializer):
+    source = serializers.CharField()
+    current = serializers.IntegerField()
+    previous = serializers.IntegerField()
+    percentage_change = serializers.FloatField()
