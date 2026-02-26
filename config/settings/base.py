@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_spectacular",
+
     "apps.teacher",
     "apps.pupil",
     "apps.lead",
@@ -130,4 +131,5 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
