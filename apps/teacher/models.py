@@ -76,7 +76,7 @@ GENDER_CHOICES = (
 )
 
 class Teacher(TimeStampedModel):
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
@@ -101,15 +101,12 @@ class Teacher(TimeStampedModel):
     monthly_per_student = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
 
     # suggested new fields
-    birth_date = models.DateField(null=True, blank=True)
     contract_date = models.DateField(null=True, blank=True)
     percentage_share = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
     lesson_fee = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     per_student_fee = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     branch = models.ForeignKey('settings.Branch', on_delete=models.SET_NULL, null=True, blank=True, related_name='teachers')
     is_archived = models.BooleanField(default=False)
-    registration_date = models.DateField(default=timezone.now)
 
     def __str__(self):
         # fall back if no user

@@ -46,16 +46,12 @@ class LeadListAPIView(generics.ListAPIView):
         queryset = (
             Lead.objects
             .select_related(
-                'user',
                 'operator__user',
                 'situation',
             )
             .only(
                 'created_at',
                 'situation',
-                'user__first_name',
-                'user__last_name',
-                'user__phone_number',
                 'operator__user__first_name',
                 'operator__user__last_name',
 

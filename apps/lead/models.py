@@ -22,11 +22,8 @@ class Situation(models.Model):
 
 
 class Lead(TimeStampedModel):
-    
-    user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-    )
+    full_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=30)
     group = models.ForeignKey(
         'group.Group',
         on_delete=models.SET_NULL,
@@ -93,16 +90,18 @@ class Lead(TimeStampedModel):
                 name="prevent_active_and_archived_true"
             )
         ]
+
         indexes = [
-            models.Index(fields=['user', '-created_at'], name='lead_user_created_idx'),
-            models.Index(fields=['user', 'status'], name='lead_user_status_idx'),
-            models.Index(fields=['center', '-created_at'], name='lead_center_created_idx'),
             models.Index(fields=['center', 'status'], name='lead_center_status_idx'),
+            models.Index(fields=['center', '-created_at'], name='lead_center_created_idx'),
+            models.Index(fields=['operator', 'status'], name='lead_operator_status_idx'),
+            models.Index(fields=['course'], name='lead_course_idx'),
+            models.Index(fields=['phone_number'], name='lead_phone_idx'),
         ]
         
 
     def __str__(self):
-        return self.user.phone_number
+        return self.phone_number
 
 
 class Note(models.Model):

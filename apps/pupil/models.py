@@ -50,7 +50,7 @@ class Student(TimeStampedModel):
         ]
 
     def __str__(self):
-        return self.lead.user.phone_number
+        return self.lead.phone_number
     
 
 class Parent(models.Model):
