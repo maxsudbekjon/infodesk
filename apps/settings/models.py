@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from apps.base_models import TimeStampedModel
+from apps.settings.choices import LEAD_CONSOLIDATION
 
 
 
@@ -8,6 +9,8 @@ from apps.base_models import TimeStampedModel
 class Organization(TimeStampedModel):
 
 	owner  = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+	# lead_consolidation - leadga operatorni qaysi usulda biriktirishni bildiradi.
+	lead_consolidation = models.CharField(max_length=20,choices=LEAD_CONSOLIDATION.choices,default=LEAD_CONSOLIDATION.MANUAL)
 	organization_phone = models.CharField(max_length=255,null=True,blank=True)
 	name = models.CharField(max_length=255)
 	description = models.TextField(blank=True)

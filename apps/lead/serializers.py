@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.db import transaction
 from apps.lead.models import Lead
+from apps.lead.services import assign_for_new_lead
 from apps.user.models import User
 
 
@@ -23,7 +24,8 @@ class LeadModelSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        return Lead.objects.create(**validated_data)
+        lead = Lead.objects.create(**validated_data)
+        return assign_for_new_lead(lead)
     
 
 class LeadListModelSerializer(serializers.ModelSerializer):

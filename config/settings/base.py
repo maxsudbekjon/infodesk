@@ -1,5 +1,6 @@
 from pathlib import Path
 from environs import Env
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -22,6 +23,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "drf_spectacular",
+    "django_celery_beat",
 
     "apps.teacher",
     "apps.pupil",
@@ -100,11 +102,11 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Tashkent"
+USE_TZ = True
 
 USE_I18N = True
 
-USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [
@@ -135,4 +137,19 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+}
+
+
+
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+
+
+
+CELERY_BEAT_SCHEDULE = {
+    "daily-lead-job": {
+        "task": "apps.lead.tasks.daily_lead_job",
+        "schedule": crontab(hour=14, minute=36),
+    },
 }

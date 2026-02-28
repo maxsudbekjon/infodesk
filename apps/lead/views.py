@@ -27,7 +27,7 @@ def parse_bool(value):
 
 
 class LeadPagination(PageNumberPagination):
-    page_size = 2
+    page_size = 10
 
 
 class LeadCreateAPIView(generics.CreateAPIView):
@@ -36,14 +36,19 @@ class LeadCreateAPIView(generics.CreateAPIView):
     permission_classes=[IsAuthenticated]
 
 
-class LeadListAPIView(generics.ListAPIView):
-    serializer_class=LeadListModelSerializer
-    pagination_class = LeadPagination
-    def get_queryset(self):
-        is_active = self.request.query_params.get('is_active')
-        is_archived = self.request.query_params.get('is_archived')
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Q
+from apps.user.models import Operator
 
-        queryset = (
+class LeadListAPIView(generics.ListAPIView):
+    serializer_class = LeadListModelSerializer
+    pagination_class = LeadPagination
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        base_queryset = (
             Lead.objects
             .select_related(
                 'operator__user',
@@ -54,23 +59,33 @@ class LeadListAPIView(generics.ListAPIView):
                 'situation',
                 'operator__user__first_name',
                 'operator__user__last_name',
-
             )
             .order_by('-created_at')
         )
 
+        organizations = user.organization_set.all()
+        if organizations.exists():
+            queryset = base_queryset.filter(center__in=organizations)
+        else:
+            try:
+                operator = user.operator
+            except Operator.DoesNotExist:
+                operator = None
+            if operator:
+                queryset = base_queryset.filter(operator__user=user)
+            else:
+                return Lead.objects.none()
+
+        is_active = self.request.query_params.get('is_active')
+        is_archived = self.request.query_params.get('is_archived')
+
         if is_active is not None:
-            queryset = queryset.filter(
-                is_active=parse_bool(is_active)
-            )
+            queryset = queryset.filter(is_active=parse_bool(is_active))
 
         if is_archived is not None:
-            queryset = queryset.filter(
-                is_archived=parse_bool(is_archived)
-            )
+            queryset = queryset.filter(is_archived=parse_bool(is_archived))
 
         return queryset
-    
 
 class MonthlyLeadSourceComparisonAPIView(APIView):
     permission_classes = [IsAuthenticated]

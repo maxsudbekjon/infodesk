@@ -41,14 +41,16 @@ class Lead(TimeStampedModel):
         'user.Operator',
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
+        related_name='leads'
     )
     center = models.ForeignKey(
         'settings.Organization',
         on_delete=models.CASCADE,
-        related_name='leads',
         null=True,
         blank=True,
+        related_name='lead'
+
     )
     days = models.ManyToManyField(
         'group.Day',
@@ -99,7 +101,12 @@ class Lead(TimeStampedModel):
             models.Index(fields=['phone_number'], name='lead_phone_idx'),
         ]
         
-
+    def save(self, *args, **kwargs):
+        if self.course and not self.center:
+            branch = self.course.branch
+            if branch:
+                self.center = branch.organization
+        super().save(*args, **kwargs)
     def __str__(self):
         return self.phone_number
 
