@@ -63,3 +63,10 @@ class SourceModelSerializer(serializers.ModelSerializer):
             'center',
             'is_static'
         )
+
+
+class LeadAddGroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Lead 
+        fields=('group',)
+    

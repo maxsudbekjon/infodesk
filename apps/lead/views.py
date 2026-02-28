@@ -1,6 +1,6 @@
 from rest_framework import generics
 from apps.lead.models import Lead, Source
-from apps.lead.serializers import LeadListModelSerializer, LeadModelSerializer, SourceModelSerializer
+from apps.lead.serializers import LeadAddGroupSerializer, LeadListModelSerializer, LeadModelSerializer, SourceModelSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
@@ -130,11 +130,14 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
 
             current_data = {item["source"]: item["count"] for item in current_qs}
 
-            result = {}
+            sources = Source.objects.filter(
+                Q(center__in=organizations) | Q(is_static=True)
+            )
 
-            for source, _ in LEAD_SOURCE.choices:
-                result[source] = {
-                    "current": current_data.get(source, 0),
+            result = {}
+            for source in sources:
+                result[source.name] = {
+                    "current": current_data.get(source.id, 0),
                 }
 
             return Response(result)
@@ -169,18 +172,21 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
         current_data = {item["source"]: item["count"] for item in current_qs}
         previous_data = {item["source"]: item["count"] for item in previous_qs}
 
-        result = {}
+        sources = Source.objects.filter(
+            Q(center__in=organizations) | Q(is_static=True)
+        )
 
-        for source, _ in LEAD_SOURCE.choices:
-            current_count = current_data.get(source, 0)
-            previous_count = previous_data.get(source, 0)
+        result = {}
+        for source in sources:
+            current_count = current_data.get(source.id, 0)
+            previous_count = previous_data.get(source.id, 0)
 
             if previous_count == 0:
                 percentage = 100.0 if current_count > 0 else 0
             else:
                 percentage = ((current_count - previous_count) / previous_count) * 100
 
-            result[source] = {
+            result[source.name] = {
                 "current": current_count,
                 "previous": previous_count,
                 "percentage_change": round(percentage, 2)
@@ -192,3 +198,81 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
 class SourceListAPIView(generics.CreateAPIView):
     queryset=Source.objects.all
     serializer_class=SourceModelSerializer
+
+
+class LeadAddGroupAPIView(generics.UpdateAPIView):
+    queryset=Lead 
+    serializer_class=LeadAddGroupSerializer
+    lookup_field='id'
+
+class LeadDeleteAPIView(generics.DestroyAPIView):
+    permission_classes=[IsAuthenticated]
+    queryset=Lead 
+    lookup_field='id'
+
+from rest_framework.views import APIView
+from django.http import HttpResponse
+from openpyxl import Workbook
+
+
+
+class LeadExportExcelAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        organizations = user.organization_set.all()
+
+        if organizations.exists():
+            leads = Lead.objects.filter(center__in=organizations)
+        else:
+            try:
+                operator = user.operator
+            except Operator.DoesNotExist:
+                operator = None
+            if operator:
+                leads = Lead.objects.filter(center=operator.center)
+            else:
+                leads = Lead.objects.none()
+
+        leads = leads.select_related('operator__user', 'center')
+
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Leads"
+
+        # Header
+        headers = [
+            "ID",
+            "Full Name",
+            "Phone",
+            "Operator",
+            "Center",
+            "Created At",
+            "Status"
+        ]
+        sheet.append(headers)
+
+        # Data
+        for lead in leads:
+            sheet.append([
+                lead.id,
+                lead.full_name,
+                lead.phone_number,
+                (
+                    f"{lead.operator.user.first_name} {lead.operator.user.last_name}".strip()
+                    if lead.operator and lead.operator.user
+                    else ""
+                ),
+                lead.center.name if lead.center else "",
+                lead.created_at.strftime("%Y-%m-%d %H:%M"),
+                lead.status
+            ])
+
+        response = HttpResponse(
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response["Content-Disposition"] = "attachment; filename=leads.xlsx"
+
+        workbook.save(response)
+        return response
