@@ -17,10 +17,10 @@ class Student(TimeStampedModel):
     )
     next_payment_date = models.DateField()
     # Lead da ham groups bor. 
-    # groups = models.ManyToManyField(
-    #     'group.Group',
-    #     related_name='students'
-    # )
+    groups = models.ManyToManyField(
+        'group.Group',
+        related_name='students'
+    )
     balance = models.DecimalField(
         max_digits=20,
         decimal_places=2

@@ -23,7 +23,7 @@ __pypackages__/
 .db.sqlite3
 
 media/
-staticfiles/
+static/
 
 .idea/
 .vscode/
