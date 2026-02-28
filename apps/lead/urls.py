@@ -1,5 +1,5 @@
 from django.urls import path
-from apps.lead.views import LeadCreateAPIView, LeadListAPIView, MonthlyLeadSourceComparisonAPIView
+from apps.lead.views import LeadCreateAPIView, LeadListAPIView, MonthlyLeadSourceComparisonAPIView, SourceListAPIView
 
 
 
@@ -13,4 +13,9 @@ urlpatterns = [
         MonthlyLeadSourceComparisonAPIView.as_view(),
         name='monthly-lead-source-comparison'
     ),
+    path(
+        'source/create',
+        SourceListAPIView.as_view(),
+        name='source-create'
+    )
 ]

@@ -1,7 +1,7 @@
 from django.db import models
 from apps.base_models import TimeStampedModel
 from apps.group.choices import GROUP_DAYS_CHOICES
-from apps.lead.choices import LEAD_SOURCE, LEAD_STATUS, LEAD_TEMPERATURE
+from apps.lead.choices import  LEAD_STATUS, LEAD_TEMPERATURE
 from config import settings
 from django.db.models import Q
 
@@ -20,7 +20,14 @@ class Situation(models.Model):
     def __str__(self):
         return self.title
 
+class Source(models.Model):
+    center = models.ForeignKey('settings.Organization',on_delete=models.SET_NULL,null=True,blank=True)
+    name = models.CharField(max_length=100)
+    icon = models.ImageField(upload_to='sourse-icon')
+    is_static = models.BooleanField(default=False)
 
+    def __str__(self):
+        return self.name
 class Lead(TimeStampedModel):
     full_name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=30)
@@ -76,9 +83,12 @@ class Lead(TimeStampedModel):
         choices=LEAD_STATUS.choices,
         default=LEAD_STATUS.NEW
     )
-    source = models.CharField(
-        max_length=30,
-        choices=LEAD_SOURCE.choices
+    source = models.ForeignKey(
+        Source,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='leads'
     )
     temperature = models.CharField(max_length=20, choices=LEAD_TEMPERATURE.choices, default=LEAD_TEMPERATURE.HOT)
     comment = models.TextField(null=True,blank=True)
@@ -130,3 +140,5 @@ class Note(models.Model):
 
     def __str__(self):
         return self.text
+
+

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db import transaction
-from apps.lead.models import Lead
+from apps.lead.models import Lead, Source
 from apps.lead.services import assign_for_new_lead
 from apps.user.models import User
 
@@ -52,3 +52,14 @@ class LeadSourceMonthlyComparisonSerializer(serializers.Serializer):
     current = serializers.IntegerField()
     previous = serializers.IntegerField()
     percentage_change = serializers.FloatField()
+
+
+class SourceModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Source
+        fields=(
+            'name',
+            'icon',
+            'center',
+            'is_static'
+        )

@@ -1,7 +1,6 @@
 from rest_framework import generics
-from apps.lead.choices import LEAD_SOURCE
-from apps.lead.models import Lead
-from apps.lead.serializers import LeadListModelSerializer, LeadModelSerializer
+from apps.lead.models import Lead, Source
+from apps.lead.serializers import LeadListModelSerializer, LeadModelSerializer, SourceModelSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
@@ -10,7 +9,10 @@ from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from datetime import timedelta
-
+from django.db.models import Q
+from apps.user.models import Operator
+from rest_framework import status
+from django.utils.dateparse import parse_datetime
 
 
 
@@ -36,9 +38,6 @@ class LeadCreateAPIView(generics.CreateAPIView):
     permission_classes=[IsAuthenticated]
 
 
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q
-from apps.user.models import Operator
 
 class LeadListAPIView(generics.ListAPIView):
     serializer_class = LeadListModelSerializer
@@ -91,24 +90,70 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        user = request.user
+
+        organizations = user.organization_set.all()
+
+        # 🔐 Faqat owner ko‘ra oladi
+        if not organizations.exists():
+            return Response(
+                {"detail": "Only center owners can access this data"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         now = timezone.now()
 
-        organizations = request.user.organization_set.all()
-
-        if not organizations.exists():
-            return Response({"detail": "No organization found"}, status=400)
-
-        start_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        last_month = start_current_month - timedelta(days=1)
-        start_previous_month = last_month.replace(day=1)
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
 
         base_queryset = Lead.objects.filter(center__in=organizations)
+
+        # ==============================
+        # 📅 Custom date range
+        # ==============================
+        if start_date and end_date:
+            start_date = parse_datetime(start_date)
+            end_date = parse_datetime(end_date)
+
+            if not start_date or not end_date:
+                return Response(
+                    {"detail": "Invalid datetime format. Use ISO format."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            current_qs = (
+                base_queryset
+                .filter(created_at__gte=start_date, created_at__lte=end_date)
+                .values("source")
+                .annotate(count=Count("id"))
+            )
+
+            current_data = {item["source"]: item["count"] for item in current_qs}
+
+            result = {}
+
+            for source, _ in LEAD_SOURCE.choices:
+                result[source] = {
+                    "current": current_data.get(source, 0),
+                }
+
+            return Response(result)
+
+        # ==============================
+        # 📅 Default: current vs previous month
+        # ==============================
+        start_current_month = now.replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+
+        last_month_last_day = start_current_month - timedelta(days=1)
+        start_previous_month = last_month_last_day.replace(day=1)
 
         current_qs = (
             base_queryset
             .filter(created_at__gte=start_current_month)
-            .values('source')
-            .annotate(count=Count('id'))
+            .values("source")
+            .annotate(count=Count("id"))
         )
 
         previous_qs = (
@@ -117,12 +162,12 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
                 created_at__gte=start_previous_month,
                 created_at__lt=start_current_month
             )
-            .values('source')
-            .annotate(count=Count('id'))
+            .values("source")
+            .annotate(count=Count("id"))
         )
 
-        current_data = {item['source']: item['count'] for item in current_qs}
-        previous_data = {item['source']: item['count'] for item in previous_qs}
+        current_data = {item["source"]: item["count"] for item in current_qs}
+        previous_data = {item["source"]: item["count"] for item in previous_qs}
 
         result = {}
 
@@ -142,3 +187,8 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
             }
 
         return Response(result)
+
+
+class SourceListAPIView(generics.CreateAPIView):
+    queryset=Source.objects.all
+    serializer_class=SourceModelSerializer
