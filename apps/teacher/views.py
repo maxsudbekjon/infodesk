@@ -64,7 +64,7 @@
 #         return Response(data)
 
 from django.db.models import Count
-
+from django.template.defaultfilters import center
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -134,7 +134,7 @@ class TeacherToggleArchiveAPIView(APIView):
 
     def post(self, request, pk):
         try:
-            teacher = Teacher.objects.get(pk=pk)
+            teacher = Teacher.objects.get(pk=pk, center_id=request.user.center_id)
         except Teacher.DoesNotExist:
             return Response({'detail': 'Not found'}, status=404)
 
