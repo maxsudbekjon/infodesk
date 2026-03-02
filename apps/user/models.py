@@ -1,4 +1,5 @@
 from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.auth.hashers import identify_hasher, is_password_usable, make_password
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -60,6 +61,14 @@ class User(AbstractUser):
 
     objects = CustomUserManager()
 
+    def save(self, *args, **kwargs):
+        if self.password and is_password_usable(self.password):
+            try:
+                identify_hasher(self.password)
+            except ValueError:
+                self.password = make_password(self.password)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.phone_number}"
 
@@ -72,6 +81,7 @@ class Operator(TimeStampedModel):
         null=True,
         blank=True
     )
+    center = models.ForeignKey('settings.Organization',on_delete=models.CASCADE)
     image = models.FileField(
         upload_to='teacher-avatar',
         null=True,

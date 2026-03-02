@@ -31,8 +31,8 @@ class TeacherSerializer(serializers.ModelSerializer):
             'id','user','user_id','image','image_url',
             'specialty','specialties',
             'monthly_salary','kpi','monthly_per_lesson','monthly_per_student',
-            'birth_date','contract_date','percentage_share','lesson_fee','per_student_fee',
-            'gender','branch','is_archived','registration_date',
+            'contract_date','percentage_share','lesson_fee','per_student_fee',
+            'branch','is_archived',
             'courses_count','groups_count','students_count',
             'created_at','updated_at'
         )
