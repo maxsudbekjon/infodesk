@@ -20,8 +20,6 @@ class CourseTemplate(TimeStampedModel):
     branch = models.ForeignKey('settings.Branch', null=True, blank=True, on_delete=models.CASCADE,
                                related_name="course_templates")
     teacher = models.ForeignKey('teacher.Teacher', on_delete=CASCADE, related_name='teacher_courses', null=True, blank=True)
-    color_bg = models.CharField(max_length=7, default="#FFFFFF", help_text="Hex color for course background")
-    color_text = models.CharField(max_length=7, default="#000000", help_text="Hex color for course text")
     price_effective_from = models.DateField(null=True, blank=True)
     apply_price_from_month = models.BooleanField(default=False,
                                              help_text="If true, apply price change from start of month for related groups")
@@ -98,10 +96,13 @@ class Group(TimeStampedModel):
     )
     start_lesson = models.TimeField()
     end_lesson = models.TimeField()
-    students_count = models.IntegerField(
+    total_student = models.IntegerField(
         default=0
     )
-
+    started_at = models.DateField(
+        null=True,
+        blank=True
+    )
     closed_at = models.DateField(
         null=True,
         blank=True
