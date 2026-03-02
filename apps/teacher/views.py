@@ -1,119 +1,63 @@
-# from django.shortcuts import render
-# from rest_framework import viewsets, status
-# from rest_framework.decorators import action
-# from rest_framework.parsers import MultiPartParser, FormParser
-# from rest_framework.response import Response
-# from django.db.models import Count
-# from rest_framework.permissions import IsAuthenticated
-# from .models import Teacher
-# from .serializers import TeacherSerializer
-#
-#
-# class IsStaffOrReadOnly(IsAuthenticated):
-#     # simple: require auth and staff for unsafe methods
-#     def has_permission(self, request, view):
-#         if request.method in ('GET', 'HEAD', 'OPTIONS'):
-#             return super().has_permission(request, view)
-#         return super().has_permission(request, view) and request.user.is_staff
-#
-#
-# class TeacherViewSet(viewsets.ModelViewSet):
-#     queryset = Teacher.objects.all().select_related('user', 'branch').prefetch_related('specialty')
-#     serializer_class = TeacherSerializer
-#     permission_classes = [IsStaffOrReadOnly]
-#     parser_classes = (MultiPartParser, FormParser)
-#     filterset_fields = ('is_archived', 'branch', 'specialty')
-#     search_fields = ('user__first_name', 'user__last_name', 'user__phone_number')
-#     ordering_fields = ('created_at', 'monthly_salary', 'percentage_share')
-#
-#     def get_queryset(self):
-#         qs = super().get_queryset()
-#         # annotate counts if you have related models: groups, students, courses
-#         return qs.annotate(
-#             groups_count=Count('groups', distinct=True),
-#             students_count=Count('groups__students', distinct=True),
-#             courses_count=Count('courses', distinct=True)
-#         )
-#
-#     @action(detail=True, methods=['post'], url_path='toggle-archive')
-#     def toggle_archive(self, request, pk=None):
-#         teacher = self.get_object()
-#         teacher.is_archived = not teacher.is_archived
-#         teacher.save()
-#         return Response({'is_archived': teacher.is_archived})
-#
-#     @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser], url_path='upload-image')
-#     def upload_image(self, request, pk=None):
-#         teacher = self.get_object()
-#         file_obj = request.data.get('image')
-#         if not file_obj:
-#             return Response({'detail': 'No image provided'}, status=status.HTTP_400_BAD_REQUEST)
-#         teacher.image = file_obj
-#         teacher.save()
-#         return Response({'image_url': request.build_absolute_uri(teacher.image.url)})
-#
-#     # optional: quick stats endpoint
-#     @action(detail=True, methods=['get'], url_path='stats')
-#     def stats(self, request, pk=None):
-#         t = self.get_object()
-#         data = {
-#             'courses_count': getattr(t, 'courses_count', 0),
-#             'groups_count': getattr(t, 'groups_count', 0),
-#             'students_count': getattr(t, 'students_count', 0),
-#         }
-#         return Response(data)
-
-from django.db.models import Count
-from django.template.defaultfilters import center
-
+from django.db.models import Count, Q
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from apps.teacher.models import Teacher
+from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer
 
-from .models import Teacher
-from .serializers import TeacherSerializer
 
-class TeacherListCreateAPIView(generics.ListCreateAPIView):
-    queryset = Teacher.objects.all().select_related('user', 'branch').prefetch_related('specialty')
-    serializer_class = TeacherSerializer
+class TeacherListAPIView(generics.ListAPIView):
+    serializer_class = TeacherListSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = super().get_queryset()
-
-        # filterlar
+        branch_id = self.request.query_params.get('branch')
         is_archived = self.request.query_params.get('is_archived')
-        branch = self.request.query_params.get('branch')
-        specialty = self.request.query_params.get('specialty')
         search = self.request.query_params.get('search')
+
+        qs = Teacher.objects.select_related('user', 'branch')
+
+        if branch_id:
+            qs = qs.filter(branch_id=branch_id)
 
         if is_archived is not None:
             qs = qs.filter(is_archived=is_archived)
 
-        if branch:
-            qs = qs.filter(branch_id=branch)
-
-        if specialty:
-            qs = qs.filter(specialty__id=specialty)
-
         if search:
             qs = qs.filter(
-                user__first_name__icontains=search
-            ) | qs.filter(
-                user__last_name__icontains=search
-            ) | qs.filter(
-                user__phone_number__icontains=search
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(user__phone_number__icontains=search)
             )
 
-        return qs.annotate(
+        return qs.order_by('-id')
+
+
+class TeacherCreateAPIView(generics.CreateAPIView):
+    queryset = Teacher.objects.all()
+    serializer_class = TeacherSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class TeacherDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = TeacherSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Teacher.objects.select_related(
+            'user', 'branch'
+        ).prefetch_related(
+            'specialty',
+            'main_groups__students',
+            'teacher_courses__groups'
+        ).annotate(
             groups_count=Count('main_groups', distinct=True),
             students_count=Count('main_groups__students', distinct=True),
             courses_count=Count('teacher_courses', distinct=True)
         )
-
-
 
 
 class TeacherRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -147,27 +91,50 @@ class TeacherToggleArchiveAPIView(APIView):
         })
 
 
-class TeacherUploadImageAPIView(APIView):
+# class TeacherUploadImageAPIView(APIView):
+#     permission_classes = [IsAuthenticated]
+#     parser_classes = (MultiPartParser, FormParser)
+#
+#     def post(self, request, pk):
+#         try:
+#             teacher = Teacher.objects.get(pk=pk)
+#         except Teacher.DoesNotExist:
+#             return Response({'detail': 'Not found'}, status=404)
+#
+#         image = request.data.get('image')
+#         if not image:
+#             return Response({'detail': 'Image not provided'}, status=400)
+#
+#         teacher.image = image
+#         teacher.save()
+#
+#         return Response({
+#             'image_url': request.build_absolute_uri(teacher.image.url)
+#         })
+
+
+
+class TeacherUploadImageAPIView(generics.GenericAPIView):
+    serializer_class = TeacherImageUploadSerializer
     permission_classes = [IsAuthenticated]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, pk):
-        try:
-            teacher = Teacher.objects.get(pk=pk)
-        except Teacher.DoesNotExist:
-            return Response({'detail': 'Not found'}, status=404)
+        teacher = get_object_or_404(
+            Teacher,
+            pk=pk,
+            center=request.user.center
+        )
 
-        image = request.data.get('image')
-        if not image:
-            return Response({'detail': 'Image not provided'}, status=400)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        teacher.image = image
+        teacher.image = serializer.validated_data["image"]
         teacher.save()
 
         return Response({
-            'image_url': request.build_absolute_uri(teacher.image.url)
+            "image_url": request.build_absolute_uri(teacher.image.url)
         })
-
 
 class TeacherStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -187,4 +154,3 @@ class TeacherStatsAPIView(APIView):
             'groups_count': teacher.groups_count,
             'students_count': teacher.students_count
         })
-

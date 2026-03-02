@@ -10,8 +10,11 @@ click-repl==0.3.0
 cron_descriptor==2.0.6
 Django==5.2.11
 django-celery-beat==2.8.1
+django-stubs==5.2.9
+django-stubs-ext==5.2.9
 django-timezone-field==7.2.1
 djangorestframework==3.16.1
+djangorestframework-stubs==3.16.8
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.29.0
 environs==14.6.0
@@ -36,6 +39,7 @@ referencing==0.37.0
 rpds-py==0.30.0
 six==1.17.0
 sqlparse==0.5.5
+types-PyYAML==6.0.12.20250915
 typing_extensions==4.15.0
 tzdata==2025.3
 tzlocal==5.3.1
