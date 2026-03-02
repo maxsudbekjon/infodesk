@@ -4,7 +4,6 @@ from apps.group.serializers import GroupDetailModelSerializer, GroupModelSeriali
 from rest_framework.response import Response
 from rest_framework import status
 from apps.group.models import Group
-from drf_spectacular.utils import extend_schema
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
