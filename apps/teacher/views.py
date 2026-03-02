@@ -7,8 +7,9 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from apps.teacher.models import Teacher
 from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer
+from drf_spectacular.utils import extend_schema
 
-
+@extend_schema(tags=["Teachers"])
 class TeacherListAPIView(generics.ListAPIView):
     serializer_class = TeacherListSerializer
     permission_classes = [IsAuthenticated]
@@ -36,12 +37,14 @@ class TeacherListAPIView(generics.ListAPIView):
         return qs.order_by('-id')
 
 
+@extend_schema(tags=["Teachers"])
 class TeacherCreateAPIView(generics.CreateAPIView):
     queryset = Teacher.objects.all()
     serializer_class = TeacherSerializer
     permission_classes = [IsAuthenticated]
 
 
+@extend_schema(tags=["Teachers"])
 class TeacherDetailAPIView(generics.RetrieveAPIView):
     serializer_class = TeacherSerializer
     permission_classes = [IsAuthenticated]
@@ -60,6 +63,7 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
         )
 
 
+@extend_schema(tags=["Teachers"])
 class TeacherRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Teacher.objects.all().select_related('user', 'branch').prefetch_related('specialty')
     serializer_class = TeacherSerializer
@@ -73,6 +77,7 @@ class TeacherRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
         )
 
 
+@extend_schema(tags=["Teachers"])
 class TeacherToggleArchiveAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -91,29 +96,7 @@ class TeacherToggleArchiveAPIView(APIView):
         })
 
 
-# class TeacherUploadImageAPIView(APIView):
-#     permission_classes = [IsAuthenticated]
-#     parser_classes = (MultiPartParser, FormParser)
-#
-#     def post(self, request, pk):
-#         try:
-#             teacher = Teacher.objects.get(pk=pk)
-#         except Teacher.DoesNotExist:
-#             return Response({'detail': 'Not found'}, status=404)
-#
-#         image = request.data.get('image')
-#         if not image:
-#             return Response({'detail': 'Image not provided'}, status=400)
-#
-#         teacher.image = image
-#         teacher.save()
-#
-#         return Response({
-#             'image_url': request.build_absolute_uri(teacher.image.url)
-#         })
-
-
-
+@extend_schema(tags=["Teachers"])
 class TeacherUploadImageAPIView(generics.GenericAPIView):
     serializer_class = TeacherImageUploadSerializer
     permission_classes = [IsAuthenticated]
@@ -136,6 +119,8 @@ class TeacherUploadImageAPIView(generics.GenericAPIView):
             "image_url": request.build_absolute_uri(teacher.image.url)
         })
 
+
+@extend_schema(tags=["Teachers"])
 class TeacherStatsAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
