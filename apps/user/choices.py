@@ -7,7 +7,6 @@ class GENDER(models.TextChoices):
 class ROLE(models.TextChoices):
     USER='user','User'
     ADMIN='admin','Admin'
-    OPERATOR='operator','Operator'
     MANAGER='meneger','Meneger'
     CEO='ceo','Ceo'
     STUDENT='student','Student'

@@ -13,7 +13,10 @@ from django.db.models import Q
 from apps.user.models import Operator
 from rest_framework import status
 from django.utils.dateparse import parse_datetime
-
+from django.http import HttpResponse
+from openpyxl import Workbook
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 
 
@@ -28,6 +31,7 @@ def parse_bool(value):
 
 
 
+
 class LeadPagination(PageNumberPagination):
     page_size = 10
 
@@ -37,8 +41,29 @@ class LeadCreateAPIView(generics.CreateAPIView):
     serializer_class=LeadModelSerializer
     permission_classes=[IsAuthenticated]
 
-
-
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name='branch_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description='Branch ID for filtering leads'
+        ),
+        OpenApiParameter(
+            name='is_active',
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            required=False,
+        ),
+        OpenApiParameter(
+            name='is_archived',
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            required=False,
+        ),
+    ]
+)
 class LeadListAPIView(generics.ListAPIView):
     serializer_class = LeadListModelSerializer
     pagination_class = LeadPagination
@@ -77,24 +102,60 @@ class LeadListAPIView(generics.ListAPIView):
 
         is_active = self.request.query_params.get('is_active')
         is_archived = self.request.query_params.get('is_archived')
+        branch_id = self.request.query_params.get('branch_id')
 
         if is_active is not None:
             queryset = queryset.filter(is_active=parse_bool(is_active))
 
         if is_archived is not None:
             queryset = queryset.filter(is_archived=parse_bool(is_archived))
-
+        if not branch_id:
+            return Response(
+                {"detail": "branch_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        queryset=queryset.filter(course__branch=branch_id)
         return queryset
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name='branch_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description='Branch ID for filtering leads'
+        ),
+        OpenApiParameter(
+            name='start_date',
+            type=OpenApiTypes.DATETIME,
+            location=OpenApiParameter.QUERY,
+            required=False,
+        ),
+        OpenApiParameter(
+            name='end_date',
+            type=OpenApiTypes.DATETIME,
+            location=OpenApiParameter.QUERY,
+            required=False,
+        ),
+    ]
+)
 class MonthlyLeadSourceComparisonAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
 
+        # 🔹 branch_id majburiy
+        branch_id = request.query_params.get("branch_id")
+        if not branch_id:
+            return Response(
+                {"detail": "branch_id is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         organizations = user.organization_set.all()
 
-        # 🔐 Faqat owner ko‘ra oladi
         if not organizations.exists():
             return Response(
                 {"detail": "Only center owners can access this data"},
@@ -106,7 +167,11 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
-        base_queryset = Lead.objects.filter(center__in=organizations)
+        # 🔹 Base queryset (branch filter qo‘shildi)
+        base_queryset = Lead.objects.filter(
+            center__in=organizations,
+            course__branch_id=branch_id
+        )
 
         # ==============================
         # 📅 Custom date range
@@ -205,15 +270,11 @@ class LeadAddGroupAPIView(generics.UpdateAPIView):
     serializer_class=LeadAddGroupSerializer
     lookup_field='id'
 
+
 class LeadDeleteAPIView(generics.DestroyAPIView):
     permission_classes=[IsAuthenticated]
     queryset=Lead 
     lookup_field='id'
-
-from rest_framework.views import APIView
-from django.http import HttpResponse
-from openpyxl import Workbook
-
 
 
 class LeadExportExcelAPIView(APIView):
