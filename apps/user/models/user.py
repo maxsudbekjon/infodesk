@@ -1,10 +1,11 @@
+import re
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.hashers import identify_hasher, is_password_usable, make_password
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
-import re
-from apps.base_models import TimeStampedModel
+
 from apps.user.choices import GENDER, ROLE
 
 
@@ -13,8 +14,7 @@ class CustomUserManager(BaseUserManager):
         if not phone_number:
             raise ValidationError("phone_number is required")
 
-        # Minimal phone format check (starts with + and digits only)
-        if not re.match(r"^\+?\d{7,15}$", phone_number):
+        if not re.match(r"^\\+?\\d{7,15}$", phone_number):
             raise ValidationError({"phone_number": "Telefon raqami noto‘g‘ri formatda!"})
 
         extra_fields["phone_number"] = phone_number
@@ -42,17 +42,9 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, unique=True)
     phone_number2 = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
-    gender = models.CharField(
-        max_length=30,
-        choices=GENDER.choices,
-        null=True,
-        blank=True
-    )
+    gender = models.CharField(max_length=30, choices=GENDER.choices, null=True, blank=True)
     role = models.CharField(max_length=30, choices=ROLE.choices, default=ROLE.USER)
-    birthday = models.DateField(
-        blank=True,
-        null=True
-    )
+    birthday = models.DateField(blank=True, null=True)
 
     USERNAME_FIELD = "phone_number"
     REQUIRED_FIELDS = []
@@ -67,39 +59,5 @@ class User(AbstractUser):
                 self.password = make_password(self.password)
         super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.phone_number}"
-
-
-class Operator(TimeStampedModel):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True
-    )
-    center = models.ForeignKey('settings.Organization', on_delete=models.CASCADE)
-    image = models.FileField(
-        upload_to='teacher-avatar',
-        null=True,
-        blank=True
-    )
-    monthly_salary = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        null=True,
-        blank=True
-    )
-    kpi = models.DecimalField(
-        max_digits=15,
-        decimal_places=2,
-        null=True,
-        blank=True
-    )
-
-    is_archived = models.BooleanField(
-        default=False
-    )
-
-    def __str__(self):
-        return self.user.phone_number

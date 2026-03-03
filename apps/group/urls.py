@@ -1,6 +1,11 @@
 from django.urls import path
 
-from apps.group.views import GroupCreateAPIView, GroupDetailAPIView, GroupListAPIView, GroupStatusUpdateAPIView
+from apps.group.views import (
+    GroupCreateAPIView,
+    GroupDetailAPIView,
+    GroupListAPIView,
+    GroupStatusUpdateAPIView,
+)
 
 urlpatterns = [
     path('list/',GroupListAPIView.as_view(),name='group-list'),
