@@ -1,6 +1,7 @@
 from django.db.models import Count, Q
 from django.template.context_processors import request
 from rest_framework import generics, status
+from rest_framework.generics import DestroyAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
@@ -9,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from apps.teacher.models import Teacher
 from apps.teacher.permissions import TeacherImagePermission, IsOrganizationOwner
 from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer, \
-    TeacherCreateSerializer
+    TeacherCreateSerializer, TeacherUpdateSerializer
 from drf_spectacular.utils import extend_schema
 
 @extend_schema(tags=["Teachers"])
@@ -124,3 +125,30 @@ class TeacherUploadImageAPIView(generics.GenericAPIView):
                 teacher.image.url
             )
         })
+
+
+@extend_schema(tags=["Teachers"])
+class TeacherDeleteAPIView(DestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOrganizationOwner]
+    queryset = Teacher.objects.all()
+
+    def get_queryset(self):
+        return Teacher.objects.filter(
+            branch__organization__owner=self.request.user
+        )
+
+    def perform_destroy(self, instance):
+        instance.delete()
+
+
+@extend_schema(tags=["Teachers"])
+class TeacherUpdateAPIView(UpdateAPIView):
+    permission_classes = [IsAuthenticated, TeacherImagePermission]
+    serializer_class = TeacherUpdateSerializer
+
+    def get_queryset(self):
+        return Teacher.objects.filter(
+            branch__organization__owner=self.request.user
+        )
+
+

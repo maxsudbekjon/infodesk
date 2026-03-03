@@ -1,10 +1,9 @@
 from django.urls import path
 from .views import (
-    # TeacherListCreateAPIView,
     TeacherRetrieveUpdateDestroyAPIView,
     TeacherToggleArchiveAPIView,
     TeacherUploadImageAPIView,
-    TeacherListAPIView, TeacherCreateAPIView, TeacherDetailAPIView,
+    TeacherListAPIView, TeacherCreateAPIView, TeacherDetailAPIView, TeacherDeleteAPIView, TeacherUpdateAPIView,
 )
 
 
@@ -17,7 +16,8 @@ urlpatterns = [
     path('<int:pk>/toggle-archive/', TeacherToggleArchiveAPIView.as_view()),
     path('<int:pk>/upload-image/', TeacherUploadImageAPIView.as_view()),
 
-    path('<int:pk>/', TeacherRetrieveUpdateDestroyAPIView.as_view()),
+    path('delete/<int:pk>/', TeacherDeleteAPIView.as_view()),
+        path('update/<int:pk>/', TeacherUpdateAPIView.as_view()),
 ]
 
 

@@ -162,3 +162,23 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             teacher.specialty.set(speciaties)
 
         return teacher
+
+
+
+class TeacherUpdateSerializer(serializers.ModelSerializer):
+    user = SimpleUserSerializer(read_only=True)
+    specialty = serializers.PrimaryKeyRelatedField(
+        queryset=Specialty.objects.all(),
+        many=True,
+        required=False
+    )
+
+    class Meta:
+        model = Teacher
+        fields = (
+            'id', 'user',
+            'specialty',
+            'monthly_salary', 'kpi', 'monthly_per_lesson', 'monthly_per_student',
+            'contract_date', 'percentage_share', 'lesson_fee', 'per_student_fee',
+            'branch', 'is_archived',
+        )
