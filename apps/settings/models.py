@@ -8,7 +8,7 @@ from apps.settings.choices import LEAD_CONSOLIDATION
 
 class Organization(TimeStampedModel):
 
-	owner  = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+	owner  = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE, related_name="organizations")
 	# lead_consolidation - leadga operatorni qaysi usulda biriktirishni bildiradi.
 	lead_consolidation = models.CharField(max_length=20,choices=LEAD_CONSOLIDATION.choices,default=LEAD_CONSOLIDATION.MANUAL)
 	organization_phone = models.CharField(max_length=255,null=True,blank=True)

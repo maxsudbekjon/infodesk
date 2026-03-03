@@ -1,4 +1,6 @@
+from click import clear
 from django.db.models import Count, Q
+from django.db import transaction
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from apps.teacher.models import Teacher, Specialty
@@ -13,7 +15,9 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'email', 'phone_number')
 
 
-class SpecialtySerializer(serializers.ModelSerializer):
+
+
+class SpecialtySerializer(serializers.ModelSerializer ):
     class Meta:
         model = Specialty
         fields = ('id', 'title')
@@ -50,10 +54,9 @@ class TeacherCourseSerializer(serializers.ModelSerializer):
             'active_groups',
         )
 
+
 class TeacherSerializer(serializers.ModelSerializer):
-    user = SimpleUserSerializer(read_only=True)
-    user_id = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True, source='user',
-                                                 required=False, allow_null=True)
+    user = SimpleUserSerializer()
     specialties = SpecialtySerializer(source='specialty', many=True, read_only=True)
     courses = serializers.SerializerMethodField()
     courses_count = serializers.IntegerField(read_only=True)
@@ -63,7 +66,7 @@ class TeacherSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = (
-            'id', 'user', 'user_id', 'image',
+            'id', 'user', 'image',
             'specialties',
             'monthly_salary', 'kpi', 'monthly_per_lesson', 'monthly_per_student',
             'contract_date', 'percentage_share', 'lesson_fee', 'per_student_fee',
@@ -85,21 +88,12 @@ class TeacherSerializer(serializers.ModelSerializer):
         )
         return TeacherCourseSerializer(courses, many=True).data
 
-    def create(self, validated_data):
-        # handle specialty m2m and user assignment
-        specialties = validated_data.pop('specialty', [])
-        teacher = super().create(validated_data)
-        if specialties:
-            teacher.specialty.set(specialties)
-        return teacher
-
     def update(self, instance, validated_data):
         specialties = validated_data.pop('specialty', None)
         teacher = super().update(instance, validated_data)
         if specialties is not None:
             teacher.specialty.set(specialties)
         return teacher
-
 
 
 class TeacherListSerializer(serializers.ModelSerializer):
@@ -129,3 +123,42 @@ class TeacherListSerializer(serializers.ModelSerializer):
 
 class TeacherImageUploadSerializer(serializers.Serializer):
     image = serializers.ImageField()
+
+    def validate_image(self, value):
+        if value.size > 5 * 1024 * 1024:
+            raise serializers.ValidationError("Image size must be under 5MB.")
+        return value
+
+
+class TeacherCreateSerializer(serializers.ModelSerializer):
+    user = SimpleUserSerializer()
+    specialties = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Specialty.objects.all(),
+        required=False
+    )
+
+    class Meta:
+        model = Teacher
+        fields = (
+            'id', 'user',
+            'specialties',
+            'monthly_salary', 'kpi', 'monthly_per_lesson', 'monthly_per_student',
+            'contract_date', 'percentage_share', 'lesson_fee', 'per_student_fee',
+            'branch', 'is_archived',
+        )
+        # read_only_fields = ('created_at', 'updated_at', 'courses_count', 'groups_count', 'students_count')
+
+    def create(self, validated_data):
+        user_data = validated_data.pop('user')
+        speciaties = validated_data.pop('specialties')
+
+        with transaction.atomic():
+            user = User.objects.create_user(**user_data)
+            teacher = Teacher.objects.create(
+                user=user,
+                **validated_data
+            )
+            teacher.specialty.set(speciaties)
+
+        return teacher

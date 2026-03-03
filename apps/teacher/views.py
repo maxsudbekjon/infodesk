@@ -1,4 +1,5 @@
 from django.db.models import Count, Q
+from django.template.context_processors import request
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -6,7 +7,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from apps.teacher.models import Teacher
-from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer
+from apps.teacher.permissions import TeacherImagePermission, IsOrganizationOwner
+from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer, \
+    TeacherCreateSerializer
 from drf_spectacular.utils import extend_schema
 
 @extend_schema(tags=["Teachers"])
@@ -40,8 +43,8 @@ class TeacherListAPIView(generics.ListAPIView):
 @extend_schema(tags=["Teachers"])
 class TeacherCreateAPIView(generics.CreateAPIView):
     queryset = Teacher.objects.all()
-    serializer_class = TeacherSerializer
-    permission_classes = [IsAuthenticated]
+    serializer_class = TeacherCreateSerializer
+    permission_classes = [IsAuthenticated, IsOrganizationOwner]
 
 
 @extend_schema(tags=["Teachers"])
@@ -99,24 +102,27 @@ class TeacherToggleArchiveAPIView(APIView):
 @extend_schema(tags=["Teachers"])
 class TeacherUploadImageAPIView(generics.GenericAPIView):
     serializer_class = TeacherImageUploadSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TeacherImagePermission]
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, pk):
+
         teacher = get_object_or_404(
             Teacher,
             pk=pk,
-            center=request.user.center
         )
+        self.check_object_permissions(request, teacher)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         teacher.image = serializer.validated_data["image"]
-        teacher.save()
+        teacher.save(update_fields=["image"])
 
         return Response({
-            "image_url": request.build_absolute_uri(teacher.image.url)
+            "image_url": request.build_absolute_uri(
+                teacher.image.url
+            )
         })
 
 
