@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from django.db import transaction
 from apps.lead.models import Lead, Source
 from apps.lead.services import assign_for_new_lead
-from apps.user.models import User
 
 
 

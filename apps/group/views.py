@@ -3,7 +3,9 @@ from rest_framework.permissions import IsAuthenticated
 from apps.group.serializers import GroupDetailModelSerializer, GroupModelSerializer, GroupStatusModelSerializer
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from apps.group.models import Group
+from apps.settings.models import Branch
 from drf_spectacular.utils import extend_schema, OpenApiParameter,OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 
@@ -89,9 +91,22 @@ class GroupStatusUpdateAPIView(generics.UpdateAPIView):
 
         group = serializer.instance
 
-        group.status = status
-        group.course.branch = branch_id
-        group.course.save()
+        if status is not None:
+            group.status = status
+
+        if branch_id is not None:
+            branch = Branch.objects.filter(id=branch_id).first()
+            if not branch:
+                raise ValidationError({'branch_id': "Branch topilmadi."})
+
+            if not branch.courses.filter(id=group.course_id).exists():
+                raise ValidationError({
+                    'branch_id': "Ushbu branchda guruhga biriktirilgan kurs mavjud emas. Ko'chirish mumkin emas."
+                })
+
+            group.course.branch = branch_id
+            group.course.save()
+
         group.save()
 
 

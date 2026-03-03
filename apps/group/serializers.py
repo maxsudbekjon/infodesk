@@ -38,7 +38,7 @@ class GroupDetailModelSerializer(serializers.ModelSerializer):
         read_only=True
     )
     branch = serializers.CharField(
-        source='course.branch.name',
+        source='room.branch.name',
         read_only=True
     )
 

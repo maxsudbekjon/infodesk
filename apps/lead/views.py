@@ -34,11 +34,13 @@ def parse_bool(value):
 class LeadPagination(PageNumberPagination):
     page_size = 10
 
+
 @extend_schema(tags=['Lead'])
 class LeadCreateAPIView(generics.CreateAPIView):
     queryset=Lead.objects.all()
     serializer_class=LeadModelSerializer
     permission_classes=[IsAuthenticated]
+
 
 @extend_schema(
     tags=['Lead'],
@@ -116,6 +118,7 @@ class LeadListAPIView(generics.ListAPIView):
             )
         queryset=queryset.filter(course__branch=branch_id)
         return queryset
+
 
 @extend_schema(
     tags=['Lead'],
@@ -260,10 +263,12 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
 
         return Response(result)
 
+
 @extend_schema(tags=['Lead'])
 class SourceListAPIView(generics.CreateAPIView):
     queryset=Source.objects.all
     serializer_class=SourceModelSerializer
+
 
 @extend_schema(tags=['Lead'])
 class LeadAddGroupAPIView(generics.UpdateAPIView):
@@ -271,11 +276,13 @@ class LeadAddGroupAPIView(generics.UpdateAPIView):
     serializer_class=LeadAddGroupSerializer
     lookup_field='id'
 
+
 @extend_schema(tags=['Lead'])
 class LeadDeleteAPIView(generics.DestroyAPIView):
     permission_classes=[IsAuthenticated]
     queryset=Lead 
     lookup_field='id'
+
 
 @extend_schema(tags=['Lead'])
 class LeadExportExcelAPIView(APIView):

@@ -7,7 +7,11 @@ from apps.settings.choices import LEAD_CONSOLIDATION
 
 
 class Organization(TimeStampedModel):
-
+	GRADING_CHOICES = [
+        ("point", "Point"),
+        ("percent", "Percent"),
+        ("ielts", "IELTS"),
+    ]
 	owner  = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
 	# lead_consolidation - leadga operatorni qaysi usulda biriktirishni bildiradi.
 	lead_consolidation = models.CharField(max_length=20,choices=LEAD_CONSOLIDATION.choices,default=LEAD_CONSOLIDATION.MANUAL)
@@ -22,6 +26,7 @@ class Organization(TimeStampedModel):
 	bank_accounts = models.JSONField(blank=True, null=True, help_text="Optional bank account details JSON")
 	cash_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 	terminal_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+	grading_system = models.CharField(max_length=50, choices=GRADING_CHOICES, default="point")
 
 
 	def __str__(self):
@@ -31,6 +36,7 @@ class Organization(TimeStampedModel):
 class Branch(TimeStampedModel):
 
 	organization = models.ForeignKey(Organization, related_name="branches", on_delete=models.CASCADE)
+	courses = models.ManyToManyField('group.CourseTemplate',related_name='branchs')
 	name = models.CharField(max_length=255)
 	phone = models.CharField(max_length=50, blank=True)
 	address = models.CharField(max_length=1024, blank=True)

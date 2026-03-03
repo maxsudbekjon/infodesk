@@ -6,23 +6,15 @@ from apps.group.choices import GROUP_DAYS_CHOICES, GROUP_STATUS
 
 
 class CourseTemplate(TimeStampedModel):
-    GRADING_CHOICES = [
-        ("point", "Point"),
-        ("percent", "Percent"),
-        ("ielts", "IELTS"),
-    ]
+    
 
     name = models.CharField(max_length=255)
     note = models.TextField(blank=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     duration_months = models.PositiveIntegerField(default=1)
-    grading_system = models.CharField(max_length=50, choices=GRADING_CHOICES, default="point")
-    branch = models.ForeignKey('settings.Branch', null=True, blank=True, on_delete=models.CASCADE,
+    
+    center = models.ForeignKey('settings.Organization',on_delete=models.CASCADE,
                                related_name="course_templates")
-    teacher = models.ForeignKey('teacher.Teacher', on_delete=CASCADE, related_name='teacher_courses', null=True, blank=True)
-    price_effective_from = models.DateField(null=True, blank=True)
-    apply_price_from_month = models.BooleanField(default=False,
-                                             help_text="If true, apply price change from start of month for related groups")
 
 
 def __str__(self):
@@ -54,8 +46,8 @@ class Group(TimeStampedModel):
     course = models.ForeignKey(
         CourseTemplate,
         on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        # null=True,
+        # blank=True,
         related_name='groups'
     )
     teacher = models.ForeignKey(
