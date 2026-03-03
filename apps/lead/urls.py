@@ -1,5 +1,5 @@
 from django.urls import path
-from apps.lead.views import LeadAddGroupAPIView, LeadCreateAPIView, LeadDeleteAPIView, LeadExportExcelAPIView, LeadListAPIView, MonthlyLeadSourceComparisonAPIView, SourceListAPIView
+from apps.lead.views import LeadAddGroupAPIView, LeadCreateAPIView, LeadDeleteAPIView, LeadExportExcelAPIView, LeadListAPIView, MonthlyLeadSourceComparisonAPIView, SituationCreateAPIView, SourceCreateAPIView
 
 
 
@@ -15,7 +15,7 @@ urlpatterns = [
     ),
     path(
         'source/create',
-        SourceListAPIView.as_view(),
+        SourceCreateAPIView.as_view(),
         name='source-create'
     ),
     path(
@@ -32,5 +32,10 @@ urlpatterns = [
         'api/leads/export/',
         LeadExportExcelAPIView.as_view(),
         name='lead-exel-export'
+    ),
+    path(
+        'situation/create',
+        SituationCreateAPIView.as_view(),
+        name='situation-create'
     )
 ]

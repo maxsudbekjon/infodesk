@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from apps.lead.models import Lead, Source
+from apps.lead.models import Lead, Situation, Source
 from apps.lead.services import assign_for_new_lead
 
 
@@ -59,7 +59,6 @@ class SourceModelSerializer(serializers.ModelSerializer):
             'name',
             'icon',
             'center',
-            'is_static'
         )
 
 
@@ -68,3 +67,10 @@ class LeadAddGroupSerializer(serializers.ModelSerializer):
         model=Lead 
         fields=('group',)
     
+class SituationModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Situation
+        fields=(
+            'organization',
+            'title'
+        )

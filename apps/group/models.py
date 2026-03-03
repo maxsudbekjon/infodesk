@@ -46,9 +46,16 @@ class Group(TimeStampedModel):
     course = models.ForeignKey(
         CourseTemplate,
         on_delete=models.SET_NULL,
-        # null=True,
-        # blank=True,
+        null=True,
+        blank=True,
         related_name='groups'
+    )
+    branch = models.ForeignKey(
+        'settings.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='group'
     )
     teacher = models.ForeignKey(
         'teacher.Teacher',
@@ -106,10 +113,17 @@ class Group(TimeStampedModel):
                 condition=models.Q(start_lesson__lt=models.F('end_lesson')),
                 name='group_start_before_end_lesson',
             ),
+            models.CheckConstraint(
+                condition=models.Q(started_at__lt=models.F('closed_at')),
+                name='group_start_date_before_end_date',
+            ),
         ]
         indexes = [
             models.Index(fields=['status', 'created_at'], name='group_status_date_idx'),
             models.Index(fields=['teacher', 'status'], name='group_teacher_status_idx'),
+            models.Index(fields=['course', 'branch'], name='group_course_branch_idx'),
+            models.Index(fields=['branch'], name='group_branch_idx'),
+            models.Index(fields=['branch', 'status'], name='group_branch_status_idx'),
         ]
 
     def __str__(self):

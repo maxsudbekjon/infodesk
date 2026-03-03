@@ -1,6 +1,6 @@
 from rest_framework import generics
-from apps.lead.models import Lead, Source
-from apps.lead.serializers import LeadAddGroupSerializer, LeadListModelSerializer, LeadModelSerializer, SourceModelSerializer
+from apps.lead.models import Lead, Situation, Source
+from apps.lead.serializers import LeadAddGroupSerializer, LeadListModelSerializer, LeadModelSerializer, SituationModelSerializer, SourceModelSerializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import ValidationError
@@ -111,13 +111,17 @@ class LeadListAPIView(generics.ListAPIView):
 
         if is_archived is not None:
             queryset = queryset.filter(is_archived=parse_bool(is_archived))
-        if not branch_id:
+        if branch_id:
+            queryset=queryset.filter(course__branch=branch_id)
+        return queryset
+    
+    def list(self, request, *args, **kwargs):
+        if not request.query_params.get('branch_id'):
             return Response(
                 {"detail": "branch_id is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        queryset=queryset.filter(course__branch=branch_id)
-        return queryset
+        return super().list(request, *args, **kwargs)
 
 
 @extend_schema(
@@ -265,7 +269,7 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
 
 
 @extend_schema(tags=['Lead'])
-class SourceListAPIView(generics.CreateAPIView):
+class SourceCreateAPIView(generics.CreateAPIView):
     queryset=Source.objects.all
     serializer_class=SourceModelSerializer
 
@@ -345,3 +349,19 @@ class LeadExportExcelAPIView(APIView):
 
         workbook.save(response)
         return response
+
+@extend_schema(tags=['Lead'])
+class SituationCreateAPIView(generics.CreateAPIView):
+    queryset=Situation.objects.all()
+    serializer_class=SituationModelSerializer
+    permission_classes=[IsAuthenticated]
+
+    def perform_create(self, serializer):
+        organization = serializer.validated_data.get('organization')
+        if not organization:
+            raise ValidationError({'organization': "Organization majburiy."})
+
+        if organization.owner_id != self.request.user.id:
+            raise ValidationError({'organization': "Faqat o'zingizga tegishli organization uchun qo'sha olasiz."})
+
+        serializer.save()
