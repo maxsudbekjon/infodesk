@@ -124,24 +124,3 @@ class TeacherUploadImageAPIView(generics.GenericAPIView):
                 teacher.image.url
             )
         })
-
-
-@extend_schema(tags=["Teachers"])
-class TeacherStatsAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, pk):
-        try:
-            teacher = Teacher.objects.annotate(
-                groups_count=Count('main_groups', distinct=True),
-                students_count=Count('main_groups__students', distinct=True),
-                courses_count=Count('teacher_courses', distinct=True)
-            ).get(pk=pk)
-        except Teacher.DoesNotExist:
-            return Response({'detail': 'Not found'}, status=404)
-
-        return Response({
-            'courses_count': teacher.courses_count,
-            'groups_count': teacher.groups_count,
-            'students_count': teacher.students_count
-        })
