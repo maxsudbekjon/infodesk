@@ -6,23 +6,15 @@ from apps.group.choices import GROUP_DAYS_CHOICES, GROUP_STATUS
 
 
 class CourseTemplate(TimeStampedModel):
-    GRADING_CHOICES = [
-        ("point", "Point"),
-        ("percent", "Percent"),
-        ("ielts", "IELTS"),
-    ]
+    
 
     name = models.CharField(max_length=255)
     note = models.TextField(blank=True)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     duration_months = models.PositiveIntegerField(default=1)
-    grading_system = models.CharField(max_length=50, choices=GRADING_CHOICES, default="point")
-    branch = models.ForeignKey('settings.Branch', null=True, blank=True, on_delete=models.CASCADE,
+    
+    center = models.ForeignKey('settings.Organization',on_delete=models.CASCADE,
                                related_name="course_templates")
-    teacher = models.ForeignKey('teacher.Teacher', on_delete=CASCADE, related_name='teacher_courses', null=True, blank=True)
-    price_effective_from = models.DateField(null=True, blank=True)
-    apply_price_from_month = models.BooleanField(default=False,
-                                             help_text="If true, apply price change from start of month for related groups")
 
 
 def __str__(self):
@@ -57,6 +49,13 @@ class Group(TimeStampedModel):
         null=True,
         blank=True,
         related_name='groups'
+    )
+    branch = models.ForeignKey(
+        'settings.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='group'
     )
     teacher = models.ForeignKey(
         'teacher.Teacher',
@@ -114,10 +113,17 @@ class Group(TimeStampedModel):
                 condition=models.Q(start_lesson__lt=models.F('end_lesson')),
                 name='group_start_before_end_lesson',
             ),
+            models.CheckConstraint(
+                condition=models.Q(started_at__lt=models.F('closed_at')),
+                name='group_start_date_before_end_date',
+            ),
         ]
         indexes = [
             models.Index(fields=['status', 'created_at'], name='group_status_date_idx'),
             models.Index(fields=['teacher', 'status'], name='group_teacher_status_idx'),
+            models.Index(fields=['course', 'branch'], name='group_course_branch_idx'),
+            models.Index(fields=['branch'], name='group_branch_idx'),
+            models.Index(fields=['branch', 'status'], name='group_branch_status_idx'),
         ]
 
     def __str__(self):

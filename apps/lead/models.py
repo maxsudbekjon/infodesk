@@ -16,6 +16,13 @@ class Situation(models.Model):
     )
     is_static  = models.BooleanField(default=False)
 
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(is_static=True, organization__isnull=False),
+                name="situation_static_requires_no_org"
+            )
+        ]
 
     def __str__(self):
         return self.title
@@ -140,5 +147,4 @@ class Note(models.Model):
 
     def __str__(self):
         return self.text
-
 

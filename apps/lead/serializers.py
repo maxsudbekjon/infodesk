@@ -1,8 +1,6 @@
 from rest_framework import serializers
-from django.db import transaction
-from apps.lead.models import Lead, Source
+from apps.lead.models import Lead, Situation, Source
 from apps.lead.services import assign_for_new_lead
-from apps.user.models import User
 
 
 
@@ -61,7 +59,6 @@ class SourceModelSerializer(serializers.ModelSerializer):
             'name',
             'icon',
             'center',
-            'is_static'
         )
 
 
@@ -70,3 +67,10 @@ class LeadAddGroupSerializer(serializers.ModelSerializer):
         model=Lead 
         fields=('group',)
     
+class SituationModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Situation
+        fields=(
+            'organization',
+            'title'
+        )

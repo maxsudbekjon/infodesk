@@ -4,7 +4,7 @@ from apps.group.views import GroupCreateAPIView, GroupDetailAPIView, GroupListAP
 
 urlpatterns = [
     path('list/',GroupListAPIView.as_view(),name='group-list'),
-    path('update-status/<int:id>',GroupStatusUpdateAPIView.as_view(),name='group-status-update'),
+    path('update-status&branch/<int:id>',GroupStatusUpdateAPIView.as_view(),name='group-status-update'),
     path('create/',GroupCreateAPIView.as_view(),name='group-create'),
     path('detail/<int:id>',GroupDetailAPIView.as_view(),name='group-detail'),
 ]

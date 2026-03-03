@@ -13,9 +13,10 @@ class Student(TimeStampedModel):
     )
     grade = models.DecimalField(
         max_digits=20,
-        decimal_places=2
+        decimal_places=2,
+        default=0
     )
-    next_payment_date = models.DateField()
+    next_payment_date = models.DateField(null=True,blank=True)
     # Lead da ham groups bor. 
     groups = models.ManyToManyField(
         'group.Group',
@@ -23,7 +24,8 @@ class Student(TimeStampedModel):
     )
     balance = models.DecimalField(
         max_digits=20,
-        decimal_places=2
+        decimal_places=2,
+        default=0
     )
     payment_status=models.CharField(
         max_length=30,
@@ -32,9 +34,14 @@ class Student(TimeStampedModel):
     )
     attendance = models.DecimalField(
         max_digits=3,
-        decimal_places=2
+        decimal_places=2,
+        null=True,
+        blank=True
     )
-    comment = models.TextField()
+    comment = models.TextField(
+        null=True,
+        blank=True
+    )
 
 
     class Meta:
