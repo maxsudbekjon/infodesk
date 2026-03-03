@@ -28,6 +28,8 @@ class Source(models.Model):
 
     def __str__(self):
         return self.name
+
+
 class Lead(TimeStampedModel):
     full_name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=30)

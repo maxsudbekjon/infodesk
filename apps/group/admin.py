@@ -2,7 +2,7 @@ from django.apps import apps as django_apps
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
 
-from apps.group.models import CourseTemplate, Day, Room, Group
+from apps.group.models import CourseTemplate, Day, Room, Group, GroupNote
 
 
 admin.site.register(CourseTemplate)
