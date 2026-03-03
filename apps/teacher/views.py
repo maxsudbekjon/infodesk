@@ -82,22 +82,22 @@ class TeacherRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView)
 
 @extend_schema(tags=["Teachers"])
 class TeacherToggleArchiveAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrganizationOwner]
 
     def post(self, request, pk):
-        try:
-            teacher = Teacher.objects.get(pk=pk, center_id=request.user.center_id)
-        except Teacher.DoesNotExist:
-            return Response({'detail': 'Not found'}, status=404)
+        teacher = get_object_or_404(
+            Teacher.objects.select_related("branch__organization"),
+            pk=pk,
+            branch__organization__owner=request.user
+        )
 
         teacher.is_archived = not teacher.is_archived
-        teacher.save()
+        teacher.save(update_fields=["is_archived"])
 
         return Response({
-            'id': teacher.id,
-            'is_archived': teacher.is_archived
+            "id": teacher.id,
+            "is_archived": teacher.is_archived
         })
-
 
 @extend_schema(tags=["Teachers"])
 class TeacherUploadImageAPIView(generics.GenericAPIView):
