@@ -1,17 +1,19 @@
 from django.db.models import Count, Q
-from django.template.context_processors import request
+from django.shortcuts import get_object_or_404
+
+from drf_spectacular.utils import extend_schema
+
 from rest_framework import generics, status
 from rest_framework.generics import DestroyAPIView, UpdateAPIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from django.shortcuts import get_object_or_404
 from apps.teacher.models import Teacher
 from apps.teacher.permissions import TeacherImagePermission, IsOrganizationOwner
 from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer, \
     TeacherCreateSerializer, TeacherUpdateSerializer
-from drf_spectacular.utils import extend_schema
+
 
 @extend_schema(tags=["Teachers"])
 class TeacherListAPIView(generics.ListAPIView):
@@ -68,20 +70,6 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
 
 
 @extend_schema(tags=["Teachers"])
-class TeacherRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Teacher.objects.all().select_related('user', 'branch').prefetch_related('specialty')
-    serializer_class = TeacherSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return super().get_queryset().annotate(
-            groups_count=Count('main_groups', distinct=True),
-            students_count=Count('main_groups__students', distinct=True),
-            courses_count=Count('teacher_courses', distinct=True)
-        )
-
-
-@extend_schema(tags=["Teachers"])
 class TeacherToggleArchiveAPIView(APIView):
     permission_classes = [IsAuthenticated, IsOrganizationOwner]
 
@@ -100,6 +88,7 @@ class TeacherToggleArchiveAPIView(APIView):
             "is_archived": teacher.is_archived
         })
 
+
 @extend_schema(tags=["Teachers"])
 class TeacherUploadImageAPIView(generics.GenericAPIView):
     serializer_class = TeacherImageUploadSerializer
@@ -107,7 +96,6 @@ class TeacherUploadImageAPIView(generics.GenericAPIView):
     parser_classes = (MultiPartParser, FormParser)
 
     def post(self, request, pk):
-
         teacher = get_object_or_404(
             Teacher,
             pk=pk,
@@ -150,5 +138,3 @@ class TeacherUpdateAPIView(UpdateAPIView):
         return Teacher.objects.filter(
             branch__organization__owner=self.request.user
         )
-
-

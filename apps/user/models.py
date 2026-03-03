@@ -8,8 +8,6 @@ from apps.base_models import TimeStampedModel
 from apps.user.choices import GENDER, ROLE
 
 
-
-
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
         if not phone_number:
@@ -42,15 +40,15 @@ class User(AbstractUser):
     username = None
 
     phone_number = models.CharField(max_length=20, unique=True)
-    phone_number2 = models.CharField(max_length=20, unique=True,null=True,blank=True)
+    phone_number2 = models.CharField(max_length=20, unique=True, null=True, blank=True)
 
-    gender=models.CharField(
+    gender = models.CharField(
         max_length=30,
         choices=GENDER.choices,
         null=True,
         blank=True
     )
-    role = models.CharField(max_length=30,choices=ROLE.choices,default=ROLE.USER)
+    role = models.CharField(max_length=30, choices=ROLE.choices, default=ROLE.USER)
     birthday = models.DateField(
         blank=True,
         null=True
@@ -74,14 +72,13 @@ class User(AbstractUser):
 
 
 class Operator(TimeStampedModel):
-
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         null=True,
         blank=True
     )
-    center = models.ForeignKey('settings.Organization',on_delete=models.CASCADE)
+    center = models.ForeignKey('settings.Organization', on_delete=models.CASCADE)
     image = models.FileField(
         upload_to='teacher-avatar',
         null=True,
@@ -100,7 +97,7 @@ class Operator(TimeStampedModel):
         blank=True
     )
 
-    is_archived  = models.BooleanField(
+    is_archived = models.BooleanField(
         default=False
     )
 

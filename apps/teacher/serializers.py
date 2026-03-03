@@ -1,8 +1,9 @@
-from click import clear
 from django.db.models import Count, Q
 from django.db import transaction
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
+
+from rest_framework import serializers
+
 from apps.teacher.models import Teacher, Specialty
 from apps.group.models import Group, CourseTemplate
 
@@ -15,12 +16,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'first_name', 'last_name', 'email', 'phone_number')
 
 
-
-
-class SpecialtySerializer(serializers.ModelSerializer ):
+class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:
         model = Specialty
         fields = ('id', 'title')
+
 
 class TeacherGroupSerializer(serializers.ModelSerializer):
     # total_students = serializers.IntegerField(source='students_count', read_only=True)
@@ -162,7 +162,6 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
             teacher.specialty.set(speciaties)
 
         return teacher
-
 
 
 class TeacherUpdateSerializer(serializers.ModelSerializer):
