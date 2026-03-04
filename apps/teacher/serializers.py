@@ -13,7 +13,7 @@ User = get_user_model()
 class SimpleUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'phone_number')
+        fields = ('id', 'full_name', 'last_name', 'email', 'phone_number')
 
 
 class SpecialtySerializer(serializers.ModelSerializer):
@@ -23,7 +23,6 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 
 class TeacherGroupSerializer(serializers.ModelSerializer):
-    # total_students = serializers.IntegerField(source='students_count', read_only=True)
 
     class Meta:
         model = Group
@@ -97,8 +96,8 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 
 class TeacherListSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    # first_name = serializers.CharField(source='user.first_name', read_only=True)
+    # last_name = serializers.CharField(source='user.last_name', read_only=True)
     phone = serializers.CharField(source='user.phone_number', read_only=True)
     image_url = serializers.SerializerMethodField()
 
@@ -106,8 +105,7 @@ class TeacherListSerializer(serializers.ModelSerializer):
         model = Teacher
         fields = (
             'id',
-            'first_name',
-            'last_name',
+            'full_name'
             'phone',
             'image_url',
             'monthly_salary',

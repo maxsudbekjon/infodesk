@@ -35,8 +35,7 @@ class TeacherListAPIView(generics.ListAPIView):
 
         if search:
             qs = qs.filter(
-                Q(user__first_name__icontains=search) |
-                Q(user__last_name__icontains=search) |
+                Q(user__full_name__icontains=search) |
                 Q(user__phone_number__icontains=search)
             )
 
