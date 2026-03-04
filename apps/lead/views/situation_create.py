@@ -1,11 +1,11 @@
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
-
+from drf_spectacular.utils import extend_schema
 from apps.lead.models import Situation
 from apps.lead.serializers import SituationModelSerializer
 
-
+@extend_schema(tags=['Lead'])
 class SituationCreateAPIView(generics.CreateAPIView):
     queryset = Situation.objects.all()
     serializer_class = SituationModelSerializer

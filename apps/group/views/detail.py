@@ -1,10 +1,10 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-
+from drf_spectacular.utils import extend_schema
 from apps.group.models import Group
 from apps.group.serializers import GroupDetailModelSerializer
 
-
+@extend_schema(tags=['Group'])
 class GroupDetailAPIView(generics.RetrieveAPIView):
     serializer_class = GroupDetailModelSerializer
     lookup_field = "id"

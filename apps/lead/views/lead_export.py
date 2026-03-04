@@ -3,11 +3,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import HttpResponse
-
+from drf_spectacular.utils import extend_schema
 from apps.lead.models import Lead
 from apps.user.models import Operator
 
-
+@extend_schema(tags=['Lead'])
 class LeadExportExcelAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
