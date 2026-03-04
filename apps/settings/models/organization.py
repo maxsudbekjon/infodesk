@@ -24,7 +24,7 @@ class Organization(TimeStampedModel):
     description = models.TextField(blank=True)
     logo = models.ImageField(upload_to="organization/logos/", null=True, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longtitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
     address = models.CharField(max_length=1024, blank=True)
     sms_identifier = models.CharField(
         max_length=128,

@@ -6,4 +6,6 @@ from apps.lead.models import Situation
 class SituationModelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Situation
-        fields = ("organization", "title")
+        fields = ("organization", "title",)
+        read_only_fields = ("id", "status")
+

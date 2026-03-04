@@ -6,8 +6,6 @@ from apps.group.serializers import GroupStatusModelSerializer
 
 @extend_schema(tags=['Group'])
 class GroupStatusUpdateAPIView(generics.UpdateAPIView):
+    queryset=Group.objects.all()
     serializer_class = GroupStatusModelSerializer
     lookup_field = "id"
-
-    def get_queryset(self):
-        return Group.objects.all()

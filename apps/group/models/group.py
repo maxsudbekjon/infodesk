@@ -11,9 +11,7 @@ class Group(TimeStampedModel):
     title = models.CharField(max_length=255)
     course = models.ForeignKey(
         CourseTemplate,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name="groups",
     )
     branch = models.ForeignKey(
@@ -46,8 +44,6 @@ class Group(TimeStampedModel):
     lessons_days_choice = models.CharField(
         max_length=30,
         choices=GROUP_DAYS_CHOICES.choices,
-        null=True,
-        blank=True,
     )
     status = models.CharField(
         max_length=30,

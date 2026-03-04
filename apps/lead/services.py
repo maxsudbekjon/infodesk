@@ -1,16 +1,38 @@
+from django.db import transaction
+from django.db.models import Count, Q
+
 from apps.lead.models import Lead
 from apps.lead.choices import LEAD_STATUS
 from apps.settings.choices import LEAD_CONSOLIDATION
 from apps.settings.models import Organization
 from apps.user.models import Operator
-from django.db import models, transaction
 
 
+# operatorlarni hozirgi load bo'yicha olish
+def get_operators_by_load(center_id):
+    return list(
+        Operator.objects
+        .filter(
+            center_id=center_id,
+            is_archived=False
+        )
+        .annotate(
+            new_leads_count=Count(
+                "leads",
+                filter=Q(leads__status=LEAD_STATUS.NEW)
+            )
+        )
+        .order_by("new_leads_count", "id")
+        .only("id")
+    )
 
-# lead tushishi bilan operator biriktiradi.
+
+# lead tushishi bilan operator biriktiradi
 def auto_assign(lead: Lead):
+
     if not lead.center:
-        return None
+        return lead
+
     if lead.center.lead_consolidation != LEAD_CONSOLIDATION.AUTO:
         return lead
 
@@ -18,60 +40,88 @@ def auto_assign(lead: Lead):
         Operator.objects
         .filter(
             is_archived=False,
-            center=lead.center   # 🔥 MUHIM
+            center=lead.center
         )
         .annotate(
-            new_leads_count=models.Count(
-                'leads',
-                filter=models.Q(leads__status=LEAD_STATUS.NEW)
+            new_leads_count=Count(
+                "leads",
+                filter=Q(leads__status=LEAD_STATUS.NEW)
             )
         )
-        .order_by('new_leads_count', 'id')
+        .order_by("new_leads_count", "id")
         .first()
     )
 
-    if operator:
+    if not operator:
+        return lead
+
+    # race condition oldini olish
+    updated = (
+        Lead.objects
+        .filter(
+            id=lead.id,
+            operator__isnull=True
+        )
+        .update(operator=operator)
+    )
+
+    if updated:
         lead.operator = operator
-        lead.save(update_fields=['operator'])
 
     return lead
 
-def once_a_day():
-    centers = Organization.objects.filter(
-        lead_consolidation=LEAD_CONSOLIDATION.ONCE_A_DAY
-    ).values_list('id', flat=True)
 
-    with transaction.atomic():
+# kuniga bir marta leadlarni operatorlarga taqsimlaydi
+def once_a_day(batch_size=2000):
 
-        for center_id in centers:
+    centers = (
+        Organization.objects
+        .filter(
+            lead_consolidation=LEAD_CONSOLIDATION.ONCE_A_DAY
+        )
+        .values_list("id", flat=True)
+    )
 
-            operators = list(
-                Operator.objects.filter(
-                    center_id=center_id,
-                    is_archived=False
+    for center_id in centers:
+
+        operators = get_operators_by_load(center_id)
+
+        if not operators:
+            continue
+
+        operator_count = len(operators)
+
+        while True:
+
+            with transaction.atomic():
+
+                leads = list(
+                    Lead.objects
+                    .select_for_update(skip_locked=True)
+                    .filter(
+                        center_id=center_id,
+                        status=LEAD_STATUS.NEW,
+                        operator__isnull=True
+                    )
+                    .only("id")
+                    .order_by("id")[:batch_size]
                 )
-            )
 
-            if not operators:
-                continue
+                if not leads:
+                    break
 
-            leads = Lead.objects.filter(
-                center_id=center_id,
-                status=LEAD_STATUS.NEW,
-                operator__isnull=True
-            )
+                for index, lead in enumerate(leads):
+                    lead.operator_id = operators[index % operator_count].id
 
-            operator_count = len(operators)
-
-            for index, lead in enumerate(leads):
-                operator = operators[index % operator_count]
-                lead.operator = operator
-                lead.save(update_fields=['operator'])
+                Lead.objects.bulk_update(leads, ["operator"])
 
 
 def assign_for_new_lead(lead: Lead):
+
     if not lead.center:
         return lead
+
     if lead.center.lead_consolidation == LEAD_CONSOLIDATION.AUTO:
         return auto_assign(lead)
+
     return lead

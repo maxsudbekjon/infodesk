@@ -1,13 +1,21 @@
 from django.urls import path
 from apps.lead.views import LeadAddGroupAPIView, LeadCreateAPIView, LeadDeleteAPIView, LeadExportExcelAPIView, LeadListAPIView, MonthlyLeadSourceComparisonAPIView, SituationCreateAPIView, SourceCreateAPIView
+from apps.lead.views.situation_create import SituationListAPIView
 
 
 
 urlpatterns = [
 
-    path('create/',LeadCreateAPIView.as_view(),name='lead-create'),
-
-    path('list/',LeadListAPIView.as_view(),name='lead-list'),
+    path(
+        'create/',
+        LeadCreateAPIView.as_view(),
+        name='lead-create'
+    ),
+    path(
+        'list/',
+        LeadListAPIView.as_view(),
+        name='lead-list'
+    ),
     path(
         'stats/monthly-comparison/',
         MonthlyLeadSourceComparisonAPIView.as_view(),
@@ -37,5 +45,10 @@ urlpatterns = [
         'situation/create',
         SituationCreateAPIView.as_view(),
         name='situation-create'
+    ),
+    path(
+        'situation-list',
+        SituationListAPIView.as_view(),
+        name='situation-list'
     )
 ]

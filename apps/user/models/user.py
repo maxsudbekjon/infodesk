@@ -14,7 +14,7 @@ class CustomUserManager(BaseUserManager):
         if not phone_number:
             raise ValidationError("phone_number is required")
 
-        if not re.match(r"^\\+?\\d{7,15}$", phone_number):
+        if not re.match(r"^\+?\d{7,15}$", phone_number):
             raise ValidationError({"phone_number": "Telefon raqami noto‘g‘ri formatda!"})
 
         extra_fields["phone_number"] = phone_number

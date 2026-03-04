@@ -12,4 +12,4 @@ def parse_bool(value: str) -> bool:
 
 
 class LeadPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 20

@@ -19,9 +19,7 @@ class Lead(TimeStampedModel):
     )
     course = models.ForeignKey(
         "group.CourseTemplate",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name="leads",
     )
     operator = models.ForeignKey(
@@ -41,7 +39,6 @@ class Lead(TimeStampedModel):
     days = models.ManyToManyField(
         "group.Day",
         related_name="leads",
-        null=True,
         blank=True,
     )
     days_choice = models.CharField(
@@ -64,9 +61,7 @@ class Lead(TimeStampedModel):
     )
     source = models.ForeignKey(
         Source,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=models.CASCADE,
         related_name="leads",
     )
     temperature = models.CharField(
@@ -96,9 +91,9 @@ class Lead(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         if self.course and not self.center:
-            branch = getattr(self.course, "branch", None)
-            if branch:
-                self.center = branch.organization
+            center = getattr(self.course, "center", None)
+            if center:
+                self.center = center
         super().save(*args, **kwargs)
 
     def __str__(self) -> str:

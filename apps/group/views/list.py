@@ -59,8 +59,6 @@ class GroupListAPIView(generics.ListAPIView):
             return Group.objects.none()
 
         branch_id = self.request.query_params.get("branch_id")
-        if not branch_id:
-            return Group.objects.none()
 
         filters = {
             "branch__organization_id__in": org_ids,
@@ -103,6 +101,4 @@ class GroupListAPIView(generics.ListAPIView):
         )
 
     def list(self, request, *args, **kwargs):
-        if not request.query_params.get("branch_id"):
-            return Response({"detail": "branch_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         return super().list(request, *args, **kwargs)

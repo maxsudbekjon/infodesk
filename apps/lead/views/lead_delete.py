@@ -6,5 +6,5 @@ from apps.lead.models import Lead
 @extend_schema(tags=['Lead'])
 class LeadDeleteAPIView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = Lead
+    queryset = Lead.objects.all()
     lookup_field = "id"

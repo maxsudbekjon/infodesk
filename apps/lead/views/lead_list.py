@@ -76,10 +76,8 @@ class LeadListAPIView(generics.ListAPIView):
         if is_archived is not None:
             queryset = queryset.filter(is_archived=parse_bool(is_archived))
         if branch_id:
-            queryset = queryset.filter(course__branch=branch_id)
+            queryset = queryset.filter(course__branchs=branch_id)
         return queryset
 
     def list(self, request, *args, **kwargs):
-        if not request.query_params.get("branch_id"):
-            return Response({"detail": "branch_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         return super().list(request, *args, **kwargs)

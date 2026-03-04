@@ -1,5 +1,5 @@
 from datetime import timedelta
-
+from django.core.cache import cache
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -42,11 +42,8 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
 
     def get(self, request):
         user = request.user
-
         branch_id = request.query_params.get("branch_id")
-        if not branch_id:
-            return Response({"detail": "branch_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         organizations = user.organization_set.all()
         if not organizations.exists():
             return Response(
@@ -60,6 +57,7 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
 
         base_queryset = Lead.objects.filter(center__in=organizations, course__branch_id=branch_id)
 
+        # Custom vaqt — cache yo'q, to'g'ridan to'g'ri hisoblanadi
         if start_date and end_date:
             start_date = parse_datetime(start_date)
             end_date = parse_datetime(end_date)
@@ -70,13 +68,22 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            current_qs = base_queryset.filter(created_at__gte=start_date, created_at__lte=end_date).values("source").annotate(
-                count=Count("id")
-            )
+            current_qs = base_queryset.filter(
+                created_at__gte=start_date, created_at__lte=end_date
+            ).values("source").annotate(count=Count("id"))
+            
             current_data = {item["source"]: item["count"] for item in current_qs}
             sources = Source.objects.filter(Q(center__in=organizations) | Q(is_static=True))
             result = {source.name: {"current": current_data.get(source.id, 0)} for source in sources}
             return Response(result)
+
+        # Oylik qism — cache bilan
+        org_ids = sorted(organizations.values_list("id", flat=True))
+        cache_key = f"monthly_lead_source:orgs:{','.join(map(str, org_ids))}:branch:{branch_id}:{now.year}:{now.month}"
+        
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
 
         start_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         last_month_last_day = start_current_month - timedelta(days=1)
@@ -113,4 +120,5 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
                 "percentage_change": round(percentage, 2),
             }
 
+        cache.set(cache_key, result, 60 * 10)  # 30 daqiqa
         return Response(result)

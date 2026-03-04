@@ -14,7 +14,7 @@ class Branch(TimeStampedModel):
     phone = models.CharField(max_length=50, blank=True)
     address = models.CharField(max_length=1024, blank=True)
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
-    longtitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
     sms_identifier = models.CharField(
         max_length=128,
         blank=True,
