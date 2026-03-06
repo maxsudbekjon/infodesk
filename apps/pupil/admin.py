@@ -1,7 +1,7 @@
 from django.apps import apps as django_apps
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
-
+# from apps
 
 def _register_all_models():
     app_config = django_apps.get_app_config("pupil")
@@ -13,3 +13,6 @@ def _register_all_models():
 
 
 _register_all_models()
+
+
+# admin.site.register()

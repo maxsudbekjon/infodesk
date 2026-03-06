@@ -2,7 +2,7 @@ from django.apps import apps as django_apps
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
 
-from apps.group.models import CourseTemplate, Day, Room, Group
+from apps.group.models import CourseTemplate, Day, Room, Group, Attendance
 
 
 @admin.register(CourseTemplate)
@@ -111,3 +111,28 @@ class GroupAdmin(admin.ModelAdmin):
         "created_at",
         "updated_at",
     )
+
+
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "group",
+        "student",
+        "date",
+        "is_present",
+        "note",
+    )
+
+    search_fields = (
+        "student__name",
+        "group__title",
+    )
+
+    list_filter = (
+        "is_present",
+        "date",
+        "group",
+    )
+
+    ordering = ("-date",)

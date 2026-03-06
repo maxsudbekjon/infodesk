@@ -50,6 +50,7 @@ class Group(TimeStampedModel):
         choices=GROUP_STATUS.choices,
         default=GROUP_STATUS.ACTIVE,
     )
+    students = models.ManyToManyField('pupil.Student',related_name='groups',blank=True)
     lessons_days = models.ManyToManyField(Day, related_name="groups", blank=True)
     start_lesson = models.TimeField()
     end_lesson = models.TimeField()
