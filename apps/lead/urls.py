@@ -23,17 +23,17 @@ urlpatterns = [
         name='monthly-lead-source-comparison'
     ),
     path(
-        'source/create',
+        'source/create/',
         SourceCreateAPIView.as_view(),
         name='source-create'
     ),
     path(
-        'lead-add-group/<int:id>',
+        'lead-add-group/<int:id>/',
         LeadAddGroupAPIView.as_view(),
         name='lead-add-group'
     ),
     path(
-        'lead/delete/<int:id>',
+        'lead/delete/<int:id>/',
         LeadDeleteAPIView.as_view(),
         name='lead-delete'
     ),
@@ -43,16 +43,16 @@ urlpatterns = [
         name='lead-exel-export'
     ),
     path(
-        'situation/create',
+        'situation/create/',
         SituationCreateAPIView.as_view(),
         name='situation-create'
     ),
     path(
-        'situation-list',
+        'situation-list/',
         SituationListAPIView.as_view(),
         name='situation-list'
     ),
-    path("<int:pk>/situation/", 
+    path("situation/<int:id>/", 
          LeadSituationUpdateView.as_view(), 
          name="lead-situation-update"),
 ]

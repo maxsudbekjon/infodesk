@@ -54,22 +54,18 @@ def auto_assign(lead: Lead):
     good_operators = (
         base_qs
         .filter(penalty_point__lt=PENALTY_THRESHOLD)
-        .order_by("new_leads_count", "id")
+        .order_by("new_leads_count", "-bonus_point", "id")  # ← teng bo'lsa bonus_point ko'piga
     )
 
     operator = None
-
     best_good = good_operators.first()
 
     if best_good and best_good.new_leads_count < LEAD_COUNT_THRESHOLD:
-        # Yaxshi operator bor va u band emas → uni ol
         operator = best_good
     else:
-        # Yaxshi operator yo'q YOKI uning leadi juda ko'p →
-        # Barcha operatorlardan eng kamini ol (jarima bo'lsa ham)
         operator = (
             base_qs
-            .order_by("new_leads_count", "id")
+            .order_by("new_leads_count", "-bonus_point", "id")  # ← bu yerda ham
             .first()
         )
 

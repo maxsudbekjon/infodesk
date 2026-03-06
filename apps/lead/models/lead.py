@@ -6,11 +6,24 @@ from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.lead.choices import LEAD_STATUS, LEAD_TEMPERATURE
 from apps.lead.models.situation import Situation
 from apps.lead.models.source import Source
+import re
+from django.core.exceptions import ValidationError
+
+
+def validate_phone_number(value):
+    pattern = r'^\+\d{7,15}$'
+    if not re.match(pattern, str(value)):
+        raise ValidationError(
+            f'"{value}" is not a valid phone number. '
+            'Use international format, e.g. +12334556 or +998903314222'
+        )
+
+
 
 
 class Lead(TimeStampedModel):
     full_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=30)
+    phone_number = models.CharField(max_length=30,validators=[validate_phone_number])
     group = models.ForeignKey(
         "group.Group",
         on_delete=models.SET_NULL,

@@ -55,8 +55,10 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
         start_date = request.query_params.get("start_date")
         end_date = request.query_params.get("end_date")
 
-        base_queryset = Lead.objects.filter(center__in=organizations, course__branch_id=branch_id)
-
+        base_queryset = Lead.objects.filter(
+            center__in=organizations,
+            course__branchs__id=branch_id
+        ).distinct()
         # Custom vaqt — cache yo'q, to'g'ridan to'g'ri hisoblanadi
         if start_date and end_date:
             start_date = parse_datetime(start_date)

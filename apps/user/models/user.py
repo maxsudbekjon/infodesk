@@ -7,7 +7,17 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.user.choices import GENDER, ROLE
+import re
+from django.core.exceptions import ValidationError
 
+
+def validate_phone_number(value):
+    pattern = r'^\+\d{7,15}$'
+    if not re.match(pattern, str(value)):
+        raise ValidationError(
+            f'"{value}" is not a valid phone number. '
+            'Use international format, e.g. +12334556 or +998903314222'
+        )
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
@@ -39,8 +49,8 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractUser):
     username = None
 
-    phone_number = models.CharField(max_length=20, unique=True)
-    phone_number2 = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    phone_number = models.CharField(max_length=20, unique=True,validators=[validate_phone_number])
+    phone_number2 = models.CharField(max_length=20, unique=True, null=True, blank=True,validators=[validate_phone_number])
 
     gender = models.CharField(max_length=30, choices=GENDER.choices, null=True, blank=True)
     role = models.CharField(max_length=30, choices=ROLE.choices, default=ROLE.USER)

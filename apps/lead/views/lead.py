@@ -21,11 +21,7 @@ from apps.user.models import Operator
 class LeadSituationUpdateView(generics.UpdateAPIView):
     queryset = Lead.objects.filter(is_archived=False)
     serializer_class = LeadSituationUpdateSerializer
-    http_method_names = ["patch"]
-
-    def get_queryset(self):
-        return super().get_queryset().filter(center=self.request.user.operator.center)
-
+    lookup_field='id'
 
 
 

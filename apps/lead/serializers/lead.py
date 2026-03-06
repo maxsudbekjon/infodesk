@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.lead.models import Lead
+from apps.lead.models.situation import Situation
 from apps.lead.services import assign_for_new_lead
 from apps.lead.tasks import process_sold_lead
 
@@ -22,6 +23,18 @@ class LeadModelSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+        center = validated_data.get("center") or validated_data.get("course").center
+        
+        # "yangi" static situationni topib qo'shamiz
+        new_situation = Situation.objects.filter(
+            organization=center,
+            is_static=True,
+            title__iexact="yangi"
+        ).first()
+        
+        if new_situation:
+            validated_data["situation"] = new_situation
+        
         lead = Lead.objects.create(**validated_data)
         return assign_for_new_lead(lead)
 
@@ -56,21 +69,21 @@ class LeadSituationUpdateSerializer(serializers.ModelSerializer):
         model = Lead
         fields = ["situation"]
     def validate_situation(self, situation):
+        print('validate ga kirdi')
         lead = self.instance
         if situation and situation.organization and situation.organization != lead.center:
             raise serializers.ValidationError("Bu situation bu centerga tegishli emas.")
         return situation
 
     def update(self, instance, validated_data):
+        print('update ga kirdi')
         situation = validated_data.get("situation")
         instance.situation = situation
-        instance.save(update_fields=["situation"])
-
+        instance.save(update_fields=["situation_id"])  # ← situation → situation_id
         if (
             situation
             and situation.is_static
             and situation.title.lower() == "sotildi"
         ):
-            process_sold_lead.delay(instance.id)  # ← API ni kutmaydi, background da ishlaydi
-
+            process_sold_lead.delay(instance.id)
         return instance

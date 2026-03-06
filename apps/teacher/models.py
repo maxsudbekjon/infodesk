@@ -5,6 +5,9 @@ from config import settings
 from decimal import Decimal
 
 
+
+
+
 class Specialty(models.Model):
     title = models.CharField(
         max_length=255
