@@ -48,6 +48,7 @@ class CustomUserManager(BaseUserManager):
 
 class User(AbstractUser):
     username = None
+    full_name = models.CharField(max_length=255, null=True, blank=True)
 
     phone_number = models.CharField(max_length=20, unique=True,validators=[validate_phone_number])
     phone_number2 = models.CharField(max_length=20, unique=True, null=True, blank=True,validators=[validate_phone_number])

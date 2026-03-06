@@ -12,7 +12,7 @@ class Organization(TimeStampedModel):
         ("ielts", "IELTS"),
     ]
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="organization")
     # lead_consolidation - leadga operatorni qaysi usulda biriktirishni bildiradi.
     lead_consolidation = models.CharField(
         max_length=20,

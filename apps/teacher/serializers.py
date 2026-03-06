@@ -1,6 +1,7 @@
 from django.db.models import Count, Q
 from django.db import transaction
 from django.contrib.auth import get_user_model
+from django.template.context_processors import request
 
 from rest_framework import serializers
 
@@ -13,7 +14,7 @@ User = get_user_model()
 class SimpleUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'phone_number')
+        fields = ('id', 'full_name', 'email', 'phone_number')
 
 
 class SpecialtySerializer(serializers.ModelSerializer):
@@ -23,43 +24,28 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 
 class TeacherGroupSerializer(serializers.ModelSerializer):
-    # total_students = serializers.IntegerField(source='students_count', read_only=True)
+    course = serializers.CharField(source='course.name', read_only=True)
+    room = serializers.CharField(source='room.name', read_only=True)
 
     class Meta:
         model = Group
         fields = (
             'id',
             'title',
+            "course",
             'room',
             'status',
+            "lessons_days_choice",
             'start_lesson',
             'end_lesson',
-            'students_count',
-        )
-
-
-class TeacherCourseSerializer(serializers.ModelSerializer):
-    groups = TeacherGroupSerializer(many=True, read_only=True)
-    total_groups = serializers.IntegerField(read_only=True)
-    active_groups = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = CourseTemplate
-        fields = (
-            'id',
-            'name',
-            'duration_months',
-            'groups',
-            'total_groups',
-            'active_groups',
+            'total_student',
         )
 
 
 class TeacherSerializer(serializers.ModelSerializer):
     user = SimpleUserSerializer()
     specialties = SpecialtySerializer(source='specialty', many=True, read_only=True)
-    courses = serializers.SerializerMethodField()
-    courses_count = serializers.IntegerField(read_only=True)
+    groups = TeacherGroupSerializer(source='main_groups', many=True, read_only=True)
     groups_count = serializers.IntegerField(read_only=True)
     students_count = serializers.IntegerField(read_only=True)
 
@@ -67,26 +53,14 @@ class TeacherSerializer(serializers.ModelSerializer):
         model = Teacher
         fields = (
             'id', 'user', 'image',
-            'specialties',
+            'specialties', 'groups',
             'monthly_salary', 'kpi', 'monthly_per_lesson', 'monthly_per_student',
             'contract_date', 'percentage_share', 'lesson_fee', 'per_student_fee',
             'branch', 'is_archived',
-            'created_at', 'updated_at', 'courses', 'courses_count', 'groups_count', 'students_count'
+            'created_at', 'updated_at', 'groups_count', 'students_count'
         )
-        read_only_fields = ('created_at', 'updated_at', 'courses_count', 'groups_count', 'students_count')
+        read_only_fields = ('created_at', 'updated_at', 'groups_count', 'students_count')
 
-    def get_courses(self, obj):
-        courses = (
-            obj.teacher_courses
-            .prefetch_related('groups')
-            .annotate(
-                total_groups=Count('groups', distinct=True),
-                active_groups=Count('groups',
-                                    filter=Q(groups__status='active'),
-                                    distinct=True)
-            )
-        )
-        return TeacherCourseSerializer(courses, many=True).data
 
     def update(self, instance, validated_data):
         specialties = validated_data.pop('specialty', None)
@@ -97,8 +71,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 
 class TeacherListSerializer(serializers.ModelSerializer):
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
+    full_name = serializers.CharField(source='user.full_name', read_only=True)
     phone = serializers.CharField(source='user.phone_number', read_only=True)
     image_url = serializers.SerializerMethodField()
 
@@ -106,12 +79,12 @@ class TeacherListSerializer(serializers.ModelSerializer):
         model = Teacher
         fields = (
             'id',
-            'first_name',
-            'last_name',
+            'full_name',
             'phone',
             'image_url',
             'monthly_salary',
             'percentage_share',
+            'branch_id',
         )
 
     def get_image_url(self, obj):
@@ -150,8 +123,13 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
         # read_only_fields = ('created_at', 'updated_at', 'courses_count', 'groups_count', 'students_count')
 
     def create(self, validated_data):
+        request = self.context["request"]
         user_data = validated_data.pop('user')
         speciaties = validated_data.pop('specialties')
+        branch = validated_data.get('branch')
+
+        if branch and branch.organization.owner != request.user:
+            raise serializers.ValidationError("You do not have permission to assign this branch.")
 
         with transaction.atomic():
             user = User.objects.create_user(**user_data)
