@@ -9,23 +9,15 @@ class Student(TimeStampedModel):
     grade = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     next_payment_date = models.DateField(null=True, blank=True)
     # Lead da ham groups bor.
-    groups = models.ManyToManyField("group.Group", related_name="students")
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     payment_status = models.CharField(
         max_length=30,
         choices=STUDENT_PAYMENT.choices,
         default=STUDENT_PAYMENT.NO_DEBT,
     )
-    attendance = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     comment = models.TextField(null=True, blank=True)
 
     class Meta:
-        constraints = [
-            models.CheckConstraint(
-                condition=models.Q(attendance__gte=0) & models.Q(attendance__lte=100),
-                name="student_attendance_between_0_and_100",
-            ),
-        ]
         indexes = [
             models.Index(fields=["payment_status", "next_payment_date"], name="student_pay_date_idx"),
             models.Index(fields=["next_payment_date"], name="student_next_pay_idx"),
