@@ -1,6 +1,7 @@
 from django.urls import path
 from apps.lead.views import LeadAddGroupAPIView, LeadCreateAPIView, LeadDeleteAPIView, LeadExportExcelAPIView, LeadListAPIView, MonthlyLeadSourceComparisonAPIView, SituationCreateAPIView, SourceCreateAPIView
-from apps.lead.views.situation_create import SituationListAPIView
+from apps.lead.views.lead import LeadSituationUpdateView
+from apps.lead.views.situation import SituationListAPIView
 
 
 
@@ -50,5 +51,8 @@ urlpatterns = [
         'situation-list',
         SituationListAPIView.as_view(),
         name='situation-list'
-    )
+    ),
+    path("<int:pk>/situation/", 
+         LeadSituationUpdateView.as_view(), 
+         name="lead-situation-update"),
 ]

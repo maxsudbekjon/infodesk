@@ -4,6 +4,7 @@ class LEAD_STATUS(models.TextChoices):
     NEW='new','New'
     PROCESS='process','Process'
     CANSELED='canseled','Canseled'
+    SOLD='sold','Sold'
 
 
 

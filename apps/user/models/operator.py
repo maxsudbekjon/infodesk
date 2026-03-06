@@ -10,7 +10,8 @@ class Operator(TimeStampedModel):
     image = models.FileField(upload_to="teacher-avatar", null=True, blank=True)
     monthly_salary = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
     kpi = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-
+    penalty_point = models.IntegerField(default=0)
+    bonus_point = models.IntegerField(default=0)
     is_archived = models.BooleanField(default=False)
 
     def __str__(self) -> str:

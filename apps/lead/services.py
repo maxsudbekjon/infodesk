@@ -6,6 +6,8 @@ from apps.lead.choices import LEAD_STATUS
 from apps.settings.choices import LEAD_CONSOLIDATION
 from apps.settings.models import Organization
 from apps.user.models import Operator
+PENALTY_THRESHOLD = 10      # Shu baldan past = "yaxshi" operator
+LEAD_COUNT_THRESHOLD = 7   # Shu sondan ko'p lead bo'lsa, jarimalini ham ko'rib chiq
 
 
 # operatorlarni hozirgi load bo'yicha olish
@@ -29,14 +31,12 @@ def get_operators_by_load(center_id):
 
 # lead tushishi bilan operator biriktiradi
 def auto_assign(lead: Lead):
-
     if not lead.center:
         return lead
-
     if lead.center.lead_consolidation != LEAD_CONSOLIDATION.AUTO:
         return lead
 
-    operator = (
+    base_qs = (
         Operator.objects
         .filter(
             is_archived=False,
@@ -48,14 +48,35 @@ def auto_assign(lead: Lead):
                 filter=Q(leads__status=LEAD_STATUS.NEW)
             )
         )
-        .order_by("new_leads_count", "id")
-        .first()
     )
+
+    # 1-qadam: Jarima bali yo'q yoki threshold dan past operatorlar
+    good_operators = (
+        base_qs
+        .filter(penalty_point__lt=PENALTY_THRESHOLD)
+        .order_by("new_leads_count", "id")
+    )
+
+    operator = None
+
+    best_good = good_operators.first()
+
+    if best_good and best_good.new_leads_count < LEAD_COUNT_THRESHOLD:
+        # Yaxshi operator bor va u band emas → uni ol
+        operator = best_good
+    else:
+        # Yaxshi operator yo'q YOKI uning leadi juda ko'p →
+        # Barcha operatorlardan eng kamini ol (jarima bo'lsa ham)
+        operator = (
+            base_qs
+            .order_by("new_leads_count", "id")
+            .first()
+        )
 
     if not operator:
         return lead
 
-    # race condition oldini olish
+    # Race condition oldini olish
     updated = (
         Lead.objects
         .filter(
