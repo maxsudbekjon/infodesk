@@ -1,5 +1,6 @@
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
+from django.template.context_processors import request
 
 from drf_spectacular.utils import extend_schema
 
@@ -18,14 +19,14 @@ from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, T
 @extend_schema(tags=["Teachers"])
 class TeacherListAPIView(generics.ListAPIView):
     serializer_class = TeacherListSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrganizationOwner]
 
     def get_queryset(self):
         branch_id = self.request.query_params.get('branch')
         is_archived = self.request.query_params.get('is_archived')
         search = self.request.query_params.get('search')
 
-        qs = Teacher.objects.select_related('user', 'branch')
+        qs = Teacher.objects.select_related('user', 'branch', 'branch__organization').filter(branch__organization__owner=self.request.user)
 
         if branch_id:
             qs = qs.filter(branch_id=branch_id)
@@ -41,6 +42,34 @@ class TeacherListAPIView(generics.ListAPIView):
 
         return qs.order_by('-id')
 
+    # def post(self, request):
+    #     branch_id = request.data.get("branch_id")
+    #     search = request.data.get("search")
+    #     is_archived = request.data.get("is_archived")
+    #
+    #     qs = Teacher.objects.select_related(
+    #         "user",
+    #         "branch",
+    #         "branch__organization"
+    #     ).filter(
+    #         branch__organization__owner=request.user
+    #     )
+    #
+    #     if branch_id:
+    #         qs = qs.filter(branch_id=branch_id)
+    #
+    #     if is_archived is not None:
+    #         qs = qs.filter(is_archived=is_archived)
+    #
+    #     if search:
+    #         qs = qs.filter(
+    #             Q(user__full_name__icontains=search) |
+    #             Q(user__phone_number__icontains=search)
+    #         )
+    #
+    #     serializer = TeacherListSerializer(qs, many=True, context={"request": request})
+    #     return Response(serializer.data)
+
 
 @extend_schema(tags=["Teachers"])
 class TeacherCreateAPIView(generics.CreateAPIView):
@@ -52,19 +81,17 @@ class TeacherCreateAPIView(generics.CreateAPIView):
 @extend_schema(tags=["Teachers"])
 class TeacherDetailAPIView(generics.RetrieveAPIView):
     serializer_class = TeacherSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOrganizationOwner]
 
     def get_queryset(self):
         return Teacher.objects.select_related(
-            'user', 'branch'
+            'user', 'branch', 'branch__organization'
         ).prefetch_related(
             'specialty',
             'main_groups__students',
-            'teacher_courses__groups'
-        ).annotate(
+        ).filter(branch__organization__owner=self.request.user).annotate(
             groups_count=Count('main_groups', distinct=True),
             students_count=Count('main_groups__students', distinct=True),
-            courses_count=Count('teacher_courses', distinct=True)
         )
 
 
@@ -130,7 +157,7 @@ class TeacherDeleteAPIView(DestroyAPIView):
 
 @extend_schema(tags=["Teachers"])
 class TeacherUpdateAPIView(UpdateAPIView):
-    permission_classes = [IsAuthenticated, TeacherImagePermission]
+    permission_classes = [IsAuthenticated, TeacherImagePermission, IsOrganizationOwner]
     serializer_class = TeacherUpdateSerializer
 
     def get_queryset(self):
