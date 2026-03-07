@@ -3,3 +3,11 @@ from .day import Day
 from .room import Room
 from .group import Group
 from .attendance import Attendance
+from .grade import Grade
+from .note import GroupNote
+from .exam import Exam
+from .discount import GroupDiscount
+from .ranking import GroupRankingComment
+from .score import GroupScore
+from .history import GroupHistory
+from .freeze import GroupFreeze

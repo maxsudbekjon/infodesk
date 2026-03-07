@@ -1,9 +1,13 @@
 from django.core.exceptions import ValidationError
 from rest_framework import generics
 from apps.group.models.attendance import Attendance
-from apps.group.serializers.attendance import AttendanceModelSerializer
+from apps.group.serializers.attendance import AttendanceModelSerializer, GroupAttendanceModelSerializer
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
+from rest_framework.pagination import PageNumberPagination
 
+class AttendancePagination(PageNumberPagination):
+    page_size = 20
 
 
 class AttendanceCreateAPIView(generics.CreateAPIView):
@@ -21,3 +25,21 @@ class AttendanceCreateAPIView(generics.CreateAPIView):
             raise ValidationError({'detail': 'This student not found in this group'})
 
         serializer.save()
+        
+@extend_schema(tags=['Group'])
+class GroupAttendanceAPIView(generics.ListAPIView):
+    serializer_class = GroupAttendanceModelSerializer
+    pagination_class = AttendancePagination
+
+    def get_queryset(self):
+        group_id = self.kwargs["group_id"]
+
+        month = self.request.query_params.get("month")
+        year = self.request.query_params.get("year")
+
+        qs = Attendance.objects.filter(group_id=group_id)
+
+        if month and year:
+            qs = qs.filter(date__year=year, date__month=month)
+
+        return qs.select_related("student", "group").order_by("date")

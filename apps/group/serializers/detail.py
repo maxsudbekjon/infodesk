@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.group.models import Group
+from apps.pupil.models.student import Student
 
 
 class GroupDetailModelSerializer(serializers.ModelSerializer):
@@ -27,3 +28,18 @@ class GroupDetailModelSerializer(serializers.ModelSerializer):
             "branch",
             "price",
         )
+
+
+class StudentModelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Student
+        fields=('id','full_name','phone_number','status')
+
+
+
+class GroupStudentModelSerializer(serializers.ModelSerializer):
+    students=StudentModelSerializer(many=True)
+    class Meta:
+        model=Group
+        fields=('id','students')
+    

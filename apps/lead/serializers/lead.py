@@ -69,14 +69,14 @@ class LeadSituationUpdateSerializer(serializers.ModelSerializer):
         model = Lead
         fields = ["situation"]
     def validate_situation(self, situation):
-        print('validate ga kirdi')
+        # print('validate ga kirdi')
         lead = self.instance
         if situation and situation.organization and situation.organization != lead.center:
             raise serializers.ValidationError("Bu situation bu centerga tegishli emas.")
         return situation
 
     def update(self, instance, validated_data):
-        print('update ga kirdi')
+        # print('update ga kirdi')
         situation = validated_data.get("situation")
         instance.situation = situation
         instance.save(update_fields=["situation_id"])  # ← situation → situation_id

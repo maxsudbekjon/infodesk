@@ -35,10 +35,23 @@ class AttendanceModelSerializer(serializers.ModelSerializer):
             })
 
         # 2. Student shu groupga tegishli ekanligini tekshirish
-        # (Group modelida 'studnets' deb yozilgan — typo, lekin shunga mos ishlatamiz)
         if not group.students.filter(id=student.id).exists():
             raise serializers.ValidationError({
                 'detail': 'Bu talaba shu guruhga tegishli emas.'
             })
 
         return attrs
+    
+class GroupAttendanceModelSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.full_name")
+
+    class Meta:
+        model = Attendance
+        fields = (
+            "id",
+            "student",
+            "student_name",
+            "date",
+            "is_present",
+            "note",
+        )
