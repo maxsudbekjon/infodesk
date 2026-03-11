@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 
 from apps.group.models.history import GroupHistory
@@ -6,12 +7,12 @@ from apps.group.serializers.history import (
     GroupHistoryListSerializer,
 )
 
-
+@extend_schema(tags=['Group'])
 class GroupHistoryCreateAPIView(generics.CreateAPIView):
     queryset = GroupHistory.objects.all()
     serializer_class = GroupHistoryCreateSerializer
 
-
+@extend_schema(tags=['Group'])
 class GroupHistoryListAPIView(generics.ListAPIView):
     serializer_class = GroupHistoryListSerializer
 

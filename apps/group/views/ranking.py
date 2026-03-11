@@ -1,6 +1,7 @@
 from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.response import Response
 
@@ -8,7 +9,7 @@ from apps.group.models.ranking import GroupRankingComment
 from apps.group.serializers.ranking import GroupRankingListSerializer
 from apps.pupil.models.student import Student
 
-
+@extend_schema(tags=['Group'])
 class GroupRankingListAPIView(generics.ListAPIView):
     serializer_class = GroupRankingListSerializer
 

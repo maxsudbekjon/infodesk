@@ -16,7 +16,7 @@ def validate_phone_number(value):
 
 class Student(TimeStampedModel):
     lead = models.ForeignKey("lead.Lead", on_delete=models.SET_NULL,null=True,blank=True)
-    full_name = models.CharField(max_length=100)
+    full_name = models.CharField(max_length=100,null=True,blank=True)
     grade = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     next_payment_date = models.DateField(null=True, blank=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
@@ -25,7 +25,7 @@ class Student(TimeStampedModel):
         choices=STUDENT_PAYMENT.choices,
         default=STUDENT_PAYMENT.NO_DEBT,
     )
-    phone_number = models.CharField(max_length=30,validators=[validate_phone_number])
+    phone_number = models.CharField(max_length=30,validators=[validate_phone_number],null=True,blank=True)
     comment = models.TextField(null=True, blank=True)
     group = models.ForeignKey(
         "group.Group",
@@ -38,6 +38,8 @@ class Student(TimeStampedModel):
         "settings.Organization",
         on_delete=models.CASCADE,
         related_name="students",
+        null=True,
+        blank=True
     )
     class Meta:
         indexes = [
@@ -69,10 +71,34 @@ class Student(TimeStampedModel):
 
 class StudnetTransfer(models.Model):
     student=models.ForeignKey(Student,on_delete=models.CASCADE)
-    from_group=models.ForeignKey('group.Group',on_delete=models.SET_NULL,null=True,blank=True)
-    to_group=models.ForeignKey('group.Group',on_delete=models.SET_NULL,null=True,blank=True)
-    from_branch=models.ForeignKey('settings.Branch',on_delete=models.SET_NULL,null=True,blank=True)
-    to_branch=models.ForeignKey('settings.Branch',on_delete=models.SET_NULL,null=True,blank=True)
+    from_group=models.ForeignKey(
+        'group.Group',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='student_transfers_from',
+    )
+    to_group=models.ForeignKey(
+        'group.Group',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='student_transfers_to',
+    )
+    from_branch=models.ForeignKey(
+        'settings.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='student_transfers_from',
+    )
+    to_branch=models.ForeignKey(
+        'settings.Branch',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='student_transfers_to',
+    )
     reason=models.TextField()
     reason_choice=models.CharField(max_length=30,choices=TRANSFER_REASON.choices,null=True,blank=True)
     is_apply_discount=models.BooleanField(default=False)

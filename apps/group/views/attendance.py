@@ -9,7 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 class AttendancePagination(PageNumberPagination):
     page_size = 20
 
-
+@extend_schema(tags=['Group'])
 class AttendanceCreateAPIView(generics.CreateAPIView):
     serializer_class = AttendanceModelSerializer
     permission_classes = [IsAuthenticated]

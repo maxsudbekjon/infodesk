@@ -44,7 +44,7 @@ class MonthlyLeadSourceComparisonAPIView(APIView):
         user = request.user
         branch_id = request.query_params.get("branch_id")
         
-        organizations = user.organization_set.all()
+        organizations = user.organization.all()
         if not organizations.exists():
             return Response(
                 {"detail": "Only center owners can access this data"},

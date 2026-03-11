@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 
 from apps.pupil.models.note import StudentNote
@@ -8,17 +9,17 @@ from apps.pupil.serializers.student import (
     StudentRemoveFromGroupSerializer,
 )
 
-
+@extend_schema(tags=['Group'])
 class StudentTransferCreateAPIView(generics.CreateAPIView):
     queryset = StudnetTransfer.objects.all()
     serializer_class = StudentChangeGroupSerializer
 
-
+@extend_schema(tags=['Group'])
 class StudentRemoveFromGroupAPIView(generics.CreateAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentRemoveFromGroupSerializer
 
-
+@extend_schema(tags=['Group'])
 class GroupStudentNoteListAPIView(generics.ListAPIView):
     serializer_class = StudentNoteListSerializer
 

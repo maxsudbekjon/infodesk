@@ -1,10 +1,11 @@
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 
 from apps.group.models.grade import Grade
 from apps.group.serializers.grade import GradeModelSerializer
 
-
+@extend_schema(tags=['Group'])
 class GroupGradeAPIView(generics.ListAPIView):
     serializer_class = GradeModelSerializer
 
