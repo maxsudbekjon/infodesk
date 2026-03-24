@@ -10,10 +10,22 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+
 from apps.teacher.models import Teacher
 from apps.teacher.permissions import TeacherImagePermission, IsOrganizationOwner
-from apps.teacher.serializers import TeacherSerializer, TeacherListSerializer, TeacherImageUploadSerializer, \
-    TeacherCreateSerializer, TeacherUpdateSerializer
+from apps.teacher.serializers import (
+    TeacherSerializer,
+    TeacherListSerializer,
+    TeacherImageUploadSerializer,
+    TeacherCreateSerializer,
+    TeacherUpdateSerializer,
+    TeacherGroupSerializer,
+)
+from apps.group.models import Group
+from apps.group.serializers.group import CourseTemplateModelSerializer
+from apps.group.models.course import CourseTemplate
+from apps.group.permissions import IsTeacherUser
+from apps.user.profile_resolver import get_teacher_profile
 
 
 @extend_schema(tags=["Teachers"])
@@ -164,3 +176,92 @@ class TeacherUpdateAPIView(UpdateAPIView):
         return Teacher.objects.filter(
             branch__organization__owner=self.request.user
         )
+
+
+@extend_schema(
+    tags=["Teachers"],
+    summary="List of groups for the logged-in teacher",
+    description=(
+        "Returns groups where the current user is assigned as teacher or assistant teacher. "
+        "Accessible only for teacher accounts."
+    ),
+)
+class TeacherGroupListAPIView(generics.ListAPIView):
+    serializer_class = TeacherGroupSerializer
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
+    def get_queryset(self):
+        teacher = get_teacher_profile(self.request.user)
+        if not teacher:
+            return Group.objects.none()
+
+        return Group.objects.select_related(
+            "course",
+            "room",
+            "teacher",
+            "assistant_teacher",
+        ).filter(Q(teacher=teacher) | Q(assistant_teacher=teacher))
+
+
+@extend_schema(
+    tags=["Teachers"],
+    summary="List of courses for the logged-in teacher",
+    description="Returns distinct courses where the current teacher is assigned to at least one group "
+                "as main or assistant teacher.",
+)
+class TeacherCourseListAPIView(generics.ListAPIView):
+    serializer_class = CourseTemplateModelSerializer
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
+    def get_queryset(self):
+        teacher = get_teacher_profile(self.request.user)
+        if not teacher:
+            return CourseTemplate.objects.none()
+
+        course_ids = (
+            Group.objects.filter(Q(teacher=teacher) | Q(assistant_teacher=teacher))
+            .values_list("course_id", flat=True)
+        )
+        return CourseTemplate.objects.filter(id__in=course_ids).distinct()
+
+
+@extend_schema(
+    tags=["Teachers"],
+    summary="Groups for a specific course (teacher-scoped)",
+    description="Returns groups of the given course where the current teacher is assigned as main or assistant.",
+)
+class TeacherCourseGroupsAPIView(generics.ListAPIView):
+    serializer_class = TeacherGroupSerializer
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
+    def get_queryset(self):
+        teacher = get_teacher_profile(self.request.user)
+        if not teacher:
+            return Group.objects.none()
+
+        course_id = self.kwargs.get("course_id")
+        return Group.objects.select_related(
+            "course",
+            "room",
+            "teacher",
+            "assistant_teacher",
+        ).filter(
+            Q(teacher=teacher) | Q(assistant_teacher=teacher),
+            course_id=course_id,
+        )
+
+
+@extend_schema(
+    tags=["Teachers"],
+    summary="Current teacher profile",
+    description="Returns detailed profile of the logged-in teacher.",
+)
+class TeacherMeAPIView(generics.RetrieveAPIView):
+    serializer_class = TeacherSerializer
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
+    def get_object(self):
+        teacher = get_teacher_profile(self.request.user)
+        if not teacher:
+            raise get_object_or_404(Teacher, pk=0)  # will raise 404
+        return teacher
