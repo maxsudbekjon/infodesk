@@ -1,40 +1,77 @@
-version: "3.9"
 
 services:
 
+  db:
+    image: postgres:15-alpine
+    container_name: ${CONTAINER_NAME_TEMPLATE}_db
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    restart: unless-stopped
+
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile
+    container_name: ${CONTAINER_NAME_TEMPLATE}_web
     environment:
       DJANGO_ENV: dev
     command: python manage.py runserver 0.0.0.0:8000
+    restart: unless-stopped
+    env_file:
+      - ./.env
     volumes:
       - .:/app
+      - ./media:/app/media
+      - ./static:/app/static
     ports:
       - "8000:8000"
     depends_on:
       - redis
+      - db
 
   redis:
     image: redis:7
-    ports:
-      - "6379:6379"
+    restart: unless-stopped
+    container_name: ${CONTAINER_NAME_TEMPLATE}_redis
 
-  celery_worker:
-    build: .
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile
+    container_name: ${CONTAINER_NAME_TEMPLATE}_worker
     environment:
       DJANGO_ENV: dev
     command: celery -A config worker -l info
+    entrypoint: []
+    restart: unless-stopped
     volumes:
       - .:/app
     depends_on:
       - redis
 
-  celery_beat:
-    build: .
+  beat:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile
+    container_name: ${CONTAINER_NAME_TEMPLATE}_beat
     environment:
       DJANGO_ENV: dev
     command: celery -A config beat -l info
+    entrypoint: []
+    restart: unless-stopped
     volumes:
       - .:/app
     depends_on:
       - redis
+
+volumes:
+  postgres_data:
+  media:
+  static:
+
