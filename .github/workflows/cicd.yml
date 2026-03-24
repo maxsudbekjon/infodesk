@@ -63,16 +63,30 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Deploy over SSH
+        env:
+          REPO_URL: git@github.com:${{ github.repository }}.git
+          BRANCH: dev
         run: |
           ssh -o StrictHostKeyChecking=no \
             -p ${{ secrets.SSH_PORT }} \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           set -e
-          cd ${{ secrets.PROJECT_PATH }}
-          echo "📥 Pulling latest code (dev)..."
-          git fetch origin dev
-          git checkout dev
-          git pull origin dev
+          REPO_DIR="${{ secrets.PROJECT_PATH }}"
+          BRANCH="${BRANCH}"
+          REPO_URL="${REPO_URL}"
+
+          mkdir -p "$REPO_DIR"
+          if [ ! -d "$REPO_DIR/.git" ]; then
+            echo "📥 Cloning $REPO_URL into $REPO_DIR ..."
+            rm -rf "$REPO_DIR"
+            git clone --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
+          fi
+
+          cd "$REPO_DIR"
+          echo "📥 Fetching latest code ($BRANCH)..."
+          git fetch origin "$BRANCH"
+          git checkout "$BRANCH"
+          git reset --hard "origin/$BRANCH"
           echo "🐳 Rebuilding containers..."
           docker compose down
           docker compose up --build -d
