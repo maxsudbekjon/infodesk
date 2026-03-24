@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Pull latest code
-        working-directory: /home/ubuntu/projects/backend_dev
+        working-directory: /home/ubuntu/projects/backends/infodesk
         run: |
           git fetch origin
           git checkout dev
