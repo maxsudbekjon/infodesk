@@ -86,6 +86,7 @@ jobs:
               docker compose down; \
               docker compose up --build -d; \
               echo '🧹 Cleaning old images...'; \
+              docker system prune -f
               echo '✅ Deploy finished'; \
             "
 
