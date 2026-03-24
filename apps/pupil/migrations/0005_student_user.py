@@ -5,9 +5,66 @@ from django.conf import settings
 from django.db import migrations, models
 
 
-def noop(apps, schema_editor):
-    # placeholder for reverse_sql compatibility
-    pass
+def add_user_field_if_missing(apps, schema_editor):
+    """Add student.user column/FK only if it doesn't exist (SQLite-safe)."""
+    Student = apps.get_model("pupil", "Student")
+    User = apps.get_model("user", "User")
+
+    field = models.OneToOneField(
+        blank=True,
+        null=True,
+        on_delete=django.db.models.deletion.SET_NULL,
+        related_name="student_profile",
+        to=settings.AUTH_USER_MODEL,
+    )
+    field.set_attributes_from_name("user")
+
+    table = Student._meta.db_table
+    column = field.column
+    conn = schema_editor.connection
+
+    # check column existence
+    exists = False
+    with conn.cursor() as cursor:
+        if conn.vendor == "sqlite":
+            cursor.execute(f"PRAGMA table_info({table});")
+            cols = [row[1] for row in cursor.fetchall()]
+            exists = column in cols
+        else:
+            cursor.execute(
+                """
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name = %s AND column_name = %s
+                """,
+                [table, column],
+            )
+            exists = cursor.fetchone() is not None
+
+    if not exists:
+        schema_editor.add_field(Student, field)
+
+    # ensure FK on postgres if missing
+    if conn.vendor == "postgresql":
+        fk_exists = False
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT 1
+                FROM information_schema.constraint_column_usage ccu
+                WHERE ccu.table_name = %s AND ccu.column_name = %s
+                """,
+                [table, column],
+            )
+            fk_exists = cursor.fetchone() is not None
+
+        if not fk_exists:
+            user_table = User._meta.db_table
+            schema_editor.execute(
+                f'ALTER TABLE "{table}" '
+                f'ADD CONSTRAINT "{table}_{column}_fk" '
+                f'FOREIGN KEY ("{column}") REFERENCES "{user_table}" ("id") '
+                f'DEFERRABLE INITIALLY DEFERRED;'
+            )
 
 
 class Migration(migrations.Migration):
@@ -18,54 +75,16 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.SeparateDatabaseAndState(
-            database_operations=[
-                migrations.RunSQL(
-                    sql="""
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (
-                            SELECT 1 FROM information_schema.columns
-                            WHERE table_name = 'pupil_student' AND column_name = 'user_id'
-                        ) THEN
-                            ALTER TABLE pupil_student ADD COLUMN user_id bigint;
-                        END IF;
-                    END$$;
-                    """,
-                    reverse_sql=migrations.RunSQL.noop,
-                ),
-                migrations.RunSQL(
-                    sql="""
-                    DO $$
-                    BEGIN
-                        IF NOT EXISTS (
-                            SELECT 1
-                            FROM information_schema.constraint_column_usage ccu
-                            WHERE ccu.table_name = 'pupil_student'
-                              AND ccu.column_name = 'user_id'
-                        ) THEN
-                            ALTER TABLE pupil_student
-                              ADD CONSTRAINT pupil_student_user_id_fk
-                              FOREIGN KEY (user_id) REFERENCES auth_user(id)
-                              DEFERRABLE INITIALLY DEFERRED;
-                        END IF;
-                    END$$;
-                    """,
-                    reverse_sql=migrations.RunSQL.noop,
-                ),
-            ],
-            state_operations=[
-                migrations.AddField(
-                    model_name="student",
-                    name="user",
-                    field=models.OneToOneField(
-                        blank=True,
-                        null=True,
-                        on_delete=django.db.models.deletion.SET_NULL,
-                        related_name="student_profile",
-                        to=settings.AUTH_USER_MODEL,
-                    ),
-                ),
-            ],
+        migrations.RunPython(add_user_field_if_missing, migrations.RunPython.noop),
+        migrations.AddField(
+            model_name="student",
+            name="user",
+            field=models.OneToOneField(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="student_profile",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]
