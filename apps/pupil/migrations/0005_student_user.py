@@ -5,6 +5,11 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+def noop(apps, schema_editor):
+    # placeholder for reverse_sql compatibility
+    pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -13,15 +18,54 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="student",
-            name="user",
-            field=models.OneToOneField(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="student_profile",
-                to=settings.AUTH_USER_MODEL,
-            ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql="""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM information_schema.columns
+                            WHERE table_name = 'pupil_student' AND column_name = 'user_id'
+                        ) THEN
+                            ALTER TABLE pupil_student ADD COLUMN user_id bigint;
+                        END IF;
+                    END$$;
+                    """,
+                    reverse_sql=migrations.RunSQL.noop,
+                ),
+                migrations.RunSQL(
+                    sql="""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1
+                            FROM information_schema.constraint_column_usage ccu
+                            WHERE ccu.table_name = 'pupil_student'
+                              AND ccu.column_name = 'user_id'
+                        ) THEN
+                            ALTER TABLE pupil_student
+                              ADD CONSTRAINT pupil_student_user_id_fk
+                              FOREIGN KEY (user_id) REFERENCES auth_user(id)
+                              DEFERRABLE INITIALLY DEFERRED;
+                        END IF;
+                    END$$;
+                    """,
+                    reverse_sql=migrations.RunSQL.noop,
+                ),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name="student",
+                    name="user",
+                    field=models.OneToOneField(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="student_profile",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+            ],
         ),
     ]
