@@ -3,22 +3,22 @@ services:
 
   db:
     image: postgres:15-alpine
-    container_name: ${CONTAINER_NAME_TEMPLATE}_db
+    container_name: ${CONTAINER_NAME_TEMPLATE:-infodesk}_db
     env_file:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-infodesk}
     restart: unless-stopped
 
   web:
     build:
       context: .
       dockerfile: ./docker/local/Dockerfile
-    container_name: ${CONTAINER_NAME_TEMPLATE}_web
+    container_name: ${CONTAINER_NAME_TEMPLATE:-infodesk}_web
     command: python manage.py runserver 0.0.0.0:8000
     restart: unless-stopped
     env_file:
@@ -36,13 +36,13 @@ services:
   redis:
     image: redis:7
     restart: unless-stopped
-    container_name: ${CONTAINER_NAME_TEMPLATE}_redis
+    container_name: ${CONTAINER_NAME_TEMPLATE:-infodesk}_redis
 
   worker:
     build:
       context: .
       dockerfile: ./docker/local/Dockerfile
-    container_name: ${CONTAINER_NAME_TEMPLATE}_worker
+    container_name: ${CONTAINER_NAME_TEMPLATE:-infodesk}_worker
     environment:
       DJANGO_ENV: dev
     command: celery -A config worker -l info
@@ -57,7 +57,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/local/Dockerfile
-    container_name: ${CONTAINER_NAME_TEMPLATE}_beat
+    container_name: ${CONTAINER_NAME_TEMPLATE:-infodesk}_beat
     environment:
       DJANGO_ENV: dev
     command: celery -A config beat -l info
@@ -72,4 +72,3 @@ volumes:
   postgres_data:
   media:
   static:
-
