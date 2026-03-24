@@ -1,53 +1,53 @@
-name: CI/CD
-
-on:
-  push:
-    branches: [dev]
-  pull_request:
-    branches: [dev]
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CI — Quality checks + tests run in parallel, both gate deploys
-# ─────────────────────────────────────────────────────────────────────────────
-jobs:
-
-  deploy-dev:
-    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
-    runs-on: self-hosted
-    timeout-minutes: 15
-    environment: dev
-    concurrency:
-      group: deploy-dev
-      cancel-in-progress: false
-
-    steps:
-      - name: Pull latest code
-        working-directory: /home/ubuntu/projects/backends/infodesk
-        run: |
-          git fetch origin
-          git checkout dev
-          git pull origin dev
-
-      - name: Stop existing containers
-        working-directory: /home/ubuntu/projects/backends/infodesk
-        run: docker compose -f docker-compose.yaml down --remove-orphans
-
-      - name: Build and deploy
-        working-directory: /home/ubuntu/projects/backends/infodesk
-        run: docker compose -f docker-compose.yaml up -d --build
-
-      - name: Health check
-        working-directory: /home/ubuntu/projects/backends/infodesk
-        run: |
-          echo "Waiting for backend to become healthy..."
-          for i in $(seq 1 10); do
-            if docker compose -f docker-compose.yaml ps web | grep -q "(healthy)"; then
-              echo "Backend is healthy!"
-              exit 0
-            fi
-            echo "  Attempt $i/10 — waiting 5s..."
-            sleep 5
-          done
-          echo "Health check failed after 50s"
-          docker compose -f docker-compose.yaml logs backend --tail=50
-          exit 1
+#name: CI/CD
+#
+#on:
+#  push:
+#    branches: [dev]
+#  pull_request:
+#    branches: [dev]
+#
+## ─────────────────────────────────────────────────────────────────────────────
+## CI — Quality checks + tests run in parallel, both gate deploys
+## ─────────────────────────────────────────────────────────────────────────────
+#jobs:
+#
+#  deploy-dev:
+#    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+#    runs-on: self-hosted
+#    timeout-minutes: 15
+#    environment: dev
+#    concurrency:
+#      group: deploy-dev
+#      cancel-in-progress: false
+#
+#    steps:
+#      - name: Pull latest code
+#        working-directory: /home/ubuntu/projects/backends/infodesk
+#        run: |
+#          git fetch origin
+#          git checkout dev
+#          git pull origin dev
+#
+#      - name: Stop existing containers
+#        working-directory: /home/ubuntu/projects/backends/infodesk
+#        run: docker compose -f docker-compose.yaml down --remove-orphans
+#
+#      - name: Build and deploy
+#        working-directory: /home/ubuntu/projects/backends/infodesk
+#        run: docker compose -f docker-compose.yaml up -d --build
+#
+#      - name: Health check
+#        working-directory: /home/ubuntu/projects/backends/infodesk
+#        run: |
+#          echo "Waiting for backend to become healthy..."
+#          for i in $(seq 1 10); do
+#            if docker compose -f docker-compose.yaml ps web | grep -q "(healthy)"; then
+#              echo "Backend is healthy!"
+#              exit 0
+#            fi
+#            echo "  Attempt $i/10 — waiting 5s..."
+#            sleep 5
+#          done
+#          echo "Health check failed after 50s"
+#          docker compose -f docker-compose.yaml logs backend --tail=50
+#          exit 1
