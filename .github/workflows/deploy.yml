@@ -30,18 +30,18 @@ jobs:
 
       - name: Stop existing containers
         working-directory: /home/ubuntu/projects/backends/infodesk
-        run: docker compose -f docker-compose.yml down --remove-orphans
+        run: docker compose -f docker-compose.yaml down --remove-orphans
 
       - name: Build and deploy
         working-directory: /home/ubuntu/projects/backends/infodesk
-        run: docker compose -f docker-compose.yml up -d --build
+        run: docker compose -f docker-compose.yaml up -d --build
 
       - name: Health check
         working-directory: /home/ubuntu/projects/backends/infodesk
         run: |
           echo "Waiting for backend to become healthy..."
           for i in $(seq 1 30); do
-            if docker compose -f docker-compose.yml ps web | grep -q "(healthy)"; then
+            if docker compose -f docker-compose.yaml ps web | grep -q "(healthy)"; then
               echo "Backend is healthy!"
               exit 0
             fi
@@ -49,5 +49,5 @@ jobs:
             sleep 5
           done
           echo "Health check failed after 150s"
-          docker compose -f docker-compose.yml logs backend --tail=50
+          docker compose -f docker-compose.yaml logs backend --tail=50
           exit 1
