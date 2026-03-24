@@ -2,9 +2,7 @@ name: CI/CD
 
 on:
   push:
-    branches: [dev, main]
-  pull_request:
-    branches: [dev, main]
+    branches: [dev]
 
 jobs:
   test:
@@ -48,3 +46,37 @@ jobs:
           DJANGO_ENV: dev
           DB_TYPE: SQLITE
           DB_NAME: db.sqlite3
+
+  deploy:
+    name: Deploy to dev server
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Deploy over SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no \
+            -p ${{ secrets.SSH_PORT }} \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          set -e
+          cd ${{ secrets.PROJECT_PATH }}
+          echo "📥 Pulling latest code (dev)..."
+          git fetch origin dev
+          git checkout dev
+          git pull origin dev
+          echo "🐳 Rebuilding containers..."
+          docker compose down
+          docker compose up --build -d
+          echo "🧹 Cleaning old images..."
+          docker system prune -f
+          echo "✅ Deploy finished"
+          EOF
