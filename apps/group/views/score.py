@@ -1,10 +1,51 @@
 from drf_spectacular.utils import extend_schema
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 
+from apps.group.models.group import Group
 from apps.group.models.score import GroupScore
+from apps.group.permissions import (
+    IsTeacherOrStudentUser,
+    IsTeacherUser,
+    get_student_profile,
+    get_teacher_profile,
+)
 from apps.group.serializers.score import GroupScoreCreateSerializer
 
 @extend_schema(tags=['Group'])
 class GroupScoreCreateAPIView(generics.CreateAPIView):
     queryset = GroupScore.objects.all()
     serializer_class = GroupScoreCreateSerializer
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+
+
+@extend_schema(tags=['Group'])
+class GroupScoreListAPIView(generics.ListAPIView):
+    serializer_class = GroupScoreCreateSerializer
+    permission_classes = [IsAuthenticated, IsTeacherOrStudentUser]
+
+    def get_queryset(self):
+        group_id = self.kwargs["id"]
+        user = self.request.user
+        group = get_object_or_404(
+            Group.objects.select_related("teacher", "assistant_teacher"),
+            pk=group_id,
+        )
+        qs = GroupScore.objects.filter(group_id=group_id).select_related("group", "student")
+
+        teacher = get_teacher_profile(user)
+        student = get_student_profile(user)
+
+        if teacher:
+            if group.teacher_id != teacher.id and group.assistant_teacher_id != teacher.id:
+                raise PermissionDenied("Siz bu guruh coinlarini ko'ra olmaysiz.")
+        elif student:
+            if not group.students.filter(pk=student.pk).exists():
+                raise PermissionDenied("Siz bu guruh coinlarini ko'ra olmaysiz.")
+            qs = qs.filter(student=student)
+        else:
+            raise PermissionDenied("Siz bu endpointdan foydalana olmaysiz.")
+
+        return qs.order_by("-created_at", "student__full_name")

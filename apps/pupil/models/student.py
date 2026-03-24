@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 import re
 from django.core.exceptions import ValidationError
 from apps.base_models import TimeStampedModel
@@ -15,9 +16,15 @@ def validate_phone_number(value):
         )
 
 class Student(TimeStampedModel):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="student_profile",
+    )
     lead = models.ForeignKey("lead.Lead", on_delete=models.SET_NULL,null=True,blank=True)
     full_name = models.CharField(max_length=100,null=True,blank=True)
-    grade = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     next_payment_date = models.DateField(null=True, blank=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     payment_status = models.CharField(
@@ -61,6 +68,19 @@ class Student(TimeStampedModel):
                 self.center = self.lead.center
 
         super().save(*args, **kwargs)
+
+    @property
+    def latest_grade(self):
+        latest = self.grades.order_by("-date").first()
+        return latest.grade if latest else None
+
+    @property
+    def average_grade(self):
+        grades = self.grades.values_list("grade", flat=True)
+        if not grades:
+            return None
+        return sum(grades) / len(grades)
+
     def __str__(self) -> str:
         if self.full_name:
             return self.full_name

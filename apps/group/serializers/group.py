@@ -31,12 +31,12 @@ class TeacherSerializerForGroup(serializers.ModelSerializer):
 
 
 class GroupModelSerializer(serializers.ModelSerializer):
-    course = CourseTemplateModelSerializer()
-    # course_id = serializers.PrimaryKeyRelatedField(
-    #     source="course",
-    #     queryset=CourseTemplate.objects.all(),
-    #     write_only=True,
-    # )
+    course = CourseTemplateModelSerializer(read_only=True)
+    course_id = serializers.PrimaryKeyRelatedField(
+        source="course",
+        queryset=CourseTemplate.objects.all(),
+        write_only=True,
+    )
     teacher = TeacherSerializerForGroup(read_only=True)
     assistant_teacher = TeacherSerializerForGroup(read_only=True)
     class Meta:

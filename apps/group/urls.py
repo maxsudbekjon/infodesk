@@ -10,11 +10,11 @@ from apps.group.views import (
 )
 from apps.group.views.attendance import AttendanceCreateAPIView, GroupAttendanceAPIView
 from apps.group.views.exam import ExamCreateAPIView, GroupExamListAPIView
-from apps.group.views.grade import GroupGradeAPIView
+from apps.group.views.grade import GradeCreateAPIView, GroupGradeAPIView
 from apps.group.views.note import GroupNoteCreateAPIView, GroupNoteListAPIView
 from apps.group.views.discount import GroupDiscountCreateAPIView, GroupDiscountListAPIView
 from apps.group.views.ranking import GroupRankingListAPIView
-from apps.group.views.score import GroupScoreCreateAPIView
+from apps.group.views.score import GroupScoreCreateAPIView, GroupScoreListAPIView
 from apps.group.views.history import GroupHistoryCreateAPIView, GroupHistoryListAPIView
 from apps.group.views.freeze import GroupFreezeCreateAPIView
 from apps.group.views.student_ops import (
@@ -32,6 +32,7 @@ urlpatterns = [
     path('detail/<int:id>',GroupDetailAPIView.as_view(),name='group-detail'),
     path('delete/<int:id>', GroupDeleteAPIView.as_view(), name='group-delete'),
     path('attendance/',AttendanceCreateAPIView.as_view(),name='attendance-create'),
+    path('grades/', GradeCreateAPIView.as_view(), name='grade-create'),
     path('group-student/<int:id>',GroupStudentAPIView.as_view(),name='group-student'),
     path('group-studnets-attendance/<int:id>',GroupAttendanceAPIView.as_view(),name='group-attendance'),
     path('group-students-attendance/<int:id>', GroupAttendanceAPIView.as_view(), name='group-attendance-v2'),
@@ -44,6 +45,7 @@ urlpatterns = [
     path('group-discounts/<int:id>', GroupDiscountListAPIView.as_view(), name='group-discount-list'),
     path('group-ranking/<int:id>', GroupRankingListAPIView.as_view(), name='group-ranking'),
     path('group-scores/create/', GroupScoreCreateAPIView.as_view(), name='group-score-create'),
+    path('group-scores/<int:id>', GroupScoreListAPIView.as_view(), name='group-score-list'),
     path('group-history/create/', GroupHistoryCreateAPIView.as_view(), name='group-history-create'),
     path('group-history/<int:id>', GroupHistoryListAPIView.as_view(), name='group-history-list'),
     path('group-freeze/create/', GroupFreezeCreateAPIView.as_view(), name='group-freeze-create'),

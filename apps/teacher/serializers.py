@@ -7,14 +7,17 @@ from rest_framework import serializers
 
 from apps.teacher.models import Teacher, Specialty
 from apps.group.models import Group, CourseTemplate
+from apps.user.choices import ROLE
 
 User = get_user_model()
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = User
-        fields = ('id', 'full_name', 'email', 'phone_number')
+        fields = ('id', 'full_name', 'email', 'phone_number', 'password')
 
 
 class SpecialtySerializer(serializers.ModelSerializer):
@@ -128,10 +131,14 @@ class TeacherCreateSerializer(serializers.ModelSerializer):
         speciaties = validated_data.pop('specialties')
         branch = validated_data.get('branch')
 
+        if not user_data.get("password"):
+            raise serializers.ValidationError({"user": {"password": "Password majburiy."}})
+
         if branch and branch.organization.owner != request.user:
             raise serializers.ValidationError("You do not have permission to assign this branch.")
 
         with transaction.atomic():
+            user_data["role"] = ROLE.TEACHER
             user = User.objects.create_user(**user_data)
             teacher = Teacher.objects.create(
                 user=user,

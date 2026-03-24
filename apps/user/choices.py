@@ -9,4 +9,5 @@ class ROLE(models.TextChoices):
     ADMIN='admin','Admin'
     MANAGER='meneger','Meneger'
     CEO='ceo','Ceo'
+    TEACHER='teacher','Teacher'
     STUDENT='student','Student'
