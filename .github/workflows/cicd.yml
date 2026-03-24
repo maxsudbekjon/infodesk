@@ -89,3 +89,7 @@ jobs:
               docker system prune -f; \
               echo '✅ Deploy finished'; \
             "
+
+
+
+            
