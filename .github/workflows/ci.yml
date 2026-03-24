@@ -38,8 +38,12 @@ jobs:
         run: python manage.py migrate --noinput
         env:
           DJANGO_ENV: dev
+          DB_TYPE: SQLITE
+          DB_NAME: db.sqlite3
 
       - name: Run tests
         run: python manage.py test
         env:
           DJANGO_ENV: dev
+          DB_TYPE: SQLITE
+          DB_NAME: db.sqlite3
