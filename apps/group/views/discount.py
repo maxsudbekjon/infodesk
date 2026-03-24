@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 
 from apps.group.models.discount import GroupDiscount
@@ -6,12 +7,12 @@ from apps.group.serializers.discount import (
     GroupDiscountListSerializer,
 )
 
-
+@extend_schema(tags=['Group'])
 class GroupDiscountCreateAPIView(generics.CreateAPIView):
     queryset = GroupDiscount.objects.all()
     serializer_class = GroupDiscountCreateSerializer
 
-
+@extend_schema(tags=['Group'])
 class GroupDiscountListAPIView(generics.ListAPIView):
     serializer_class = GroupDiscountListSerializer
 

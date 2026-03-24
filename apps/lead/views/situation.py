@@ -31,7 +31,7 @@ class SituationListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        organizations = user.organization_set.all()
+        organizations = user.organization.all()
 
         if not organizations.exists():
             return Situation.objects.filter(is_static=True)

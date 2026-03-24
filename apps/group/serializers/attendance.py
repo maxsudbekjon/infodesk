@@ -1,5 +1,6 @@
 from apps.group.models.attendance import Attendance
 from rest_framework import serializers
+from apps.group.permissions import get_teacher_profile
 
 
 class AttendanceModelSerializer(serializers.ModelSerializer):
@@ -18,9 +19,8 @@ class AttendanceModelSerializer(serializers.ModelSerializer):
         student = attrs.get('student')
 
         # Request yuborgan user ning Teacher ob'ektini olish
-        try:
-            teacher = request.user.teachers  # OneToOneField → related_name='teachers'
-        except Exception:
+        teacher = get_teacher_profile(getattr(request, "user", None))
+        if not teacher:
             raise serializers.ValidationError({
                 'detail': 'Siz teacher sifatida ro\'yxatdan o\'tmagan siz.'
             })

@@ -1,0 +1,185 @@
+1. Identity (Auth) Service
+
+Bu servis butun tizimning kirish eshigi.
+
+Vazifasi:
+
+    login / logout
+    JWT token berish
+    user identity
+    role va permissionlar
+    sessionlar
+    password reset
+    device management
+
+Bu servisning vazifasi faqat kim tizimga kirganini aniqlash.
+
+Masalan domen:
+
+    auth.company.com
+
+Boshqa barcha servislar token orqali foydalanuvchini tekshiradi.
+
+2. CRM Service
+
+Bu servis marketing va sales jarayonini boshqaradi.
+
+Vazifasi:
+
+    leads
+    lead sources
+    call history
+    operator workflow
+    pipeline
+    trial lesson
+    lead → student conversion
+
+Kim ishlatadi:
+
+    operator
+    manager
+    director
+
+Domen:
+
+    crm.company.com
+
+Muhim nuqta:
+
+lead studentga aylanganda event chiqaradi.
+lead_converted
+Shu eventni LMS qabul qiladi.
+
+3. Academic / LMS Service
+
+Bu platformaning yuragi.
+
+Vazifasi:
+
+    courses
+    groups
+    schedules
+    lessons
+    teachers
+    students academic profile
+    attendance
+    homework
+    exams
+    grades
+    course progression
+
+Kim ishlatadi:
+
+    teacher app
+    student app
+    admin panel
+
+Domen:
+
+lms.company.com
+
+Bu servis eng katta va eng muhim servis bo‘ladi.
+
+4. Billing / Finance Service
+
+Bu moliyaviy qismni boshqaradi.
+
+Vazifasi:
+
+    tariffs
+    contracts
+    invoices
+    payments
+    debt
+    balance
+    subscription
+    payme / click integratsiya
+    webhook processing
+
+Domen:
+
+billing.company.com
+
+Bu servisni alohida qilish juda foydali, chunki moliyaviy logika ko‘pincha murakkab bo‘ladi.
+
+5. Notification Service
+
+Bu servis barcha xabarlarni yuboradi.
+
+Vazifasi:
+
+    SMS
+    Telegram
+    push notifications
+    email
+    reminder system
+
+Misol eventlar:
+
+    lesson_starting
+    payment_overdue
+    homework_due
+    lead_followup
+
+Domen:
+
+notify.company.com
+
+Boshqa servislar faqat event yuboradi.
+
+6. Media / File Service
+
+LMS tizimlarida juda muhim.
+
+Vazifasi:
+
+    video darslar
+    fayllar
+    homework upload
+    teacher materiallari
+    CDN orqali tarqatish
+
+Ko‘pincha:
+
+    S3
+    Cloudflare R2
+    MinIO
+
+Domen:
+
+files.company.com
+
+7. Analytics / Reporting Service
+
+Bu servis direktor va CEO uchun.
+
+Vazifasi:
+
+    dashboards
+    revenue analytics
+    lead funnel
+    teacher performance
+    attendance stats
+    branch performance
+
+Bu servis ko‘pincha read-heavy bo‘ladi.
+
+Domen:
+
+analytics.company.com
+
+
+Yakuniy servis xaritasi
+Agar tizimni to‘g‘ri arxitektura bilan qursak, servislar quyidagicha bo‘ladi:
+
+    auth.company.com
+    crm.company.com
+    lms.company.com
+    billing.company.com
+    notify.company.com
+    files.company.com
+    analytics.company.com
+
+Oldida esa odatda bitta kirish nuqtasi turadi:
+
+    api.company.com

@@ -54,7 +54,7 @@ class GroupListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        org_ids = list(user.organization_set.values_list("id", flat=True))
+        org_ids = list(user.organization.values_list("id", flat=True))
         if not org_ids:
             return Group.objects.none()
 

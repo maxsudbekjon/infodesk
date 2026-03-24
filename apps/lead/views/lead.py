@@ -68,7 +68,7 @@ class LeadListAPIView(generics.ListAPIView):
             .order_by("-created_at")
         )
 
-        organizations = user.organization_set.all()
+        organizations = user.organization.all()
         if organizations.exists():
             queryset = base_queryset.filter(center__in=organizations)
         else:
@@ -105,7 +105,7 @@ class LeadExportExcelAPIView(APIView):
 
     def get(self, request):
         user = request.user
-        organizations = user.organization_set.all()
+        organizations = user.organization.all()
 
         if organizations.exists():
             leads = Lead.objects.filter(center__in=organizations)

@@ -14,7 +14,7 @@ class GroupUpdateAPIView(generics.UpdateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        organizations = user.organization_set.all()
+        organizations = user.organization.all()
         if not organizations.exists():
             return Group.objects.none()
         return Group.objects.select_related("room", "course", "branch").filter(

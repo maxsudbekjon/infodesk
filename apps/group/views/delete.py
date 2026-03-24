@@ -12,7 +12,7 @@ class GroupDeleteAPIView(generics.DestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        organizations = user.organization_set.all()
+        organizations = user.organization.all()
         if not organizations.exists():
             return Group.objects.none()
         return Group.objects.filter(branch__organization__in=organizations)

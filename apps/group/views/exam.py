@@ -1,15 +1,16 @@
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 
 from apps.group.models.exam import Exam
 from apps.group.serializers.exam import ExamCreateSerializer, ExamListSerializer
 
-
+@extend_schema(tags=['Group'])
 class ExamCreateAPIView(generics.CreateAPIView):
     queryset = Exam.objects.all()
     serializer_class = ExamCreateSerializer
 
-
+@extend_schema(tags=['Group'])
 class GroupExamListAPIView(generics.ListAPIView):
     serializer_class = ExamListSerializer
 
