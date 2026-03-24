@@ -10,8 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="student",
-            name="grade",
-        ),
+        # Previous attempt to drop non-existent Student.grade caused KeyError in CI.
+        # No-op migration kept for sequence consistency.
     ]
