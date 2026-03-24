@@ -4,6 +4,7 @@ import os
 import sys
 
 
+
 def main():
     """Run administrative tasks."""
     django_env = os.environ.get("DJANGO_ENV", "dev").lower()
