@@ -1,6 +1,6 @@
 from apps.group.models.attendance import Attendance
 from rest_framework import serializers
-from apps.group.permissions import get_teacher_profile
+from apps.group.permissions import get_teacher_profile, user_can_access_group_as_student
 
 
 class AttendanceModelSerializer(serializers.ModelSerializer):
@@ -35,7 +35,7 @@ class AttendanceModelSerializer(serializers.ModelSerializer):
             })
 
         # 2. Student shu groupga tegishli ekanligini tekshirish
-        if not group.students.filter(id=student.id).exists():
+        if not user_can_access_group_as_student(group, student):
             raise serializers.ValidationError({
                 'detail': 'Bu talaba shu guruhga tegishli emas.'
             })

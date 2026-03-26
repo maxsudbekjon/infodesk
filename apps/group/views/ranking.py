@@ -7,6 +7,7 @@ from rest_framework.response import Response
 
 from apps.group.models.ranking import GroupRankingComment
 from apps.group.serializers.ranking import GroupRankingListSerializer
+from apps.group.utils import build_student_image_url, get_group_students_queryset
 from apps.pupil.models.student import Student
 
 @extend_schema(tags=['Group'])
@@ -15,7 +16,8 @@ class GroupRankingListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         group_id = self.kwargs.get("id")
-        qs = Student.objects.filter(groups__id=group_id)
+        student_ids = get_group_students_queryset(group_id).values_list("pk", flat=True).distinct()
+        qs = Student.objects.filter(pk__in=student_ids)
 
         month = self.request.query_params.get("month")
         year = self.request.query_params.get("year")
@@ -25,7 +27,7 @@ class GroupRankingListAPIView(generics.ListAPIView):
             try:
                 month = int(month)
             except ValueError:
-                return Student.objects.none()
+                return qs.none()
 
             if not year:
                 year = timezone.now().year
@@ -33,7 +35,7 @@ class GroupRankingListAPIView(generics.ListAPIView):
                 try:
                     year = int(year)
                 except ValueError:
-                    return Student.objects.none()
+                    return qs.none()
 
             grade_filter &= Q(grades__date__year=year, grades__date__month=month)
 
@@ -65,6 +67,7 @@ class GroupRankingListAPIView(generics.ListAPIView):
                     "student": student.id,
                     "full_name": student.full_name,
                     "total_grade": student.total_grade,
+                    "image": build_student_image_url(student, request=request),
                     "comment": comment_map.get(student.id),
                 }
             )

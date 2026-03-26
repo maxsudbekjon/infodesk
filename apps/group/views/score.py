@@ -11,6 +11,7 @@ from apps.group.permissions import (
     IsTeacherUser,
     get_student_profile,
     get_teacher_profile,
+    user_can_access_group_as_student,
 )
 from apps.group.serializers.score import GroupScoreCreateSerializer
 
@@ -42,7 +43,7 @@ class GroupScoreListAPIView(generics.ListAPIView):
             if group.teacher_id != teacher.id and group.assistant_teacher_id != teacher.id:
                 raise PermissionDenied("Siz bu guruh coinlarini ko'ra olmaysiz.")
         elif student:
-            if not group.students.filter(pk=student.pk).exists():
+            if not user_can_access_group_as_student(group, student):
                 raise PermissionDenied("Siz bu guruh coinlarini ko'ra olmaysiz.")
             qs = qs.filter(student=student)
         else:

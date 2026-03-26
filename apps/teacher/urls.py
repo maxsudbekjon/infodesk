@@ -21,6 +21,7 @@ urlpatterns = [
     path('<int:pk>/upload-image/', TeacherUploadImageAPIView.as_view()),
     path('my-groups/', TeacherGroupListAPIView.as_view()),
     path('my-courses/', TeacherCourseListAPIView.as_view()),
+    path('my-courses/groups/', TeacherCourseGroupsAPIView.as_view()),
     path('my-courses/<int:course_id>/groups/', TeacherCourseGroupsAPIView.as_view()),
     path('me/', TeacherMeAPIView.as_view()),
 

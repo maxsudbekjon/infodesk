@@ -28,6 +28,17 @@ from apps.group.permissions import IsTeacherUser
 from apps.user.profile_resolver import get_teacher_profile
 
 
+def get_teacher_groups_queryset(teacher, course_id=None):
+    queryset = Group.objects.select_related(
+        "course",
+    ).filter(Q(teacher=teacher) | Q(assistant_teacher=teacher))
+
+    if course_id is not None:
+        queryset = queryset.filter(course_id=course_id)
+
+    return queryset.prefetch_related("lessons_days", "students", "student_set").order_by("-created_at")
+
+
 @extend_schema(tags=["Teachers"])
 class TeacherListAPIView(generics.ListAPIView):
     serializer_class = TeacherListSerializer
@@ -101,6 +112,9 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
         ).prefetch_related(
             'specialty',
             'main_groups__students',
+            'main_groups__student_set',
+            'main_groups__course',
+            'main_groups__lessons_days',
         ).filter(branch__organization__owner=self.request.user).annotate(
             groups_count=Count('main_groups', distinct=True),
             students_count=Count('main_groups__students', distinct=True),
@@ -195,12 +209,7 @@ class TeacherGroupListAPIView(generics.ListAPIView):
         if not teacher:
             return Group.objects.none()
 
-        return Group.objects.select_related(
-            "course",
-            "room",
-            "teacher",
-            "assistant_teacher",
-        ).filter(Q(teacher=teacher) | Q(assistant_teacher=teacher))
+        return get_teacher_groups_queryset(teacher)
 
 
 @extend_schema(
@@ -222,13 +231,16 @@ class TeacherCourseListAPIView(generics.ListAPIView):
             Group.objects.filter(Q(teacher=teacher) | Q(assistant_teacher=teacher))
             .values_list("course_id", flat=True)
         )
-        return CourseTemplate.objects.filter(id__in=course_ids).distinct()
+        return CourseTemplate.objects.filter(id__in=course_ids).distinct().order_by("-created_at")
 
 
 @extend_schema(
     tags=["Teachers"],
-    summary="Groups for a specific course (teacher-scoped)",
-    description="Returns groups of the given course where the current teacher is assigned as main or assistant.",
+    summary="Groups for the logged-in teacher",
+    description=(
+        "Returns groups where the current teacher is assigned as main or assistant. "
+        "If course_id is provided in the URL, the result is limited to that course."
+    ),
 )
 class TeacherCourseGroupsAPIView(generics.ListAPIView):
     serializer_class = TeacherGroupSerializer
@@ -240,15 +252,7 @@ class TeacherCourseGroupsAPIView(generics.ListAPIView):
             return Group.objects.none()
 
         course_id = self.kwargs.get("course_id")
-        return Group.objects.select_related(
-            "course",
-            "room",
-            "teacher",
-            "assistant_teacher",
-        ).filter(
-            Q(teacher=teacher) | Q(assistant_teacher=teacher),
-            course_id=course_id,
-        )
+        return get_teacher_groups_queryset(teacher, course_id=course_id)
 
 
 @extend_schema(
@@ -261,7 +265,16 @@ class TeacherMeAPIView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsTeacherUser]
 
     def get_object(self):
-        teacher = get_teacher_profile(self.request.user)
-        if not teacher:
-            raise get_object_or_404(Teacher, pk=0)  # will raise 404
-        return teacher
+        return get_object_or_404(
+            Teacher.objects.select_related(
+                'user',
+                'branch',
+            ).prefetch_related(
+                'specialty',
+                'main_groups__course',
+                'main_groups__lessons_days',
+                'main_groups__students',
+                'main_groups__student_set',
+            ),
+            user=self.request.user,
+        )

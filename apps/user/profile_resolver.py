@@ -8,6 +8,7 @@ from apps.user.choices import ROLE
 SAFE_STUDENT_ONLY_FIELDS = (
     "id",
     "full_name",
+    "image",
     "phone_number",
     "group_id",
     "center_id",

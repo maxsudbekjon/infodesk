@@ -25,6 +25,11 @@ class Student(TimeStampedModel):
     )
     lead = models.ForeignKey("lead.Lead", on_delete=models.SET_NULL,null=True,blank=True)
     full_name = models.CharField(max_length=100,null=True,blank=True)
+    image = models.ImageField(
+        upload_to="student-avatar",
+        null=True,
+        blank=True,
+    )
     next_payment_date = models.DateField(null=True, blank=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     payment_status = models.CharField(

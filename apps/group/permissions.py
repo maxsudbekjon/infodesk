@@ -1,6 +1,7 @@
 from django.db.models import Q
 from rest_framework.permissions import BasePermission
 
+from apps.group.utils import get_group_students_queryset
 from apps.user.profile_resolver import get_student_profile, get_teacher_profile
 
 
@@ -12,7 +13,11 @@ def filter_group_queryset_for_teacher(queryset, teacher, group_prefix="group"):
 
 
 def user_can_access_group_as_student(group, student):
-    return bool(student and group.students.filter(pk=student.pk).exists())
+    return bool(
+        group
+        and student
+        and get_group_students_queryset(group.id).filter(pk=student.pk).exists()
+    )
 
 
 class IsTeacherUser(BasePermission):

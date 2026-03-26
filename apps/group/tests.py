@@ -1,5 +1,6 @@
 from datetime import date, time
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -58,11 +59,21 @@ class GroupRolePermissionTests(APITestCase):
             full_name="Student One",
             phone_number="+998900000003",
             center=self.organization,
+            image=SimpleUploadedFile(
+                "student-one.png",
+                b"fake-image",
+                content_type="image/png",
+            ),
         )
 
         self.other_student = Student.objects.create(
             full_name="Student Two",
             phone_number="+998900000004",
+            center=self.organization,
+        )
+        self.fk_only_student = Student.objects.create(
+            full_name="Student Three",
+            phone_number="+998900000005",
             center=self.organization,
         )
 
@@ -80,6 +91,8 @@ class GroupRolePermissionTests(APITestCase):
         self.student.save(update_fields=["group"])
         self.other_student.group = self.group
         self.other_student.save(update_fields=["group"])
+        self.fk_only_student.group = self.group
+        self.fk_only_student.save(update_fields=["group"])
 
         Attendance.objects.create(
             group=self.group,
@@ -179,3 +192,36 @@ class GroupRolePermissionTests(APITestCase):
         results = response.data.get("results", response.data)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["student"], self.student.id)
+
+    def test_teacher_can_list_students_of_group_by_id(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("group-student", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.group.id)
+        students = response.data["students"]
+        self.assertEqual(len(students), 3)
+        self.assertSetEqual(
+            {student["id"] for student in students},
+            {self.student.id, self.other_student.id, self.fk_only_student.id},
+        )
+        student_data = next(item for item in students if item["id"] == self.student.id)
+        self.assertIsNotNone(student_data["image"])
+        self.assertIn("student-avatar", student_data["image"])
+
+    def test_group_ranking_returns_student_cards_with_image(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("group-ranking", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data.get("results", response.data)
+        self.assertEqual(len(results), 3)
+
+        first = results[0]
+        self.assertEqual(first["rating"], 1)
+        self.assertEqual(first["full_name"], self.student.full_name)
+        self.assertEqual(first["total_grade"], 5)
+        self.assertIsNotNone(first["image"])
+        self.assertIn("student-avatar", first["image"])

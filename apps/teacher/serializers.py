@@ -1,15 +1,55 @@
+import calendar
+import re
+
 from django.db.models import Count, Q
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.template.context_processors import request
+from django.utils import timezone
 
 from rest_framework import serializers
 
 from apps.teacher.models import Teacher, Specialty
 from apps.group.models import Group, CourseTemplate
+from apps.group.choices import GROUP_DAYS_CHOICES
+from apps.group.utils import count_group_students
 from apps.user.choices import ROLE
 
 User = get_user_model()
+
+
+DAY_ALIASES = {
+    "mon": "monday",
+    "monday": "monday",
+    "dushanba": "monday",
+    "tue": "tuesday",
+    "tuesday": "tuesday",
+    "seshanba": "tuesday",
+    "wed": "wednesday",
+    "wednesday": "wednesday",
+    "chorshanba": "wednesday",
+    "thu": "thursday",
+    "thursday": "thursday",
+    "payshanba": "thursday",
+    "fri": "friday",
+    "friday": "friday",
+    "juma": "friday",
+    "sat": "saturday",
+    "saturday": "saturday",
+    "shanba": "saturday",
+    "sun": "sunday",
+    "sunday": "sunday",
+    "yakshanba": "sunday",
+}
+
+
+def normalize_day_value(value):
+    cleaned = re.sub(r"[^a-z]+", "", str(value).lower())
+    return DAY_ALIASES.get(cleaned, cleaned)
+
+
+def today_day_value():
+    return normalize_day_value(calendar.day_name[timezone.localdate().weekday()])
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
@@ -27,22 +67,45 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 
 class TeacherGroupSerializer(serializers.ModelSerializer):
-    course = serializers.CharField(source='course.name', read_only=True)
-    room = serializers.CharField(source='room.name', read_only=True)
+    lessons_days = serializers.SerializerMethodField()
+    duration_months = serializers.IntegerField(source="course.duration_months", read_only=True)
+    attendance_today = serializers.SerializerMethodField()
+    total_student = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
         fields = (
             'id',
             'title',
-            "course",
-            'room',
-            'status',
-            "lessons_days_choice",
+            "lessons_days",
             'start_lesson',
             'end_lesson',
+            'duration_months',
             'total_student',
+            'attendance_today',
         )
+
+    def get_lessons_days(self, obj):
+        return [day.day for day in sorted(obj.lessons_days.all(), key=lambda item: item.id or 0)]
+
+    def get_attendance_today(self, obj):
+        lessons_days = list(obj.lessons_days.all())
+        if lessons_days:
+            today_value = today_day_value()
+            return any(normalize_day_value(day.day) == today_value for day in lessons_days)
+
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.EVERAY_DAY:
+            return True
+
+        current_day = timezone.localdate().day
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.ODD_DAYS:
+            return current_day % 2 == 1
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.EVEN_DAYS:
+            return current_day % 2 == 0
+        return False
+
+    def get_total_student(self, obj):
+        return count_group_students(obj)
 
 
 class TeacherSerializer(serializers.ModelSerializer):

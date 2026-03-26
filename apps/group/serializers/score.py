@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.group.models.score import GroupScore
-from apps.group.permissions import get_teacher_profile
+from apps.group.permissions import get_teacher_profile, user_can_access_group_as_student
 
 
 class GroupScoreCreateSerializer(serializers.ModelSerializer):
@@ -28,7 +28,7 @@ class GroupScoreCreateSerializer(serializers.ModelSerializer):
                 {"detail": "Siz bu guruhga coin qo'sha olmaysiz. Bu guruh sizga tegishli emas."}
             )
 
-        if not group.students.filter(id=student.id).exists():
+        if not user_can_access_group_as_student(group, student):
             raise serializers.ValidationError(
                 {"detail": "Bu talaba shu guruhga tegishli emas."}
             )
