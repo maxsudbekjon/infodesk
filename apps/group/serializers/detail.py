@@ -1,8 +1,11 @@
+from collections import defaultdict
+
+from drf_spectacular.utils import extend_schema_field
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.group.models import Group
 from apps.group.utils import build_student_image_url, get_group_students
-from apps.pupil.models.student import Student
 
 
 class GroupDetailModelSerializer(serializers.ModelSerializer):
@@ -31,17 +34,12 @@ class GroupDetailModelSerializer(serializers.ModelSerializer):
         )
 
 
-class StudentModelSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
-
-    class Meta:
-        model=Student
-        fields=('id','full_name','phone_number','status','image')
-
-    def get_image(self, obj):
-        request = self.context.get("request")
-        return build_student_image_url(obj, request=request)
-
+class GroupStudentCardSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    full_name = serializers.CharField(allow_null=True, required=False)
+    image = serializers.URLField(allow_null=True, required=False)
+    coin = serializers.IntegerField()
+    today_coin = serializers.IntegerField()
 
 
 class GroupStudentModelSerializer(serializers.ModelSerializer):
@@ -51,9 +49,36 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
         model = Group
         fields = ('id', 'students')
 
+    @extend_schema_field(GroupStudentCardSerializer(many=True))
     def get_students(self, obj):
-        return StudentModelSerializer(
-            get_group_students(obj),
-            many=True,
-            context=self.context,
-        ).data
+        students = get_group_students(obj)
+        score_map = defaultdict(int)
+        today_score_map = defaultdict(int)
+        today = timezone.localdate()
+
+        for score in obj.scores.all():
+            score_map[score.student_id] += score.score
+            if timezone.localdate(score.created_at) == today:
+                today_score_map[score.student_id] += score.score
+
+        ordered_students = sorted(
+            students,
+            key=lambda student: (
+                -score_map.get(student.id, 0),
+                (student.full_name or "").lower(),
+                student.id,
+            ),
+        )
+
+        payload = [
+            {
+                "id": student.id,
+                "full_name": student.full_name,
+                "image": build_student_image_url(student, request=self.context.get("request")),
+                "coin": score_map.get(student.id, 0),
+                "today_coin": today_score_map.get(student.id, 0),
+            }
+            for student in ordered_students
+        ]
+
+        return GroupStudentCardSerializer(payload, many=True).data

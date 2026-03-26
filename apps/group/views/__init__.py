@@ -9,7 +9,7 @@ from .student_ops import (
     StudentRemoveFromGroupAPIView,
     StudentTransferCreateAPIView,
 )
-from .attendance import AttendanceCreateAPIView
+from .attendance import AttendanceCreateAPIView, GroupAttendanceAPIView, GroupMonthlyAttendanceAPIView
 from .grade import GradeCreateAPIView, GroupGradeAPIView
 from .note import GroupNoteCreateAPIView, GroupNoteListAPIView
 from .exam import ExamCreateAPIView, GroupExamListAPIView

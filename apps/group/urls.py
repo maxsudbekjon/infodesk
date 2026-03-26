@@ -8,7 +8,11 @@ from apps.group.views import (
     GroupStatusUpdateAPIView,
     GroupUpdateAPIView,
 )
-from apps.group.views.attendance import AttendanceCreateAPIView, GroupAttendanceAPIView
+from apps.group.views.attendance import (
+    AttendanceCreateAPIView,
+    GroupAttendanceAPIView,
+    GroupMonthlyAttendanceAPIView,
+)
 from apps.group.views.exam import ExamCreateAPIView, GroupExamListAPIView
 from apps.group.views.grade import GradeCreateAPIView, GroupGradeAPIView
 from apps.group.views.note import GroupNoteCreateAPIView, GroupNoteListAPIView
@@ -36,6 +40,7 @@ urlpatterns = [
     path('group-student/<int:id>',GroupStudentAPIView.as_view(),name='group-student'),
     path('group-studnets-attendance/<int:id>',GroupAttendanceAPIView.as_view(),name='group-attendance'),
     path('group-students-attendance/<int:id>', GroupAttendanceAPIView.as_view(), name='group-attendance-v2'),
+    path('group-monthly-attendance/<int:id>', GroupMonthlyAttendanceAPIView.as_view(), name='group-monthly-attendance'),
     path('group-students-grades/<int:id>', GroupGradeAPIView.as_view(), name='group-grades'),
     path('group-notes/create/', GroupNoteCreateAPIView.as_view(), name='group-note-create'),
     path('group-notes/<int:id>', GroupNoteListAPIView.as_view(), name='group-note-list'),

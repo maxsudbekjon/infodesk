@@ -1,7 +1,9 @@
-from datetime import date, time
+import calendar
+from datetime import date, time, timedelta
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -20,6 +22,9 @@ from apps.user.models import User
 
 class GroupRolePermissionTests(APITestCase):
     def setUp(self):
+        self.today = timezone.localdate()
+        self.attendance_date = date(self.today.year, self.today.month, 20)
+
         self.owner = User.objects.create_user(
             phone_number="+998900000001",
             password="ownerpass123",
@@ -97,25 +102,25 @@ class GroupRolePermissionTests(APITestCase):
         Attendance.objects.create(
             group=self.group,
             student=self.student,
-            date=date(2026, 3, 20),
+            date=self.attendance_date,
             is_present=True,
         )
         Attendance.objects.create(
             group=self.group,
             student=self.other_student,
-            date=date(2026, 3, 20),
+            date=self.attendance_date,
             is_present=False,
         )
         Grade.objects.create(
             group=self.group,
             student=self.student,
-            date=date(2026, 3, 20),
+            date=self.attendance_date,
             grade=5,
         )
         Grade.objects.create(
             group=self.group,
             student=self.other_student,
-            date=date(2026, 3, 20),
+            date=self.attendance_date,
             grade=3,
         )
         GroupScore.objects.create(
@@ -202,13 +207,21 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(response.data["id"], self.group.id)
         students = response.data["students"]
         self.assertEqual(len(students), 3)
-        self.assertSetEqual(
-            {student["id"] for student in students},
-            {self.student.id, self.other_student.id, self.fk_only_student.id},
-        )
-        student_data = next(item for item in students if item["id"] == self.student.id)
-        self.assertIsNotNone(student_data["image"])
-        self.assertIn("student-avatar", student_data["image"])
+        self.assertEqual(students[0]["id"], self.student.id)
+        self.assertEqual(students[0]["full_name"], self.student.full_name)
+        self.assertEqual(students[0]["coin"], 10)
+        self.assertEqual(students[0]["today_coin"], 10)
+        self.assertIsNotNone(students[0]["image"])
+        self.assertIn("student-avatar", students[0]["image"])
+        self.assertNotIn("rating", students[0])
+
+        self.assertEqual(students[1]["id"], self.other_student.id)
+        self.assertEqual(students[1]["coin"], 4)
+        self.assertEqual(students[1]["today_coin"], 4)
+
+        self.assertEqual(students[2]["id"], self.fk_only_student.id)
+        self.assertEqual(students[2]["coin"], 0)
+        self.assertEqual(students[2]["today_coin"], 0)
 
     def test_group_ranking_returns_student_cards_with_image(self):
         self.client.force_authenticate(user=self.teacher_user)
@@ -225,3 +238,74 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(first["total_grade"], 5)
         self.assertIsNotNone(first["image"])
         self.assertIn("student-avatar", first["image"])
+
+    def test_teacher_can_list_monthly_attendance_of_group(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("group-monthly-attendance", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(data["month"], self.today.month)
+        self.assertEqual(data["year"], self.today.year)
+        self.assertEqual(len(data["days"]), calendar.monthrange(self.today.year, self.today.month)[1])
+        self.assertIn(self.attendance_date.day, data["days"])
+        self.assertSetEqual(
+            {item["id"] for item in data["students"]},
+            {self.student.id, self.other_student.id, self.fk_only_student.id},
+        )
+        student_row = next(item for item in data["students"] if item["id"] == self.student.id)
+        self.assertEqual(student_row["coin"], 10)
+        self.assertTrue(student_row["attendance_days"][self.attendance_date.day - 1]["is_present"])
+
+        other_row = next(item for item in data["students"] if item["id"] == self.other_student.id)
+        self.assertEqual(other_row["coin"], 4)
+        self.assertFalse(other_row["attendance_days"][self.attendance_date.day - 1]["is_present"])
+
+        fk_only_row = next(item for item in data["students"] if item["id"] == self.fk_only_student.id)
+        self.assertEqual(fk_only_row["coin"], 0)
+        self.assertTrue(all(day["is_present"] is None for day in fk_only_row["attendance_days"]))
+
+    def test_student_can_list_own_monthly_attendance_of_group(self):
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.get(reverse("group-monthly-attendance", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(len(data["students"]), 1)
+        self.assertEqual(data["students"][0]["id"], self.student.id)
+        self.assertEqual(data["students"][0]["coin"], 10)
+
+    def test_monthly_attendance_can_filter_other_month(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        first_of_month = self.today.replace(day=1)
+        previous_month_date = first_of_month - timedelta(days=1)
+        previous_month_attendance_date = previous_month_date.replace(day=20)
+
+        Attendance.objects.create(
+            group=self.group,
+            student=self.student,
+            date=previous_month_attendance_date,
+            is_present=True,
+        )
+
+        response = self.client.get(
+            reverse("group-monthly-attendance", kwargs={"id": self.group.id}),
+            {
+                "month": previous_month_attendance_date.month,
+                "year": previous_month_attendance_date.year,
+            },
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.data
+        self.assertEqual(data["month"], previous_month_attendance_date.month)
+        self.assertEqual(data["year"], previous_month_attendance_date.year)
+        self.assertEqual(len(data["students"]), 3)
+
+        student_row = next(item for item in data["students"] if item["id"] == self.student.id)
+        self.assertEqual(student_row["coin"], 0)
+        self.assertTrue(student_row["attendance_days"][previous_month_attendance_date.day - 1]["is_present"])
+        self.assertEqual(data["days"][previous_month_attendance_date.day - 1], previous_month_attendance_date.day)

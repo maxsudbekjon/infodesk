@@ -29,8 +29,10 @@ class GroupDetailAPIView(generics.RetrieveAPIView):
 @extend_schema(
     tags=['Group'],
     summary="Students of a teacher's group",
-    description="Returns students belonging to the specified group where the current teacher is assigned "
-                "as main or assistant teacher."
+    description=(
+        "Returns a leaderboard-style list of students belonging to the specified group where the current "
+        "teacher is assigned as main or assistant teacher. Each item includes full_name, coin, today_coin and image."
+    ),
 )
 class GroupStudentAPIView(generics.RetrieveAPIView):
     serializer_class = GroupStudentModelSerializer
@@ -44,4 +46,4 @@ class GroupStudentAPIView(generics.RetrieveAPIView):
 
         return Group.objects.filter(
             models.Q(teacher=teacher) | models.Q(assistant_teacher=teacher)
-        ).prefetch_related("students", "student_set")
+        ).prefetch_related("students", "student_set", "scores")
