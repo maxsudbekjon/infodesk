@@ -14,6 +14,8 @@ from rest_framework.views import APIView
 from apps.teacher.models import Teacher
 from apps.teacher.permissions import TeacherImagePermission, IsOrganizationOwner
 from apps.teacher.serializers import (
+    TeacherArchiveToggleResponseSerializer,
+    TeacherDeleteResponseSerializer,
     TeacherSerializer,
     TeacherListSerializer,
     TeacherImageUploadSerializer,
@@ -31,6 +33,7 @@ from apps.user.profile_resolver import get_teacher_profile
 def get_teacher_groups_queryset(teacher, course_id=None):
     queryset = Group.objects.select_related(
         "course",
+        "room",
     ).filter(Q(teacher=teacher) | Q(assistant_teacher=teacher))
 
     if course_id is not None:
@@ -115,6 +118,7 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
             'main_groups__student_set',
             'main_groups__course',
             'main_groups__lessons_days',
+            'main_groups__room',
         ).filter(branch__organization__owner=self.request.user).annotate(
             groups_count=Count('main_groups', distinct=True),
             students_count=Count('main_groups__students', distinct=True),
@@ -124,7 +128,9 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
 @extend_schema(tags=["Teachers"])
 class TeacherToggleArchiveAPIView(APIView):
     permission_classes = [IsAuthenticated, IsOrganizationOwner]
+    serializer_class = TeacherArchiveToggleResponseSerializer
 
+    @extend_schema(responses=TeacherArchiveToggleResponseSerializer)
     def post(self, request, pk):
         teacher = get_object_or_404(
             Teacher.objects.select_related("branch__organization"),
@@ -167,10 +173,12 @@ class TeacherUploadImageAPIView(generics.GenericAPIView):
         })
 
 
-@extend_schema(tags=["Teachers"])
+@extend_schema(tags=["Teachers"], responses={204: None})
 class TeacherDeleteAPIView(DestroyAPIView):
     permission_classes = [IsAuthenticated, IsOrganizationOwner]
+    serializer_class = TeacherDeleteResponseSerializer
     queryset = Teacher.objects.all()
+    http_method_names = ["delete", "head", "options"]
 
     def get_queryset(self):
         return Teacher.objects.filter(
@@ -275,6 +283,7 @@ class TeacherMeAPIView(generics.RetrieveAPIView):
                 'main_groups__lessons_days',
                 'main_groups__students',
                 'main_groups__student_set',
+                'main_groups__room',
             ),
             user=self.request.user,
         )

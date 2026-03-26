@@ -1,12 +1,19 @@
 from django.db.models import Q
 from django.utils import timezone
 
+from apps.group.models.group import Group
 from apps.pupil.models.student import Student
 
 
 def get_group_students_queryset(group_id):
     return Student.objects.filter(
         Q(group_id=group_id) | Q(groups__id=group_id)
+    ).distinct()
+
+
+def get_student_groups_queryset(student):
+    return Group.objects.filter(
+        Q(students=student) | Q(student=student)
     ).distinct()
 
 

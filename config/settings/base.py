@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.pupil",
     "apps.lead",
     "apps.group",
+    "apps.market",
     "apps.dashboard",
     "apps.user",
     "apps.settings"

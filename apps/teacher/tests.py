@@ -6,6 +6,7 @@ from rest_framework.test import APITestCase
 
 from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.group.models import CourseTemplate, Day, Group
+from apps.group.models.room import Room
 from apps.pupil.models import Student
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
@@ -47,6 +48,17 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
             duration_months=6,
         )
         self.branch.courses.add(self.course_math, self.course_english)
+
+        self.room_1 = Room.objects.create(
+            branch=self.branch,
+            name="Room 101",
+            capacity=20,
+        )
+        self.room_2 = Room.objects.create(
+            branch=self.branch,
+            name="Room 102",
+            capacity=18,
+        )
 
         self.today_day = Day.objects.create(day=today.strftime("%A"))
         self.tomorrow_day = Day.objects.create(day=tomorrow.strftime("%A"))
@@ -94,6 +106,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
             course=self.course_math,
             branch=self.branch,
             teacher=self.teacher,
+            room=self.room_1,
             lessons_days_choice=GROUP_DAYS_CHOICES.ODD_DAYS,
             start_lesson=time(9, 0),
             end_lesson=time(10, 0),
@@ -108,6 +121,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
             course=self.course_english,
             branch=self.branch,
             teacher=self.teacher,
+            room=self.room_2,
             lessons_days_choice=GROUP_DAYS_CHOICES.EVEN_DAYS,
             start_lesson=time(10, 0),
             end_lesson=time(11, 0),
@@ -145,6 +159,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         second_group = next(item for item in results if item["id"] == self.teacher_group_2.id)
 
         self.assertEqual(first_group["title"], "Math-1")
+        self.assertEqual(first_group["room"], "Room 101")
         self.assertEqual(first_group["lessons_days"], [self.today_day.day])
         self.assertEqual(first_group["start_lesson"], "09:00:00")
         self.assertEqual(first_group["end_lesson"], "10:00:00")
@@ -153,6 +168,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         self.assertTrue(first_group["attendance_today"])
 
         self.assertEqual(second_group["title"], "English-1")
+        self.assertEqual(second_group["room"], "Room 102")
         self.assertEqual(second_group["lessons_days"], [self.tomorrow_day.day])
         self.assertEqual(second_group["duration_months"], 6)
         self.assertEqual(second_group["total_student"], 1)

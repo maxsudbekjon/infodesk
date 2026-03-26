@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.template.context_processors import request
 from django.utils import timezone
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.teacher.models import Teacher, Specialty
@@ -68,6 +70,7 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 class TeacherGroupSerializer(serializers.ModelSerializer):
     lessons_days = serializers.SerializerMethodField()
+    room = serializers.CharField(source="room.name", read_only=True, allow_null=True)
     duration_months = serializers.IntegerField(source="course.duration_months", read_only=True)
     attendance_today = serializers.SerializerMethodField()
     total_student = serializers.SerializerMethodField()
@@ -75,9 +78,10 @@ class TeacherGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = (
-            'id',
+           'id',
             'title',
             "lessons_days",
+            "room",
             'start_lesson',
             'end_lesson',
             'duration_months',
@@ -85,9 +89,11 @@ class TeacherGroupSerializer(serializers.ModelSerializer):
             'attendance_today',
         )
 
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_lessons_days(self, obj):
         return [day.day for day in sorted(obj.lessons_days.all(), key=lambda item: item.id or 0)]
 
+    @extend_schema_field(OpenApiTypes.BOOL)
     def get_attendance_today(self, obj):
         lessons_days = list(obj.lessons_days.all())
         if lessons_days:
@@ -104,6 +110,7 @@ class TeacherGroupSerializer(serializers.ModelSerializer):
             return current_day % 2 == 0
         return False
 
+    @extend_schema_field(OpenApiTypes.INT)
     def get_total_student(self, obj):
         return count_group_students(obj)
 
@@ -153,11 +160,21 @@ class TeacherListSerializer(serializers.ModelSerializer):
             'branch_id',
         )
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image:
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
+
+
+class TeacherArchiveToggleResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    is_archived = serializers.BooleanField()
+
+
+class TeacherDeleteResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
 
 
 class TeacherImageUploadSerializer(serializers.Serializer):
