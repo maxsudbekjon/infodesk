@@ -4,6 +4,7 @@ from datetime import date, time, timedelta
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
+from drf_spectacular.generators import SchemaGenerator
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -152,6 +153,51 @@ class GroupRolePermissionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_teacher_can_update_today_attendance(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        attendance = Attendance.objects.create(
+            group=self.group,
+            student=self.student,
+            date=self.today,
+            is_present=False,
+            note="Old note",
+        )
+
+        response = self.client.patch(
+            reverse("attendance-update", kwargs={"id": attendance.id}),
+            {
+                "is_present": True,
+                "note": "Updated note",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        attendance.refresh_from_db()
+        self.assertTrue(attendance.is_present)
+        self.assertEqual(attendance.note, "Updated note")
+
+    def test_teacher_cannot_update_old_attendance(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        attendance = Attendance.objects.create(
+            group=self.group,
+            student=self.student,
+            date=self.today - timedelta(days=1),
+            is_present=False,
+        )
+
+        response = self.client.patch(
+            reverse("attendance-update", kwargs={"id": attendance.id}),
+            {"is_present": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"][0],
+            "Faqat bugungi davomatni update qilish mumkin.",
+        )
+
     def test_student_cannot_create_attendance(self):
         self.client.force_authenticate(user=self.student_user)
 
@@ -197,6 +243,51 @@ class GroupRolePermissionTests(APITestCase):
         results = response.data.get("results", response.data)
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0]["student"], self.student.id)
+
+    def test_teacher_can_update_today_score(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        score = GroupScore.objects.create(
+            group=self.group,
+            student=self.student,
+            score=6,
+            reason="Old reason",
+        )
+
+        response = self.client.patch(
+            reverse("group-score-update", kwargs={"id": score.id}),
+            {
+                "score": 12,
+                "reason": "Updated reason",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        score.refresh_from_db()
+        self.assertEqual(score.score, 12)
+        self.assertEqual(score.reason, "Updated reason")
+
+    def test_teacher_cannot_update_old_score(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        score = GroupScore.objects.create(
+            group=self.group,
+            student=self.student,
+            score=6,
+            reason="Old reason",
+            created_at=timezone.now() - timedelta(days=1),
+        )
+
+        response = self.client.patch(
+            reverse("group-score-update", kwargs={"id": score.id}),
+            {"score": 12},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"][0],
+            "Faqat bugungi coinni update qilish mumkin.",
+        )
 
     def test_teacher_can_list_students_of_group_by_id(self):
         self.client.force_authenticate(user=self.teacher_user)
@@ -309,3 +400,10 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(student_row["coin"], 0)
         self.assertTrue(student_row["attendance_days"][previous_month_attendance_date.day - 1]["is_present"])
         self.assertEqual(data["days"][previous_month_attendance_date.day - 1], previous_month_attendance_date.day)
+
+    def test_schema_includes_refresh_and_update_endpoints(self):
+        schema = SchemaGenerator().get_schema(request=None, public=True)
+
+        self.assertIn("/api/token/refresh/", schema["paths"])
+        self.assertIn("/apps/group/attendance/update/{id}", schema["paths"])
+        self.assertIn("/apps/group/group-scores/update/{id}", schema["paths"])

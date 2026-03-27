@@ -1,3 +1,5 @@
+from django.utils import timezone
+
 from apps.group.models.attendance import Attendance
 from rest_framework import serializers
 from apps.group.permissions import get_teacher_profile, user_can_access_group_as_student
@@ -15,8 +17,8 @@ class AttendanceModelSerializer(serializers.ModelSerializer):
         )
     def validate(self, attrs):
         request = self.context.get('request')
-        group = attrs.get('group')
-        student = attrs.get('student')
+        group = attrs.get('group') or getattr(self.instance, 'group', None)
+        student = attrs.get('student') or getattr(self.instance, 'student', None)
 
         # Request yuborgan user ning Teacher ob'ektini olish
         teacher = get_teacher_profile(getattr(request, "user", None))
@@ -40,8 +42,31 @@ class AttendanceModelSerializer(serializers.ModelSerializer):
                 'detail': 'Bu talaba shu guruhga tegishli emas.'
             })
 
+        if self.instance and self.instance.date != timezone.localdate():
+            raise serializers.ValidationError({
+                'detail': 'Faqat bugungi davomatni update qilish mumkin.'
+            })
+
         return attrs
-    
+
+
+class AttendanceUpdateSerializer(AttendanceModelSerializer):
+    student_name = serializers.CharField(source="student.full_name", read_only=True)
+
+    class Meta:
+        model = Attendance
+        fields = (
+            "id",
+            "group",
+            "student",
+            "student_name",
+            "date",
+            "is_present",
+            "note",
+        )
+        read_only_fields = ("id", "group", "student", "student_name", "date")
+
+
 class GroupAttendanceModelSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source="student.full_name")
 

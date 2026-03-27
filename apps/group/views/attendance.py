@@ -18,12 +18,14 @@ from apps.group.models.score import GroupScore
 from apps.group.permissions import (
     IsTeacherOrStudentUser,
     IsTeacherUser,
+    filter_group_queryset_for_teacher,
     get_student_profile,
     get_teacher_profile,
     user_can_access_group_as_student,
 )
 from apps.group.serializers.attendance import (
     AttendanceModelSerializer,
+    AttendanceUpdateSerializer,
     GroupAttendanceModelSerializer,
 )
 from apps.group.serializers.monthly_attendance import GroupMonthlyAttendanceResponseSerializer
@@ -70,6 +72,22 @@ class AttendanceCreateAPIView(generics.CreateAPIView):
             raise ValidationError({'detail': 'This student not found in this group'})
 
         serializer.save()
+
+
+@extend_schema(tags=['Group'])
+class AttendanceUpdateAPIView(generics.UpdateAPIView):
+    serializer_class = AttendanceUpdateSerializer
+    permission_classes = [IsAuthenticated, IsTeacherUser]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        teacher = get_teacher_profile(self.request.user)
+        if not teacher:
+            return Attendance.objects.none()
+
+        queryset = Attendance.objects.select_related("group", "student")
+        return filter_group_queryset_for_teacher(queryset, teacher)
+
 
 @extend_schema(tags=['Group'])
 class GroupAttendanceAPIView(generics.ListAPIView):

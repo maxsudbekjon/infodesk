@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.group.models.score import GroupScore
@@ -14,8 +15,8 @@ class GroupScoreCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         request = self.context.get("request")
-        group = attrs.get("group")
-        student = attrs.get("student")
+        group = attrs.get("group") or getattr(self.instance, "group", None)
+        student = attrs.get("student") or getattr(self.instance, "student", None)
         teacher = get_teacher_profile(getattr(request, "user", None))
 
         if not teacher:
@@ -33,4 +34,15 @@ class GroupScoreCreateSerializer(serializers.ModelSerializer):
                 {"detail": "Bu talaba shu guruhga tegishli emas."}
             )
 
+        if self.instance and timezone.localdate(self.instance.created_at) != timezone.localdate():
+            raise serializers.ValidationError(
+                {"detail": "Faqat bugungi coinni update qilish mumkin."}
+            )
+
         return attrs
+
+
+class GroupScoreUpdateSerializer(GroupScoreCreateSerializer):
+    class Meta(GroupScoreCreateSerializer.Meta):
+        fields = ("id", "group", "student", "student_name", "score", "reason", "created_at")
+        read_only_fields = ("id", "group", "student", "student_name", "created_at")
