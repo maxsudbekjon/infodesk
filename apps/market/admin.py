@@ -5,7 +5,7 @@ from apps.market.models import MarketOrder, Product
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "price", "created_at")
+    list_display = ("id", "title", "price", "count", "created_at")
     search_fields = ("title",)
 
 

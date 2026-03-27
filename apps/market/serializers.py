@@ -1,3 +1,4 @@
+from django.db import transaction
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -22,7 +23,7 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
-        fields = ("id", "image", "title", "price", "description")
+        fields = ("id", "image", "title", "price", "description", "count")
 
     @extend_schema_field(OpenApiTypes.URI)
     def get_image(self, obj):
@@ -34,6 +35,7 @@ class MarketOrderSerializer(serializers.ModelSerializer):
     product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
     product_id = serializers.IntegerField(source="product.id", read_only=True)
     product_title = serializers.CharField(source="product.title", read_only=True)
+    product_count = serializers.IntegerField(source="product.count", read_only=True)
     product_image = serializers.SerializerMethodField()
 
     class Meta:
@@ -43,12 +45,21 @@ class MarketOrderSerializer(serializers.ModelSerializer):
             "product",
             "product_id",
             "product_title",
+            "product_count",
             "product_image",
             "price",
             "secret_code",
             "created_at",
         )
-        read_only_fields = ("product_id", "product_title", "product_image", "price", "secret_code", "created_at")
+        read_only_fields = (
+            "product_id",
+            "product_title",
+            "product_count",
+            "product_image",
+            "price",
+            "secret_code",
+            "created_at",
+        )
 
     @extend_schema_field(OpenApiTypes.URI)
     def get_product_image(self, obj):
@@ -62,4 +73,21 @@ class MarketOrderSerializer(serializers.ModelSerializer):
         if not student:
             raise serializers.ValidationError({"detail": "Bu endpoint faqat student account uchun."})
 
-        return MarketOrder.objects.create(student=student, **validated_data)
+        with transaction.atomic():
+            product = (
+                Product.objects.select_for_update()
+                .only("id", "title", "price", "count", "image")
+                .get(pk=validated_data["product"].pk)
+            )
+
+            if product.count < 1:
+                raise serializers.ValidationError({"product": "Bu mahsulot tugagan."})
+
+            product.count -= 1
+            product.save(update_fields=["count"])
+
+            return MarketOrder.objects.create(
+                student=student,
+                product=product,
+                price=product.price,
+            )

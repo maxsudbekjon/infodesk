@@ -24,6 +24,7 @@ class Product(TimeStampedModel):
     title = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=12, decimal_places=2)
     description = models.TextField()
+    count = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ("-created_at",)

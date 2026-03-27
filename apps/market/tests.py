@@ -38,6 +38,7 @@ class MarketAPITests(APITestCase):
             title="Notebook",
             price="25.00",
             description="Useful notebook",
+            count=3,
         )
 
     def test_product_list_returns_products(self):
@@ -53,6 +54,7 @@ class MarketAPITests(APITestCase):
         self.assertEqual(product["title"], self.product.title)
         self.assertEqual(product["price"], "25.00")
         self.assertEqual(product["description"], self.product.description)
+        self.assertEqual(product["count"], self.product.count)
         self.assertTrue(product["image"])
 
     def test_create_order_generates_secret_code(self):
@@ -67,12 +69,15 @@ class MarketAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["product_id"], self.product.id)
         self.assertEqual(response.data["product_title"], self.product.title)
+        self.assertEqual(response.data["product_count"], 2)
         self.assertEqual(response.data["price"], "25.00")
 
         secret_code = response.data["secret_code"]
         self.assertRegex(secret_code, r"^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{6}$")
         self.assertEqual(MarketOrder.objects.count(), 1)
         self.assertEqual(MarketOrder.objects.first().secret_code, secret_code)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.count, 2)
 
     def test_student_orders_list_shows_only_own_orders(self):
         MarketOrder.objects.create(student=self.student, product=self.product)
@@ -81,6 +86,7 @@ class MarketAPITests(APITestCase):
             title="Backpack",
             price="40.00",
             description="Useful backpack",
+            count=1,
         )
         MarketOrder.objects.create(student=self.other_student, product=other_product)
 
@@ -94,5 +100,26 @@ class MarketAPITests(APITestCase):
         order = response.data[0]
         self.assertEqual(order["product_id"], self.product.id)
         self.assertEqual(order["product_title"], self.product.title)
+        self.assertEqual(order["product_count"], self.product.count)
         self.assertTrue(order["secret_code"])
         self.assertRegex(order["secret_code"], r"^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{6}$")
+
+    def test_cannot_create_order_when_product_is_out_of_stock(self):
+        sold_out_product = Product.objects.create(
+            image=SimpleUploadedFile("sold-out.jpg", b"sold-out-bytes", content_type="image/jpeg"),
+            title="Pen",
+            price="5.00",
+            description="Blue pen",
+            count=0,
+        )
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.post(
+            reverse("market-order-create"),
+            {"product": sold_out_product.id},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(str(response.data["product"]), "Bu mahsulot tugagan.")
+        self.assertEqual(MarketOrder.objects.count(), 0)
