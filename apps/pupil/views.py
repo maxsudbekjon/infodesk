@@ -63,6 +63,7 @@ class StudentNoteCreateAPIView(generics.CreateAPIView):
 class StudentGroupListAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = StudentGroupListResponseSerializer
+    http_method_names = ["get", "head", "options"]
 
     def get(self, request, *args, **kwargs):
         student = _get_student_or_403(request.user)
@@ -119,6 +120,7 @@ class StudentGroupListAPIView(generics.GenericAPIView):
 class StudentTodayCoinAPIView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = StudentTodayCoinResponseSerializer
+    http_method_names = ["get", "head", "options"]
 
     def get(self, request, *args, **kwargs):
         student = _get_student_or_403(request.user)
