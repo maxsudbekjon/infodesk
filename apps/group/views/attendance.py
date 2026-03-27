@@ -157,8 +157,11 @@ class GroupMonthlyAttendanceAPIView(generics.ListAPIView):
             date__year=year,
             date__month=month,
         )
-        for attendance in attendance_qs.only("student_id", "date", "is_present"):
-            attendance_map[attendance.student_id][attendance.date.day] = attendance.is_present
+        for attendance in attendance_qs.only("id", "student_id", "date", "is_present"):
+            attendance_map[attendance.student_id][attendance.date.day] = {
+                "id": attendance.id,
+                "is_present": attendance.is_present,
+            }
 
         coin_map = {
             row["student_id"]: row["total_coin"]
@@ -185,8 +188,9 @@ class GroupMonthlyAttendanceAPIView(generics.ListAPIView):
                     "coin": coin_map.get(item.id, 0),
                     "attendance_days": [
                         {
+                            "id": attendance_map.get(item.id, {}).get(day, {}).get("id"),
                             "day": day,
-                            "is_present": attendance_map.get(item.id, {}).get(day),
+                            "is_present": attendance_map.get(item.id, {}).get(day, {}).get("is_present"),
                         }
                         for day in days
                     ],

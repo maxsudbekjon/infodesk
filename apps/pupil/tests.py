@@ -89,13 +89,13 @@ class StudentDashboardTests(APITestCase):
         self.student.group = self.math_group
         self.student.save(update_fields=["group"])
 
-        Attendance.objects.create(
+        self.today_math_attendance = Attendance.objects.create(
             group=self.math_group,
             student=self.student,
             date=self.today,
             is_present=True,
         )
-        Attendance.objects.create(
+        self.previous_day_math_attendance = Attendance.objects.create(
             group=self.math_group,
             student=self.student,
             date=self.today - timedelta(days=1),
@@ -176,6 +176,11 @@ class StudentDashboardTests(APITestCase):
         self.assertEqual(row["full_name"], self.student.full_name)
         self.assertEqual(row["coin"], 12)
 
-        attendance_days = {item["day"]: item["is_present"] for item in row["attendance_days"]}
-        self.assertTrue(attendance_days[self.today.day])
-        self.assertFalse(attendance_days[(self.today - timedelta(days=1)).day])
+        attendance_days = {item["day"]: item for item in row["attendance_days"]}
+        self.assertTrue(attendance_days[self.today.day]["is_present"])
+        self.assertEqual(attendance_days[self.today.day]["id"], self.today_math_attendance.id)
+        self.assertFalse(attendance_days[(self.today - timedelta(days=1)).day]["is_present"])
+        self.assertEqual(
+            attendance_days[(self.today - timedelta(days=1)).day]["id"],
+            self.previous_day_math_attendance.id,
+        )

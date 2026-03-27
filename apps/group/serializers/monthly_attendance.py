@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 
 class MonthlyAttendanceCellSerializer(serializers.Serializer):
+    id = serializers.IntegerField(allow_null=True, required=False)
     day = serializers.IntegerField()
     is_present = serializers.BooleanField(allow_null=True)
 

@@ -100,13 +100,13 @@ class GroupRolePermissionTests(APITestCase):
         self.fk_only_student.group = self.group
         self.fk_only_student.save(update_fields=["group"])
 
-        Attendance.objects.create(
+        self.student_attendance = Attendance.objects.create(
             group=self.group,
             student=self.student,
             date=self.attendance_date,
             is_present=True,
         )
-        Attendance.objects.create(
+        self.other_student_attendance = Attendance.objects.create(
             group=self.group,
             student=self.other_student,
             date=self.attendance_date,
@@ -348,14 +348,23 @@ class GroupRolePermissionTests(APITestCase):
         student_row = next(item for item in data["students"] if item["id"] == self.student.id)
         self.assertEqual(student_row["coin"], 10)
         self.assertTrue(student_row["attendance_days"][self.attendance_date.day - 1]["is_present"])
+        self.assertEqual(
+            student_row["attendance_days"][self.attendance_date.day - 1]["id"],
+            self.student_attendance.id,
+        )
 
         other_row = next(item for item in data["students"] if item["id"] == self.other_student.id)
         self.assertEqual(other_row["coin"], 4)
         self.assertFalse(other_row["attendance_days"][self.attendance_date.day - 1]["is_present"])
+        self.assertEqual(
+            other_row["attendance_days"][self.attendance_date.day - 1]["id"],
+            self.other_student_attendance.id,
+        )
 
         fk_only_row = next(item for item in data["students"] if item["id"] == self.fk_only_student.id)
         self.assertEqual(fk_only_row["coin"], 0)
         self.assertTrue(all(day["is_present"] is None for day in fk_only_row["attendance_days"]))
+        self.assertTrue(all(day["id"] is None for day in fk_only_row["attendance_days"]))
 
     def test_student_can_list_own_monthly_attendance_of_group(self):
         self.client.force_authenticate(user=self.student_user)
