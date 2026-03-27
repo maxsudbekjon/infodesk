@@ -228,3 +228,28 @@ class StudentDashboardTests(APITestCase):
         response = self.client.get(reverse("student-my-groups"))
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_student_can_list_today_coins_with_ids(self):
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.get(reverse("student-my-today-coins"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(str(response.data["date"]), str(self.today))
+        self.assertEqual(response.data["total_coin"], 15)
+        self.assertEqual(len(response.data["coins"]), 3)
+
+        coin_ids = {item["id"] for item in response.data["coins"]}
+        expected_ids = set(
+            GroupScore.objects.filter(student=self.student).values_list("id", flat=True)
+        )
+        self.assertSetEqual(coin_ids, expected_ids)
+
+        first_coin = response.data["coins"][0]
+        self.assertIn("group_id", first_coin)
+        self.assertIn("group_title", first_coin)
+        self.assertIn("course_id", first_coin)
+        self.assertIn("course_name", first_coin)
+        self.assertIn("score", first_coin)
+        self.assertIn("reason", first_coin)
+        self.assertIn("created_at", first_coin)

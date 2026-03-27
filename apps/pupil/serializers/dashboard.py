@@ -38,3 +38,20 @@ class StudentGroupListItemSerializer(serializers.Serializer):
 
 class StudentGroupListResponseSerializer(serializers.Serializer):
     groups = StudentGroupListItemSerializer(many=True)
+
+
+class StudentTodayCoinItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    group_id = serializers.IntegerField()
+    group_title = serializers.CharField(allow_null=True, required=False)
+    course_id = serializers.IntegerField(allow_null=True, required=False)
+    course_name = serializers.CharField(allow_null=True, required=False)
+    score = serializers.IntegerField()
+    reason = serializers.CharField(allow_null=True, required=False)
+    created_at = serializers.DateTimeField()
+
+
+class StudentTodayCoinResponseSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    total_coin = serializers.IntegerField()
+    coins = StudentTodayCoinItemSerializer(many=True)

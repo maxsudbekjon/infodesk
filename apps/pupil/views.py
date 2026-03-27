@@ -5,6 +5,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
@@ -28,6 +29,7 @@ from apps.pupil.models.note import StudentNote
 from apps.pupil.serializers.dashboard import (
     StudentCourseSummaryResponseSerializer,
     StudentGroupListResponseSerializer,
+    StudentTodayCoinResponseSerializer,
 )
 from apps.pupil.serializers.student import (
     StudentNoteCreateSerializer,
@@ -103,6 +105,48 @@ class StudentGroupListAPIView(generics.GenericAPIView):
                 }
                 for group in groups
             ]
+        }
+
+        serializer = self.get_serializer(payload)
+        return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Student"],
+    summary="List today's coins for the logged-in student",
+    description="Returns all GroupScore entries created today for the current student, including their ids and related group details.",
+)
+class StudentTodayCoinAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StudentTodayCoinResponseSerializer
+
+    def get(self, request, *args, **kwargs):
+        student = _get_student_or_403(request.user)
+        today = timezone.localdate()
+        today_coins = list(
+            GroupScore.objects.filter(student=student, created_at__date=today)
+            .select_related("group__course")
+            .order_by("-created_at", "-id")
+        )
+
+        payload = {
+            "date": today,
+            "total_coin": sum(item.score for item in today_coins),
+            "coins": [
+                {
+                    "id": item.id,
+                    "group_id": item.group_id,
+                    "group_title": item.group.title if item.group_id else None,
+                    "course_id": item.group.course_id if item.group_id else None,
+                    "course_name": (
+                        item.group.course.name if item.group_id and item.group.course_id else None
+                    ),
+                    "score": item.score,
+                    "reason": item.reason,
+                    "created_at": item.created_at,
+                }
+                for item in today_coins
+            ],
         }
 
         serializer = self.get_serializer(payload)
