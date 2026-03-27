@@ -39,16 +39,19 @@ class StudentDashboardTests(APITestCase):
         self.course_math = CourseTemplate.objects.create(
             name="Math",
             center=self.organization,
+            duration_months=3,
         )
         self.course_science = CourseTemplate.objects.create(
             name="Science",
             center=self.organization,
+            duration_months=6,
         )
         self.branch.courses.add(self.course_math, self.course_science)
 
         self.teacher_user = User.objects.create_user(
             phone_number="+998900100002",
             password="teacherpass123",
+            full_name="Teacher User",
             role=ROLE.TEACHER,
         )
         self.teacher = Teacher.objects.create(user=self.teacher_user, branch=self.branch)
@@ -184,3 +187,44 @@ class StudentDashboardTests(APITestCase):
             attendance_days[(self.today - timedelta(days=1)).day]["id"],
             self.previous_day_math_attendance.id,
         )
+
+    def test_student_can_list_own_groups(self):
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.get(reverse("student-my-groups"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        groups = response.data["groups"]
+        self.assertEqual(len(groups), 2)
+        self.assertSetEqual(
+            {item["id"] for item in groups},
+            {self.math_group.id, self.science_group.id},
+        )
+
+        math_row = next(item for item in groups if item["id"] == self.math_group.id)
+        self.assertEqual(math_row["title"], self.math_group.title)
+        self.assertEqual(math_row["course_id"], self.course_math.id)
+        self.assertEqual(math_row["course_name"], self.course_math.name)
+        self.assertEqual(math_row["duration_months"], self.course_math.duration_months)
+        self.assertEqual(math_row["branch_id"], self.branch.id)
+        self.assertEqual(math_row["branch_name"], self.branch.name)
+        self.assertEqual(math_row["teacher_id"], self.teacher.id)
+        self.assertEqual(math_row["teacher_name"], self.teacher_user.full_name)
+        self.assertEqual(math_row["room"], None)
+        self.assertEqual(math_row["lessons_days"], [])
+        self.assertEqual(math_row["lessons_days_choice"], GROUP_DAYS_CHOICES.EVERAY_DAY)
+        self.assertEqual(math_row["total_student"], 1)
+
+        science_row = next(item for item in groups if item["id"] == self.science_group.id)
+        self.assertEqual(science_row["course_id"], self.course_science.id)
+        self.assertEqual(science_row["course_name"], self.course_science.name)
+        self.assertEqual(science_row["duration_months"], self.course_science.duration_months)
+        self.assertEqual(science_row["teacher_id"], self.teacher.id)
+        self.assertEqual(science_row["total_student"], 1)
+
+    def test_teacher_cannot_list_student_groups_endpoint(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("student-my-groups"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

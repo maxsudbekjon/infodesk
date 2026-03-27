@@ -17,11 +17,18 @@ from apps.group.models.group import Group
 from apps.group.models.score import GroupScore
 from apps.group.permissions import user_can_access_group_as_student
 from apps.group.serializers.monthly_attendance import GroupMonthlyAttendanceResponseSerializer
-from apps.group.utils import build_student_image_url, parse_month_year_query_params
+from apps.group.utils import (
+    build_student_image_url,
+    count_group_students,
+    parse_month_year_query_params,
+)
 from apps.group.utils import get_student_groups_queryset
 from apps.pupil.models.student import Student
 from apps.pupil.models.note import StudentNote
-from apps.pupil.serializers.dashboard import StudentCourseSummaryResponseSerializer
+from apps.pupil.serializers.dashboard import (
+    StudentCourseSummaryResponseSerializer,
+    StudentGroupListResponseSerializer,
+)
 from apps.pupil.serializers.student import (
     StudentNoteCreateSerializer,
     StudentReturnToLeadSerializer,
@@ -44,6 +51,62 @@ class StudentReturnToLeadAPIView(generics.CreateAPIView):
 class StudentNoteCreateAPIView(generics.CreateAPIView):
     queryset = StudentNote.objects.all()
     serializer_class = StudentNoteCreateSerializer
+
+
+@extend_schema(
+    tags=["Student"],
+    summary="List groups for the logged-in student",
+    description="Returns all groups where the current student is enrolled through either the direct group field or the many-to-many relation.",
+)
+class StudentGroupListAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StudentGroupListResponseSerializer
+
+    def get(self, request, *args, **kwargs):
+        student = _get_student_or_403(request.user)
+        groups = (
+            get_student_groups_queryset(student)
+            .select_related("course", "branch", "room", "teacher__user", "assistant_teacher__user")
+            .prefetch_related("lessons_days", "students", "student_set")
+            .order_by("-created_at")
+        )
+
+        payload = {
+            "groups": [
+                {
+                    "id": group.id,
+                    "title": group.title,
+                    "course_id": group.course_id,
+                    "course_name": group.course.name if group.course_id else None,
+                    "duration_months": group.course.duration_months if group.course_id else None,
+                    "branch_id": group.branch_id,
+                    "branch_name": group.branch.name if group.branch_id else None,
+                    "teacher_id": group.teacher_id,
+                    "teacher_name": group.teacher.user.full_name if group.teacher_id and group.teacher and group.teacher.user else None,
+                    "assistant_teacher_id": group.assistant_teacher_id,
+                    "assistant_teacher_name": (
+                        group.assistant_teacher.user.full_name
+                        if group.assistant_teacher_id and group.assistant_teacher and group.assistant_teacher.user
+                        else None
+                    ),
+                    "room": group.room.name if group.room_id else None,
+                    "lessons_days": [
+                        day.day for day in sorted(group.lessons_days.all(), key=lambda item: item.id or 0)
+                    ],
+                    "lessons_days_choice": group.lessons_days_choice,
+                    "status": group.status,
+                    "start_lesson": group.start_lesson,
+                    "end_lesson": group.end_lesson,
+                    "total_student": count_group_students(group),
+                    "started_at": group.started_at,
+                    "closed_at": group.closed_at,
+                }
+                for group in groups
+            ]
+        }
+
+        serializer = self.get_serializer(payload)
+        return Response(serializer.data)
 
 
 @extend_schema(

@@ -11,3 +11,30 @@ class StudentCourseSummaryItemSerializer(serializers.Serializer):
 
 class StudentCourseSummaryResponseSerializer(serializers.Serializer):
     courses = StudentCourseSummaryItemSerializer(many=True)
+
+
+class StudentGroupListItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    course_id = serializers.IntegerField()
+    course_name = serializers.CharField(allow_null=True, required=False)
+    duration_months = serializers.IntegerField(allow_null=True, required=False)
+    branch_id = serializers.IntegerField(allow_null=True, required=False)
+    branch_name = serializers.CharField(allow_null=True, required=False)
+    teacher_id = serializers.IntegerField(allow_null=True, required=False)
+    teacher_name = serializers.CharField(allow_null=True, required=False)
+    assistant_teacher_id = serializers.IntegerField(allow_null=True, required=False)
+    assistant_teacher_name = serializers.CharField(allow_null=True, required=False)
+    room = serializers.CharField(allow_null=True, required=False)
+    lessons_days = serializers.ListField(child=serializers.CharField(), required=False)
+    lessons_days_choice = serializers.CharField()
+    status = serializers.CharField()
+    start_lesson = serializers.TimeField()
+    end_lesson = serializers.TimeField()
+    total_student = serializers.IntegerField()
+    started_at = serializers.DateField(allow_null=True, required=False)
+    closed_at = serializers.DateField(allow_null=True, required=False)
+
+
+class StudentGroupListResponseSerializer(serializers.Serializer):
+    groups = StudentGroupListItemSerializer(many=True)
