@@ -1,6 +1,7 @@
 ALLOWED_SCHEMA_PATHS = {
     "/api/token",
     "/api/token/refresh",
+    "/apps/teachers/me",
     "/apps/teachers/my-courses/groups",
     "/apps/group/attendance",
     "/apps/group/attendance/update/{id}",
@@ -8,6 +9,7 @@ ALLOWED_SCHEMA_PATHS = {
     "/apps/group/group-monthly-attendance/{id}",
     "/apps/group/group-scores/create",
     "/apps/group/group-scores/update/{id}",
+    "/apps/pupil/me",
     "/apps/pupil/my-groups",
     "/apps/pupil/my-courses",
     "/apps/pupil/my-today-coins",

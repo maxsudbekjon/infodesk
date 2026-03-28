@@ -256,7 +256,7 @@ class GroupRolePermissionTests(APITestCase):
         response = self.client.patch(
             reverse("group-score-update", kwargs={"id": score.id}),
             {
-                "score": 12,
+                "score": 10,
                 "reason": "Updated reason",
             },
             format="json",
@@ -264,8 +264,28 @@ class GroupRolePermissionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         score.refresh_from_db()
-        self.assertEqual(score.score, 12)
+        self.assertEqual(score.score, 10)
         self.assertEqual(score.reason, "Updated reason")
+
+    def test_teacher_cannot_create_score_above_daily_limit(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.post(
+            reverse("group-score-create"),
+            {
+                "group": self.group.id,
+                "student": self.student.id,
+                "score": 11,
+                "reason": "Overflow",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["score"][0],
+            "Bir studentga bir kunda 20 tadan ko'p coin qo'yib bo'lmaydi.",
+        )
 
     def test_teacher_cannot_update_old_score(self):
         self.client.force_authenticate(user=self.teacher_user)
@@ -301,6 +321,8 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(students[0]["id"], self.student.id)
         self.assertEqual(students[0]["full_name"], self.student.full_name)
         self.assertEqual(students[0]["coin"], 10)
+        self.assertEqual(students[0]["earned_coin"], 10)
+        self.assertEqual(students[0]["used_coin"], 0)
         self.assertEqual(students[0]["today_coin"], 10)
         self.assertIsNotNone(students[0]["image"])
         self.assertIn("student-avatar", students[0]["image"])
@@ -308,10 +330,14 @@ class GroupRolePermissionTests(APITestCase):
 
         self.assertEqual(students[1]["id"], self.other_student.id)
         self.assertEqual(students[1]["coin"], 4)
+        self.assertEqual(students[1]["earned_coin"], 4)
+        self.assertEqual(students[1]["used_coin"], 0)
         self.assertEqual(students[1]["today_coin"], 4)
 
         self.assertEqual(students[2]["id"], self.fk_only_student.id)
         self.assertEqual(students[2]["coin"], 0)
+        self.assertEqual(students[2]["earned_coin"], 0)
+        self.assertEqual(students[2]["used_coin"], 0)
         self.assertEqual(students[2]["today_coin"], 0)
 
     def test_group_ranking_returns_student_cards_with_image(self):
@@ -414,5 +440,7 @@ class GroupRolePermissionTests(APITestCase):
         schema = SchemaGenerator().get_schema(request=None, public=True)
 
         self.assertIn("/api/token/refresh/", schema["paths"])
+        self.assertIn("/apps/teachers/me/", schema["paths"])
+        self.assertIn("/apps/pupil/me/", schema["paths"])
         self.assertIn("/apps/group/attendance/update/{id}", schema["paths"])
         self.assertIn("/apps/group/group-scores/update/{id}", schema["paths"])

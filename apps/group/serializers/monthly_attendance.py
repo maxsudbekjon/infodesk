@@ -12,6 +12,7 @@ class MonthlyAttendanceStudentSerializer(serializers.Serializer):
     full_name = serializers.CharField(allow_null=True, required=False)
     image = serializers.URLField(allow_null=True, required=False)
     coin = serializers.IntegerField()
+    used_coin = serializers.IntegerField()
     attendance_days = MonthlyAttendanceCellSerializer(many=True)
 
 

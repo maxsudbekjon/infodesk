@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 import re
 from django.core.exceptions import ValidationError
+from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from apps.base_models import TimeStampedModel
 from apps.pupil.choices import DISCOUNT_TYPE, STUDENT_PAYMENT, TRANSFER_REASON
 from apps.pupil.choices import STUDENT_STATUS
@@ -37,6 +39,7 @@ class Student(TimeStampedModel):
         choices=STUDENT_PAYMENT.choices,
         default=STUDENT_PAYMENT.NO_DEBT,
     )
+    used_coin = models.PositiveIntegerField(default=0)
     phone_number = models.CharField(max_length=30,validators=[validate_phone_number],null=True,blank=True)
     comment = models.TextField(null=True, blank=True)
     group = models.ForeignKey(
@@ -85,6 +88,14 @@ class Student(TimeStampedModel):
         if not grades:
             return None
         return sum(grades) / len(grades)
+
+    @property
+    def earned_coin(self):
+        return self.scores.aggregate(total=Coalesce(Sum("score"), 0))["total"] or 0
+
+    @property
+    def available_coin(self):
+        return max(self.earned_coin - (self.used_coin or 0), 0)
 
     def __str__(self) -> str:
         if self.full_name:

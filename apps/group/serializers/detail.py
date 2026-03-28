@@ -39,6 +39,8 @@ class GroupStudentCardSerializer(serializers.Serializer):
     full_name = serializers.CharField(allow_null=True, required=False)
     image = serializers.URLField(allow_null=True, required=False)
     coin = serializers.IntegerField()
+    earned_coin = serializers.IntegerField()
+    used_coin = serializers.IntegerField()
     today_coin = serializers.IntegerField()
 
 
@@ -75,7 +77,9 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
                 "id": student.id,
                 "full_name": student.full_name,
                 "image": build_student_image_url(student, request=self.context.get("request")),
-                "coin": score_map.get(student.id, 0),
+                "coin": max(score_map.get(student.id, 0) - (student.used_coin or 0), 0),
+                "earned_coin": score_map.get(student.id, 0),
+                "used_coin": student.used_coin or 0,
                 "today_coin": today_score_map.get(student.id, 0),
             }
             for student in ordered_students

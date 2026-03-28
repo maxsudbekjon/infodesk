@@ -10,6 +10,7 @@ SAFE_STUDENT_ONLY_FIELDS = (
     "full_name",
     "image",
     "phone_number",
+    "used_coin",
     "group_id",
     "center_id",
     "status",

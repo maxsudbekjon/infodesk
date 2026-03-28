@@ -104,6 +104,8 @@ class StudentMeAPIView(generics.GenericAPIView):
         coin_row = GroupScore.objects.filter(student_id=student.id).aggregate(
             total_coin=Coalesce(Sum("score"), 0)
         )
+        earned_coin = coin_row["total_coin"]
+        available_coin = max(earned_coin - (student.used_coin or 0), 0)
 
         average_grade_percent = None
         if grade_row["avg_grade"] is not None:
@@ -121,7 +123,9 @@ class StudentMeAPIView(generics.GenericAPIView):
                 overall_attendance["present_count"],
                 overall_attendance["total_count"],
             ),
-            "total_coin": coin_row["total_coin"],
+            "total_coin": available_coin,
+            "earned_coin": earned_coin,
+            "used_coin": student.used_coin or 0,
             "course_count": len(active_groups),
             "active_courses": [
                 {
@@ -317,6 +321,7 @@ class StudentMonthlyAttendanceAPIView(generics.GenericAPIView):
                     "full_name": student.full_name,
                     "image": build_student_image_url(student, request=request),
                     "coin": coin_row["total_coin"],
+                    "used_coin": student.used_coin or 0,
                     "attendance_days": [
                         {
                             "id": attendance_map.get(student.id, {}).get(day, {}).get("id"),

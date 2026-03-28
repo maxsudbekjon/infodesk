@@ -283,6 +283,8 @@ class StudentDashboardTests(APITestCase):
         self.assertEqual(response.data["average_grade_percent"], 90)
         self.assertEqual(response.data["attendance_percent"], 40)
         self.assertEqual(response.data["total_coin"], 15)
+        self.assertEqual(response.data["earned_coin"], 15)
+        self.assertEqual(response.data["used_coin"], 0)
         self.assertEqual(response.data["course_count"], 2)
         self.assertEqual(len(response.data["active_courses"]), 2)
 

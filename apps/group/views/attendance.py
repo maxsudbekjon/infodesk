@@ -186,6 +186,7 @@ class GroupMonthlyAttendanceAPIView(generics.ListAPIView):
                     "full_name": item.full_name,
                     "image": build_student_image_url(item, request=request),
                     "coin": coin_map.get(item.id, 0),
+                    "used_coin": item.used_coin or 0,
                     "attendance_days": [
                         {
                             "id": attendance_map.get(item.id, {}).get(day, {}).get("id"),

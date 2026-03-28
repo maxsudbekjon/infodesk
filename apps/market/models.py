@@ -33,6 +33,12 @@ class Product(TimeStampedModel):
         return self.title
 
 
+class MARKET_ORDER_STATUS(models.TextChoices):
+    PENDING = "pending", "Pending"
+    COMPLETED = "completed", "Completed"
+    CANCELLED = "cancelled", "Cancelled"
+
+
 class MarketOrder(TimeStampedModel):
     student = models.ForeignKey(
         "pupil.Student",
@@ -45,6 +51,11 @@ class MarketOrder(TimeStampedModel):
         related_name="orders",
     )
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(
+        max_length=20,
+        choices=MARKET_ORDER_STATUS.choices,
+        default=MARKET_ORDER_STATUS.PENDING,
+    )
     secret_code = models.CharField(max_length=6, unique=True, editable=False)
 
     class Meta:
