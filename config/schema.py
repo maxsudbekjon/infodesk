@@ -1,6 +1,7 @@
 ALLOWED_SCHEMA_PATHS = {
     "/api/token",
     "/api/token/refresh",
+    "/apps/user/change-password",
     "/apps/teachers/me",
     "/apps/teachers/my-courses/groups",
     "/apps/group/attendance",
