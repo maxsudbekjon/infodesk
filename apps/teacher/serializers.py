@@ -200,7 +200,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
         user = getattr(obj, "user", None)
         if not user:
             return None
-        return user.full_name or user.phone_number
+        return user.full_name
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_groups(self, obj):
