@@ -23,7 +23,7 @@ urlpatterns = [
     path('my-courses/', TeacherCourseListAPIView.as_view()),
     path('my-courses/groups/', TeacherCourseGroupsAPIView.as_view()),
     path('my-courses/<int:course_id>/groups/', TeacherCourseGroupsAPIView.as_view()),
-    path('me/', TeacherMeAPIView.as_view()),
+    path('me/', TeacherMeAPIView.as_view(), name='teacher-me'),
 
     path('delete/<int:pk>/', TeacherDeleteAPIView.as_view()),
     path('update/<int:pk>/', TeacherUpdateAPIView.as_view()),

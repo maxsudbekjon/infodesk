@@ -2,7 +2,7 @@ import calendar
 from collections import defaultdict
 
 from django.core.exceptions import PermissionDenied
-from django.db.models import Sum
+from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -14,8 +14,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.group.models.attendance import Attendance
+from apps.group.models.grade import Grade
 from apps.group.models.group import Group
 from apps.group.models.score import GroupScore
+from apps.group.choices import GROUP_STATUS
 from apps.group.permissions import user_can_access_group_as_student
 from apps.group.serializers.monthly_attendance import GroupMonthlyAttendanceResponseSerializer
 from apps.group.utils import (
@@ -29,6 +31,7 @@ from apps.pupil.models.note import StudentNote
 from apps.pupil.serializers.dashboard import (
     StudentCourseSummaryResponseSerializer,
     StudentGroupListResponseSerializer,
+    StudentProfileResponseSerializer,
     StudentTodayCoinResponseSerializer,
 )
 from apps.pupil.serializers.student import (
@@ -45,6 +48,12 @@ def _get_student_or_403(user):
     return student
 
 
+def _percent_or_none(part, whole):
+    if not whole:
+        return None
+    return round((part / whole) * 100)
+
+
 class StudentReturnToLeadAPIView(generics.CreateAPIView):
     queryset = Student.objects.all()
     serializer_class = StudentReturnToLeadSerializer
@@ -53,6 +62,90 @@ class StudentReturnToLeadAPIView(generics.CreateAPIView):
 class StudentNoteCreateAPIView(generics.CreateAPIView):
     queryset = StudentNote.objects.all()
     serializer_class = StudentNoteCreateSerializer
+
+
+@extend_schema(
+    tags=["Student"],
+    summary="Current student profile",
+    description="Returns the logged-in student's profile details, summary stats, and active course progress.",
+)
+class StudentMeAPIView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StudentProfileResponseSerializer
+    http_method_names = ["get", "head", "options"]
+
+    def get(self, request, *args, **kwargs):
+        student = _get_student_or_403(request.user)
+        active_groups = list(
+            get_student_groups_queryset(student)
+            .filter(status=GROUP_STATUS.ACTIVE)
+            .select_related("course", "teacher__user")
+            .order_by("-created_at", "-id")
+        )
+
+        group_ids = [group.id for group in active_groups]
+        attendance_by_group = {
+            row["group_id"]: {
+                "present_count": row["present_count"],
+                "total_count": row["total_count"],
+            }
+            for row in Attendance.objects.filter(student_id=student.id, group_id__in=group_ids)
+            .values("group_id")
+            .annotate(
+                present_count=Count("id", filter=Q(is_present=True)),
+                total_count=Count("id"),
+            )
+        }
+        overall_attendance = Attendance.objects.filter(student_id=student.id).aggregate(
+            present_count=Count("id", filter=Q(is_present=True)),
+            total_count=Count("id"),
+        )
+        grade_row = Grade.objects.filter(student_id=student.id).aggregate(avg_grade=Avg("grade"))
+        coin_row = GroupScore.objects.filter(student_id=student.id).aggregate(
+            total_coin=Coalesce(Sum("score"), 0)
+        )
+
+        average_grade_percent = None
+        if grade_row["avg_grade"] is not None:
+            average_grade_percent = round((grade_row["avg_grade"] / 5) * 100)
+
+        payload = {
+            "id": student.id,
+            "full_name": student.full_name or request.user.full_name,
+            "image": build_student_image_url(student, request=request),
+            "birth_date": request.user.birthday,
+            "enrollment_date": student.created_at.date() if student.created_at else None,
+            "phone_number": student.phone_number or request.user.phone_number,
+            "average_grade_percent": average_grade_percent,
+            "attendance_percent": _percent_or_none(
+                overall_attendance["present_count"],
+                overall_attendance["total_count"],
+            ),
+            "total_coin": coin_row["total_coin"],
+            "course_count": len(active_groups),
+            "active_courses": [
+                {
+                    "group_id": group.id,
+                    "group_title": group.title,
+                    "course_id": group.course_id,
+                    "course_name": group.course.name if group.course_id else None,
+                    "teacher_id": group.teacher_id,
+                    "teacher_name": (
+                        group.teacher.user.full_name
+                        if group.teacher_id and group.teacher and group.teacher.user
+                        else None
+                    ),
+                    "progress_percent": _percent_or_none(
+                        attendance_by_group.get(group.id, {}).get("present_count", 0),
+                        attendance_by_group.get(group.id, {}).get("total_count", 0),
+                    ) or 0,
+                }
+                for group in active_groups
+            ],
+        }
+
+        serializer = self.get_serializer(payload)
+        return Response(serializer.data)
 
 
 @extend_schema(

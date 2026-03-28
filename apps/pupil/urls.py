@@ -3,6 +3,7 @@ from django.urls import path
 from apps.pupil.views import (
     StudentCourseSummaryAPIView,
     StudentGroupListAPIView,
+    StudentMeAPIView,
     StudentNoteCreateAPIView,
     StudentMonthlyAttendanceAPIView,
     StudentTodayCoinAPIView,
@@ -12,6 +13,7 @@ from apps.pupil.views import (
 
 
 urlpatterns = [
+    path('me/', StudentMeAPIView.as_view(), name='student-me'),
     path('my-groups/', StudentGroupListAPIView.as_view(), name='student-my-groups'),
     path('my-courses/', StudentCourseSummaryAPIView.as_view(), name='student-my-courses'),
     path('my-today-coins/', StudentTodayCoinAPIView.as_view(), name='student-my-today-coins'),

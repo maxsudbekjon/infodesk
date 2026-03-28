@@ -16,6 +16,7 @@ from apps.teacher.permissions import TeacherImagePermission, IsOrganizationOwner
 from apps.teacher.serializers import (
     TeacherArchiveToggleResponseSerializer,
     TeacherDeleteResponseSerializer,
+    TeacherProfileSerializer,
     TeacherSerializer,
     TeacherListSerializer,
     TeacherImageUploadSerializer,
@@ -27,6 +28,7 @@ from apps.group.models import Group
 from apps.group.serializers.group import CourseTemplateModelSerializer
 from apps.group.models.course import CourseTemplate
 from apps.group.permissions import IsTeacherUser
+from apps.pupil.models import Student
 from apps.user.profile_resolver import get_teacher_profile
 
 
@@ -269,21 +271,29 @@ class TeacherCourseGroupsAPIView(generics.ListAPIView):
     description="Returns detailed profile of the logged-in teacher.",
 )
 class TeacherMeAPIView(generics.RetrieveAPIView):
-    serializer_class = TeacherSerializer
+    serializer_class = TeacherProfileSerializer
     permission_classes = [IsAuthenticated, IsTeacherUser]
 
     def get_object(self):
-        return get_object_or_404(
+        teacher = get_object_or_404(
             Teacher.objects.select_related(
                 'user',
                 'branch',
+                'branch__organization',
             ).prefetch_related(
                 'specialty',
-                'main_groups__course',
-                'main_groups__lessons_days',
-                'main_groups__students',
-                'main_groups__student_set',
-                'main_groups__room',
             ),
             user=self.request.user,
         )
+
+        groups_qs = get_teacher_groups_queryset(teacher)
+        teacher.groups_count = groups_qs.count()
+        teacher.courses_count = groups_qs.values("course_id").distinct().count()
+        teacher.students_count = (
+            Student.objects.filter(
+                Q(group__in=groups_qs) | Q(groups__in=groups_qs)
+            )
+            .distinct()
+            .count()
+        )
+        return teacher

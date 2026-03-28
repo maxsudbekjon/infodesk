@@ -143,6 +143,57 @@ class TeacherSerializer(serializers.ModelSerializer):
         return teacher
 
 
+class TeacherProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="user.full_name", read_only=True, allow_null=True)
+    phone_number = serializers.CharField(source="user.phone_number", read_only=True, allow_null=True)
+    birth_date = serializers.DateField(source="user.birthday", read_only=True, allow_null=True)
+    image = serializers.SerializerMethodField()
+    specialties = SpecialtySerializer(source="specialty", many=True, read_only=True)
+    branch_name = serializers.CharField(source="branch.name", read_only=True, allow_null=True)
+    organization_id = serializers.IntegerField(source="branch.organization_id", read_only=True, allow_null=True)
+    organization_name = serializers.CharField(source="branch.organization.name", read_only=True, allow_null=True)
+    groups_count = serializers.IntegerField(read_only=True)
+    students_count = serializers.IntegerField(read_only=True)
+    courses_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Teacher
+        fields = (
+            "id",
+            "full_name",
+            "phone_number",
+            "birth_date",
+            "image",
+            "specialties",
+            "branch",
+            "branch_name",
+            "organization_id",
+            "organization_name",
+            "monthly_salary",
+            "kpi",
+            "monthly_per_lesson",
+            "monthly_per_student",
+            "contract_date",
+            "percentage_share",
+            "lesson_fee",
+            "per_student_fee",
+            "is_archived",
+            "groups_count",
+            "students_count",
+            "courses_count",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        return None
+
+
 class TeacherListSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='user.full_name', read_only=True)
     phone = serializers.CharField(source='user.phone_number', read_only=True)

@@ -55,3 +55,27 @@ class StudentTodayCoinResponseSerializer(serializers.Serializer):
     date = serializers.DateField()
     total_coin = serializers.IntegerField()
     coins = StudentTodayCoinItemSerializer(many=True)
+
+
+class StudentProfileActiveCourseItemSerializer(serializers.Serializer):
+    group_id = serializers.IntegerField()
+    group_title = serializers.CharField()
+    course_id = serializers.IntegerField()
+    course_name = serializers.CharField(allow_null=True, required=False)
+    teacher_id = serializers.IntegerField(allow_null=True, required=False)
+    teacher_name = serializers.CharField(allow_null=True, required=False)
+    progress_percent = serializers.IntegerField()
+
+
+class StudentProfileResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    full_name = serializers.CharField(allow_null=True, required=False)
+    image = serializers.URLField(allow_null=True, required=False)
+    birth_date = serializers.DateField(allow_null=True, required=False)
+    enrollment_date = serializers.DateField(allow_null=True, required=False)
+    phone_number = serializers.CharField(allow_null=True, required=False)
+    average_grade_percent = serializers.IntegerField(allow_null=True, required=False)
+    attendance_percent = serializers.IntegerField(allow_null=True, required=False)
+    total_coin = serializers.IntegerField()
+    course_count = serializers.IntegerField()
+    active_courses = StudentProfileActiveCourseItemSerializer(many=True)

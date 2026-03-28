@@ -1,5 +1,6 @@
-from datetime import time, timedelta
+from datetime import date, time, timedelta
 
+from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -9,7 +10,7 @@ from apps.group.models import CourseTemplate, Day, Group
 from apps.group.models.room import Room
 from apps.pupil.models import Student
 from apps.settings.models import Branch, Organization
-from apps.teacher.models import Teacher
+from apps.teacher.models import Specialty, Teacher
 from apps.user.choices import ROLE
 from apps.user.models import User
 
@@ -88,7 +89,19 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         self.teacher = Teacher.objects.create(
             user=self.teacher_user,
             branch=self.branch,
+            contract_date=date(2024, 1, 15),
+            monthly_salary=5000000,
+            kpi=90,
+            monthly_per_lesson=200000,
+            monthly_per_student=150000,
+            percentage_share="12.50",
+            lesson_fee=300000,
+            per_student_fee=100000,
         )
+        self.specialty = Specialty.objects.create(title="English")
+        self.teacher.specialty.add(self.specialty)
+        self.teacher_user.birthday = date(1998, 5, 20)
+        self.teacher_user.save(update_fields=["birthday"])
 
         self.other_teacher_user = User.objects.create_user(
             phone_number="+998900000003",
@@ -187,3 +200,41 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         self.assertEqual(results[0]["id"], self.teacher_group_1.id)
         self.assertEqual(results[0]["duration_months"], 3)
         self.assertEqual(results[0]["total_student"], 2)
+
+    def test_logged_in_teacher_can_fetch_profile(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("teacher-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.teacher.id)
+        self.assertEqual(response.data["full_name"], self.teacher_user.full_name)
+        self.assertEqual(response.data["phone_number"], self.teacher_user.phone_number)
+        self.assertEqual(str(response.data["birth_date"]), "1998-05-20")
+        self.assertEqual(response.data["image"], None)
+        self.assertEqual(response.data["branch"], self.branch.id)
+        self.assertEqual(response.data["branch_name"], self.branch.name)
+        self.assertEqual(response.data["organization_id"], self.organization.id)
+        self.assertEqual(response.data["organization_name"], self.organization.name)
+        self.assertEqual(response.data["groups_count"], 2)
+        self.assertEqual(response.data["students_count"], 3)
+        self.assertEqual(response.data["courses_count"], 2)
+        self.assertEqual(str(response.data["contract_date"]), "2024-01-15")
+        self.assertEqual(response.data["monthly_salary"], "5000000.00")
+        self.assertEqual(response.data["kpi"], 90)
+        self.assertEqual(response.data["monthly_per_lesson"], "200000.00")
+        self.assertEqual(response.data["monthly_per_student"], "150000.00")
+        self.assertEqual(response.data["percentage_share"], "12.50")
+        self.assertEqual(response.data["lesson_fee"], "300000.00")
+        self.assertEqual(response.data["per_student_fee"], "100000.00")
+        self.assertEqual(len(response.data["specialties"]), 1)
+        self.assertEqual(response.data["specialties"][0]["title"], self.specialty.title)
+        self.assertNotIn("user", response.data)
+        self.assertNotIn("groups", response.data)
+
+    def test_owner_cannot_fetch_teacher_profile_endpoint(self):
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.get(reverse("teacher-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

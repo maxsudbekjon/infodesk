@@ -1,4 +1,4 @@
-from datetime import timedelta, time
+from datetime import date, timedelta, time
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
@@ -7,6 +7,7 @@ from rest_framework.test import APITestCase
 from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.group.models.attendance import Attendance
 from apps.group.models.course import CourseTemplate
+from apps.group.models.grade import Grade
 from apps.group.models.group import Group
 from apps.group.models.score import GroupScore
 from apps.pupil.models import Student
@@ -141,6 +142,18 @@ class StudentDashboardTests(APITestCase):
             score=3,
             reason="Science bonus",
         )
+        Grade.objects.create(
+            group=self.math_group,
+            student=self.student,
+            date=self.today,
+            grade=5,
+        )
+        Grade.objects.create(
+            group=self.science_group,
+            student=self.student,
+            date=self.today - timedelta(days=1),
+            grade=4,
+        )
 
     def test_student_course_summary(self):
         self.client.force_authenticate(user=self.student_user)
@@ -253,3 +266,40 @@ class StudentDashboardTests(APITestCase):
         self.assertIn("score", first_coin)
         self.assertIn("reason", first_coin)
         self.assertIn("created_at", first_coin)
+
+    def test_student_can_view_profile(self):
+        self.student_user.birthday = date(2000, 10, 30)
+        self.student_user.save(update_fields=["birthday"])
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.get(reverse("student-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], self.student.id)
+        self.assertEqual(response.data["full_name"], self.student.full_name)
+        self.assertEqual(response.data["phone_number"], self.student.phone_number)
+        self.assertEqual(str(response.data["birth_date"]), "2000-10-30")
+        self.assertEqual(str(response.data["enrollment_date"]), str(self.student.created_at.date()))
+        self.assertEqual(response.data["average_grade_percent"], 90)
+        self.assertEqual(response.data["attendance_percent"], 40)
+        self.assertEqual(response.data["total_coin"], 15)
+        self.assertEqual(response.data["course_count"], 2)
+        self.assertEqual(len(response.data["active_courses"]), 2)
+
+        math_row = next(item for item in response.data["active_courses"] if item["group_id"] == self.math_group.id)
+        self.assertEqual(math_row["course_id"], self.course_math.id)
+        self.assertEqual(math_row["course_name"], self.course_math.name)
+        self.assertEqual(math_row["teacher_id"], self.teacher.id)
+        self.assertEqual(math_row["teacher_name"], self.teacher_user.full_name)
+        self.assertEqual(math_row["progress_percent"], 50)
+
+        science_row = next(item for item in response.data["active_courses"] if item["group_id"] == self.science_group.id)
+        self.assertEqual(science_row["course_id"], self.course_science.id)
+        self.assertEqual(science_row["progress_percent"], 33)
+
+    def test_teacher_cannot_view_student_profile(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("student-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
