@@ -1,6 +1,7 @@
 import calendar
 from datetime import date, time, timedelta
 
+from django.contrib import admin
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
@@ -444,3 +445,7 @@ class GroupRolePermissionTests(APITestCase):
         self.assertIn("/apps/pupil/me/", schema["paths"])
         self.assertIn("/apps/group/attendance/update/{id}", schema["paths"])
         self.assertIn("/apps/group/group-scores/update/{id}", schema["paths"])
+
+    def test_grade_and_group_score_models_are_registered_in_admin(self):
+        self.assertIn(Grade, admin.site._registry)
+        self.assertIn(GroupScore, admin.site._registry)

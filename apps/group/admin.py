@@ -2,7 +2,7 @@ from django.apps import apps as django_apps
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
 
-from apps.group.models import CourseTemplate, Day, Room, Group, Attendance
+from apps.group.models import CourseTemplate, Day, Room, Group, Attendance, Grade, GroupScore
 
 
 @admin.register(CourseTemplate)
@@ -136,3 +136,64 @@ class AttendanceAdmin(admin.ModelAdmin):
     )
 
     ordering = ("-date",)
+
+
+@admin.register(Grade)
+class GradeAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "group",
+        "student",
+        "date",
+        "grade",
+        "note",
+    )
+
+    search_fields = (
+        "student__full_name",
+        "group__title",
+    )
+
+    list_filter = (
+        "date",
+        "group",
+    )
+
+    ordering = ("-date",)
+
+
+@admin.register(GroupScore)
+class GroupScoreAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "group",
+        "student",
+        "score",
+        "reason",
+        "created_at",
+    )
+
+    search_fields = (
+        "student__full_name",
+        "group__title",
+        "reason",
+    )
+
+    list_filter = (
+        "group",
+        "created_at",
+    )
+
+    ordering = ("-created_at",)
+
+
+def _register_all_models():
+    app_config = django_apps.get_app_config("group")
+    for model in app_config.get_models():
+        try:
+            admin.site.register(model)
+        except AlreadyRegistered:
+            pass
+
+
+_register_all_models()
