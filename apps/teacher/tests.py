@@ -229,8 +229,17 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         self.assertEqual(response.data["per_student_fee"], "100000.00")
         self.assertEqual(len(response.data["specialties"]), 1)
         self.assertEqual(response.data["specialties"][0]["title"], self.specialty.title)
+        self.assertEqual(len(response.data["groups"]), 2)
+        first_group = next(item for item in response.data["groups"] if item["id"] == self.teacher_group_1.id)
+        self.assertEqual(first_group["title"], self.teacher_group_1.title)
+        self.assertEqual(first_group["course_id"], self.course_math.id)
+        self.assertEqual(first_group["course_name"], self.course_math.name)
+        self.assertEqual(first_group["duration_months"], self.course_math.duration_months)
+        self.assertEqual(first_group["total_student"], 2)
+        second_group = next(item for item in response.data["groups"] if item["id"] == self.teacher_group_2.id)
+        self.assertEqual(second_group["course_id"], self.course_english.id)
+        self.assertEqual(second_group["course_name"], self.course_english.name)
         self.assertNotIn("user", response.data)
-        self.assertNotIn("groups", response.data)
 
     def test_owner_cannot_fetch_teacher_profile_endpoint(self):
         self.client.force_authenticate(user=self.owner)

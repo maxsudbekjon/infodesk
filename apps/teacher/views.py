@@ -287,6 +287,7 @@ class TeacherMeAPIView(generics.RetrieveAPIView):
         )
 
         groups_qs = get_teacher_groups_queryset(teacher)
+        teacher.profile_groups = list(groups_qs)
         teacher.groups_count = groups_qs.count()
         teacher.courses_count = groups_qs.values("course_id").distinct().count()
         teacher.students_count = (

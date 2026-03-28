@@ -104,6 +104,34 @@ class MarketAPITests(APITestCase):
         self.assertEqual(product["count"], self.product.count)
         self.assertTrue(product["image"])
 
+    def test_product_list_can_filter_affordable_products(self):
+        cheap_product = Product.objects.create(
+            image=SimpleUploadedFile("cheap.jpg", b"cheap-image-bytes", content_type="image/jpeg"),
+            title="Pen",
+            price="10.00",
+            description="Cheap item",
+            count=5,
+        )
+        Product.objects.create(
+            image=SimpleUploadedFile("expensive-filter.jpg", b"expensive-filter-bytes", content_type="image/jpeg"),
+            title="Headphones",
+            price="50.00",
+            description="Expensive item",
+            count=2,
+        )
+        self.student.used_coin = 30
+        self.student.save(update_fields=["used_coin"])
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.get(
+            reverse("market-product-list"),
+            {"affordable": "true"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], cheap_product.id)
+
     def test_create_order_generates_secret_code(self):
         self.client.force_authenticate(user=self.student_user)
 

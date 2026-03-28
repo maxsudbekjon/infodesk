@@ -144,7 +144,8 @@ class TeacherSerializer(serializers.ModelSerializer):
 
 
 class TeacherProfileSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source="user.full_name", read_only=True, allow_null=True)
+    groups = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
     phone_number = serializers.CharField(source="user.phone_number", read_only=True, allow_null=True)
     birth_date = serializers.DateField(source="user.birthday", read_only=True, allow_null=True)
     image = serializers.SerializerMethodField()
@@ -178,6 +179,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
             "lesson_fee",
             "per_student_fee",
             "is_archived",
+            "groups",
             "groups_count",
             "students_count",
             "courses_count",
@@ -192,6 +194,40 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
         if obj.image:
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_full_name(self, obj):
+        user = getattr(obj, "user", None)
+        if not user:
+            return None
+        return user.full_name or user.phone_number
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_groups(self, obj):
+        groups = getattr(obj, "profile_groups", [])
+        payload = []
+
+        for group in groups:
+            payload.append(
+                {
+                    "id": group.id,
+                    "title": group.title,
+                    "course_id": group.course_id,
+                    "course_name": group.course.name if group.course_id else None,
+                    "duration_months": group.course.duration_months if group.course_id else None,
+                    "room": group.room.name if group.room_id else None,
+                    "lessons_days": [day.day for day in sorted(group.lessons_days.all(), key=lambda item: item.id or 0)],
+                    "lessons_days_choice": group.lessons_days_choice,
+                    "status": group.status,
+                    "start_lesson": group.start_lesson,
+                    "end_lesson": group.end_lesson,
+                    "total_student": count_group_students(group),
+                    "started_at": group.started_at,
+                    "closed_at": group.closed_at,
+                }
+            )
+
+        return payload
 
 
 class TeacherListSerializer(serializers.ModelSerializer):
