@@ -22,6 +22,14 @@ from apps.teacher.models import Teacher
 from apps.user.models import User
 
 
+def extract_teacher_full_name(row: dict) -> str | None:
+    for key in ("ism familiya", "ism familya", "full_name", "teacher_name", "name"):
+        full_name = clean_text(row.get(key))
+        if full_name:
+            return full_name
+    return None
+
+
 def import_teachers(excel_path: str) -> None:
     teacher_rows = load_sheet_rows(excel_path, "Teacher")
     branch_rows = row_map(load_sheet_rows(excel_path, "branch"))
@@ -54,7 +62,7 @@ def import_teachers(excel_path: str) -> None:
                 )
 
             phone_number = normalize_phone_number(row.get("phone_number"))
-            full_name = clean_text(row.get("ism familiya"))
+            full_name = extract_teacher_full_name(row)
             if not phone_number:
                 raise ValueError(f"Teacher sheet {row['__row__']}-qatorda phone_number yo'q.")
 
