@@ -166,7 +166,7 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
 
     for index, header in enumerate(headers or []):
         text = normalize_spaces(str(header or "")).lower()
-        if "famili" in text:
+        if "famili" in text or "family" in text or text.startswith("fam"):
             indexes["last_name"] = index
         elif text in {"ism", "ismi"} or text.endswith(" ism"):
             indexes["first_name"] = index
@@ -197,6 +197,35 @@ def row_value(values: list[object], index: int | None):
     return values[index]
 
 
+def time_distance_minutes(left: time, right: time) -> int:
+    left_minutes = left.hour * 60 + left.minute
+    right_minutes = right.hour * 60 + right.minute
+    return abs(left_minutes - right_minutes)
+
+
+def nearest_group_for_teacher(teacher: Teacher, days_choice: str, start_lesson: time) -> Group | None:
+    candidates = list(
+        Group.objects.select_related("course", "teacher__user", "branch")
+        .filter(teacher=teacher, lessons_days_choice=days_choice)
+        .order_by("start_lesson", "id")
+    )
+    if not candidates:
+        return None
+
+    ranked = sorted(
+        candidates,
+        key=lambda group: (
+            time_distance_minutes(group.start_lesson, start_lesson),
+            group.start_lesson > start_lesson,
+            group.id,
+        ),
+    )
+    nearest = ranked[0]
+    if time_distance_minutes(nearest.start_lesson, start_lesson) <= 60:
+        return nearest
+    return None
+
+
 def group_candidates_for_teacher(teacher: Teacher, days_choice: str, start_lesson: time) -> list[Group]:
     return list(
         Group.objects.select_related("course", "teacher__user", "branch")
@@ -220,6 +249,15 @@ def select_group(teacher: Teacher, sheet_name: str, header_text: str, days_choic
         raise ValueError(
             f"Bir nechta group topildi: teacher_id={teacher.id}, days={days_choice}, start={start_lesson}"
         )
+
+    nearest_teacher_group = nearest_group_for_teacher(teacher, days_choice, start_lesson)
+    if nearest_teacher_group:
+        print(
+            f"[WARN] Exact group topilmadi, eng yaqin teacher group tanlandi: "
+            f"sheet={sheet_name!r}, teacher_id={teacher.id}, requested={start_lesson}, "
+            f"matched={nearest_teacher_group.start_lesson}, group={nearest_teacher_group.title}"
+        )
+        return nearest_teacher_group
 
     fallback_candidates = list(
         Group.objects.select_related("course", "teacher__user", "branch")
@@ -491,7 +529,14 @@ def import_students(excel_path: str) -> None:
                     continue
                 coin = normalize_coin(row_value(values, column_indexes["coin"]))
 
-                group = select_group(teacher, sheet["sheet_name"], sheet["title"], days_choice, start_lesson)
+                try:
+                    group = select_group(teacher, sheet["sheet_name"], sheet["title"], days_choice, start_lesson)
+                except ValueError as exc:
+                    print(
+                        f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                        f"{exc}"
+                    )
+                    continue
                 user = upsert_student_user(full_name, primary_phone, secondary_phone, birthday)
                 student, created = get_or_create_student(full_name, primary_phone, group, contract, user, coin)
 
