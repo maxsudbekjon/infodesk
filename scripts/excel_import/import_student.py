@@ -371,19 +371,35 @@ def make_aware_midday(value: date | None):
     return timezone.make_aware(naive)
 
 
+def resolve_secondary_phone(user: User | None, primary_phone: str | None, secondary_phone: str | None) -> str | None:
+    if not secondary_phone or secondary_phone == primary_phone:
+        return None
+
+    phone_busy = User.objects.filter(phone_number=secondary_phone)
+    phone2_busy = User.objects.filter(phone_number2=secondary_phone)
+    if user:
+        phone_busy = phone_busy.exclude(pk=user.pk)
+        phone2_busy = phone2_busy.exclude(pk=user.pk)
+
+    if phone_busy.exists() or phone2_busy.exists():
+        return None
+    return secondary_phone
+
+
 def upsert_student_user(full_name: str, primary_phone: str | None, secondary_phone: str | None, birthday: date | None):
     if not primary_phone:
         return None
 
     user = User.objects.filter(phone_number=primary_phone).first()
     if not user:
+        safe_secondary_phone = resolve_secondary_phone(None, primary_phone, secondary_phone)
         user = User.objects.create_user(
             phone_number=primary_phone,
             password=default_password(primary_phone),
             full_name=full_name,
             role="student",
             birthday=birthday,
-            phone_number2=secondary_phone,
+            phone_number2=safe_secondary_phone,
         )
         return user
 
@@ -397,12 +413,10 @@ def upsert_student_user(full_name: str, primary_phone: str | None, secondary_pho
     if birthday and user.birthday != birthday:
         user.birthday = birthday
         update_fields.append("birthday")
-    if secondary_phone and secondary_phone != user.phone_number:
-        secondary_busy = User.objects.filter(phone_number=secondary_phone).exclude(pk=user.pk).exists()
-        other_user = User.objects.filter(phone_number2=secondary_phone).exclude(pk=user.pk).first()
-        if not secondary_busy and not other_user and user.phone_number2 != secondary_phone:
-            user.phone_number2 = secondary_phone
-            update_fields.append("phone_number2")
+    safe_secondary_phone = resolve_secondary_phone(user, user.phone_number, secondary_phone)
+    if safe_secondary_phone and user.phone_number2 != safe_secondary_phone:
+        user.phone_number2 = safe_secondary_phone
+        update_fields.append("phone_number2")
 
     if update_fields:
         user.save(update_fields=update_fields)
@@ -484,80 +498,99 @@ def import_students(excel_path: str) -> None:
     sheets = load_student_sheets(excel_path)
     created_count = 0
     updated_count = 0
+    skipped_count = 0
 
-    with transaction.atomic():
-        for sheet in sheets:
+    for sheet in sheets:
+        try:
             teacher = find_teacher(sheet["sheet_name"], sheet["title"], sheet["index"])
             column_indexes = detect_column_indexes(sheet["headers"])
             print(f"[SHEET] {sheet['sheet_name']} -> teacher_id={teacher.id}")
+        except Exception as exc:
+            skipped_count += len(sheet["rows"])
+            print(
+                f"[SKIPPED SHEET] {sheet['sheet_name']} teacher yoki header muammosi sabab o'tkazib yuborildi: {exc}"
+            )
+            continue
 
-            for row in sheet["rows"]:
-                values = list(row["values"])
-                full_name = build_full_name(
-                    row_value(values, column_indexes["last_name"]),
-                    row_value(values, column_indexes["first_name"]),
+        for row in sheet["rows"]:
+            try:
+                with transaction.atomic():
+                    values = list(row["values"])
+                    full_name = build_full_name(
+                        row_value(values, column_indexes["last_name"]),
+                        row_value(values, column_indexes["first_name"]),
+                    )
+                    if not full_name:
+                        skipped_count += 1
+                        print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} full_name bo'sh")
+                        continue
+
+                    phone_indexes = column_indexes["phone_indexes"]
+                    contract_indexes = column_indexes["contract_indexes"]
+
+                    primary_phone, secondary_phone = choose_primary_phone(
+                        *[row_value(values, phone_index) for phone_index in phone_indexes]
+                    )
+                    birthday = normalize_birthday(row_value(values, column_indexes["birthday"]))
+                    contract = any(
+                        normalize_contract(row_value(values, contract_index)) for contract_index in contract_indexes
+                    )
+                    arrival_date = normalize_arrival_date(row_value(values, column_indexes["arrival_date"]))
+                    raw_time = row_value(values, column_indexes["time"])
+                    if clean_text(raw_time) is None:
+                        skipped_count += 1
+                        print(
+                            f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                            f"DARS VAQTI bo'sh"
+                        )
+                        continue
+                    try:
+                        days_choice, start_lesson = parse_day_and_time(raw_time)
+                    except ValueError as exc:
+                        skipped_count += 1
+                        print(
+                            f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                            f"{exc}"
+                        )
+                        continue
+                    coin = normalize_coin(row_value(values, column_indexes["coin"]))
+
+                    try:
+                        group = select_group(teacher, sheet["sheet_name"], sheet["title"], days_choice, start_lesson)
+                    except ValueError as exc:
+                        skipped_count += 1
+                        print(
+                            f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                            f"{exc}"
+                        )
+                        continue
+                    user = upsert_student_user(full_name, primary_phone, secondary_phone, birthday)
+                    student, created = get_or_create_student(full_name, primary_phone, group, contract, user, coin)
+
+                    if arrival_date:
+                        aware_dt = make_aware_midday(arrival_date)
+                        Student.objects.filter(pk=student.pk).update(created_at=aware_dt)
+
+                    if created:
+                        created_count += 1
+                        print(
+                            f"[CREATED] student row={row['__excel_row__']} "
+                            f"name={full_name} group={group.title}"
+                        )
+                    else:
+                        updated_count += 1
+                        print(
+                            f"[UPDATED] student row={row['__excel_row__']} "
+                            f"name={full_name} group={group.title}"
+                        )
+            except Exception as exc:
+                skipped_count += 1
+                print(
+                    f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                    f"kutilmagan xato: {exc}"
                 )
-                if not full_name:
-                    print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} full_name bo'sh")
-                    continue
-
-                phone_indexes = column_indexes["phone_indexes"]
-                contract_indexes = column_indexes["contract_indexes"]
-
-                primary_phone, secondary_phone = choose_primary_phone(
-                    *[row_value(values, phone_index) for phone_index in phone_indexes]
-                )
-                birthday = normalize_birthday(row_value(values, column_indexes["birthday"]))
-                contract = any(
-                    normalize_contract(row_value(values, contract_index)) for contract_index in contract_indexes
-                )
-                arrival_date = normalize_arrival_date(row_value(values, column_indexes["arrival_date"]))
-                raw_time = row_value(values, column_indexes["time"])
-                if clean_text(raw_time) is None:
-                    print(
-                        f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                        f"DARS VAQTI bo'sh"
-                    )
-                    continue
-                try:
-                    days_choice, start_lesson = parse_day_and_time(raw_time)
-                except ValueError as exc:
-                    print(
-                        f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                        f"{exc}"
-                    )
-                    continue
-                coin = normalize_coin(row_value(values, column_indexes["coin"]))
-
-                try:
-                    group = select_group(teacher, sheet["sheet_name"], sheet["title"], days_choice, start_lesson)
-                except ValueError as exc:
-                    print(
-                        f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                        f"{exc}"
-                    )
-                    continue
-                user = upsert_student_user(full_name, primary_phone, secondary_phone, birthday)
-                student, created = get_or_create_student(full_name, primary_phone, group, contract, user, coin)
-
-                if arrival_date:
-                    aware_dt = make_aware_midday(arrival_date)
-                    Student.objects.filter(pk=student.pk).update(created_at=aware_dt)
-
-                if created:
-                    created_count += 1
-                    print(
-                        f"[CREATED] student row={row['__excel_row__']} "
-                        f"name={full_name} group={group.title}"
-                    )
-                else:
-                    updated_count += 1
-                    print(
-                        f"[UPDATED] student row={row['__excel_row__']} "
-                        f"name={full_name} group={group.title}"
-                    )
-
-    print(f"Student import yakunlandi. created={created_count}, updated={updated_count}")
+                continue
+    print(f"Student import yakunlandi. created={created_count}, updated={updated_count}, skipped={skipped_count}")
 
 
 if __name__ == "__main__":
