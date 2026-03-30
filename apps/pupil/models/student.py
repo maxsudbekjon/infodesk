@@ -34,6 +34,7 @@ class Student(TimeStampedModel):
     )
     next_payment_date = models.DateField(null=True, blank=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    contract = models.BooleanField(default=False)
     payment_status = models.CharField(
         max_length=30,
         choices=STUDENT_PAYMENT.choices,
