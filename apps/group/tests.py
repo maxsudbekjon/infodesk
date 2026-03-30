@@ -154,6 +154,27 @@ class GroupRolePermissionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_teacher_can_create_attendance_without_is_present_and_it_defaults_to_none(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.post(
+            reverse("attendance-create"),
+            {
+                "group": self.group.id,
+                "student": self.student.id,
+                "date": "2026-03-22",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        attendance = Attendance.objects.get(
+            group=self.group,
+            student=self.student,
+            date="2026-03-22",
+        )
+        self.assertIsNone(attendance.is_present)
+
     def test_teacher_can_update_today_attendance(self):
         self.client.force_authenticate(user=self.teacher_user)
         attendance = Attendance.objects.create(

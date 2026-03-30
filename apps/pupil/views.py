@@ -382,9 +382,9 @@ class StudentCourseSummaryAPIView(generics.GenericAPIView):
                 },
             )
 
-            if attendance.is_present:
+            if attendance.is_present is True:
                 item["present_count"] += 1
-            else:
+            elif attendance.is_present is False:
                 item["absent_count"] += 1
 
         score_rows = GroupScore.objects.filter(student=student).select_related("group__course")

@@ -176,6 +176,22 @@ class StudentDashboardTests(APITestCase):
         self.assertEqual(science_row["absent_count"], 2)
         self.assertEqual(science_row["coin"], 3)
 
+    def test_student_course_summary_skips_unmarked_attendance(self):
+        Attendance.objects.create(
+            group=self.math_group,
+            student=self.student,
+            date=self.today - timedelta(days=5),
+            is_present=None,
+        )
+        self.client.force_authenticate(user=self.student_user)
+
+        response = self.client.get(reverse("student-my-courses"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        math_row = next(item for item in response.data["courses"] if item["course_name"] == "Math")
+        self.assertEqual(math_row["present_count"], 1)
+        self.assertEqual(math_row["absent_count"], 1)
+
     def test_student_monthly_attendance(self):
         self.client.force_authenticate(user=self.student_user)
 

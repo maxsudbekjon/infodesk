@@ -6,6 +6,8 @@ from apps.group.permissions import get_teacher_profile, user_can_access_group_as
 
 
 class AttendanceModelSerializer(serializers.ModelSerializer):
+    is_present = serializers.BooleanField(allow_null=True, required=False)
+
     class Meta:
         model=Attendance
         fields=(
