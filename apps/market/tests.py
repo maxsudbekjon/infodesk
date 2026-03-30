@@ -146,7 +146,7 @@ class MarketAPITests(APITestCase):
         self.assertEqual(response.data["product_title"], self.product.title)
         self.assertEqual(response.data["product_count"], 2)
         self.assertEqual(response.data["price"], "25.00")
-        self.assertEqual(response.data["status"], "pending")
+        self.assertEqual(response.data["status"], "created")
 
         secret_code = response.data["secret_code"]
         self.assertRegex(secret_code, r"^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{6}$")
@@ -179,7 +179,7 @@ class MarketAPITests(APITestCase):
         self.assertEqual(order["product_id"], self.product.id)
         self.assertEqual(order["product_title"], self.product.title)
         self.assertEqual(order["product_count"], self.product.count)
-        self.assertEqual(order["status"], "pending")
+        self.assertEqual(order["status"], "created")
         self.assertTrue(order["secret_code"])
         self.assertRegex(order["secret_code"], r"^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{6}$")
 

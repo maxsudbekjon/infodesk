@@ -34,8 +34,8 @@ class Product(TimeStampedModel):
 
 
 class MARKET_ORDER_STATUS(models.TextChoices):
-    PENDING = "pending", "Pending"
-    COMPLETED = "completed", "Completed"
+    CREATED = "created", "Created"
+    DELIVERED = "delivered", "Delivered"
     CANCELLED = "cancelled", "Cancelled"
 
 
@@ -54,7 +54,7 @@ class MarketOrder(TimeStampedModel):
     status = models.CharField(
         max_length=20,
         choices=MARKET_ORDER_STATUS.choices,
-        default=MARKET_ORDER_STATUS.PENDING,
+        default=MARKET_ORDER_STATUS.CREATED,
     )
     secret_code = models.CharField(max_length=6, unique=True, editable=False)
 

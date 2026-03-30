@@ -61,6 +61,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'full_name', 'email', 'phone_number', 'password')
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["full_name"] = instance.display_name
+        return data
+
 
 class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:
@@ -116,23 +121,25 @@ class TeacherGroupSerializer(serializers.ModelSerializer):
 
 
 class TeacherSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="user.display_name", read_only=True)
     user = SimpleUserSerializer()
     specialties = SpecialtySerializer(source='specialty', many=True, read_only=True)
     groups = TeacherGroupSerializer(source='main_groups', many=True, read_only=True)
     groups_count = serializers.IntegerField(read_only=True)
     students_count = serializers.IntegerField(read_only=True)
+    courses_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Teacher
         fields = (
-            'id', 'user', 'image',
+            'id', 'full_name', 'user', 'image',
             'specialties', 'groups',
             'monthly_salary', 'kpi', 'monthly_per_lesson', 'monthly_per_student',
             'contract_date', 'percentage_share', 'lesson_fee', 'per_student_fee',
             'branch', 'is_archived',
-            'created_at', 'updated_at', 'groups_count', 'students_count'
+            'created_at', 'updated_at', 'groups_count', 'students_count', 'courses_count'
         )
-        read_only_fields = ('created_at', 'updated_at', 'groups_count', 'students_count')
+        read_only_fields = ('created_at', 'updated_at', 'groups_count', 'students_count', 'courses_count')
 
 
     def update(self, instance, validated_data):
@@ -200,7 +207,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
         user = getattr(obj, "user", None)
         if not user:
             return None
-        return user.full_name
+        return user.display_name
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_groups(self, obj):
@@ -231,7 +238,7 @@ class TeacherProfileSerializer(serializers.ModelSerializer):
 
 
 class TeacherListSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='user.full_name', read_only=True)
+    full_name = serializers.CharField(source='user.display_name', read_only=True)
     phone = serializers.CharField(source='user.phone_number', read_only=True)
     image_url = serializers.SerializerMethodField()
 

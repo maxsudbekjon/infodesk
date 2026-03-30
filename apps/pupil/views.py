@@ -113,7 +113,7 @@ class StudentMeAPIView(generics.GenericAPIView):
 
         payload = {
             "id": student.id,
-            "full_name": student.full_name or request.user.full_name,
+            "full_name": student.full_name or request.user.display_name,
             "image": build_student_image_url(student, request=request),
             "birth_date": request.user.birthday,
             "enrollment_date": student.created_at.date() if student.created_at else None,
@@ -135,7 +135,7 @@ class StudentMeAPIView(generics.GenericAPIView):
                     "course_name": group.course.name if group.course_id else None,
                     "teacher_id": group.teacher_id,
                     "teacher_name": (
-                        group.teacher.user.full_name
+                        group.teacher.user.display_name
                         if group.teacher_id and group.teacher and group.teacher.user
                         else None
                     ),
@@ -182,10 +182,14 @@ class StudentGroupListAPIView(generics.GenericAPIView):
                     "branch_id": group.branch_id,
                     "branch_name": group.branch.name if group.branch_id else None,
                     "teacher_id": group.teacher_id,
-                    "teacher_name": group.teacher.user.full_name if group.teacher_id and group.teacher and group.teacher.user else None,
+                    "teacher_name": (
+                        group.teacher.user.display_name
+                        if group.teacher_id and group.teacher and group.teacher.user
+                        else None
+                    ),
                     "assistant_teacher_id": group.assistant_teacher_id,
                     "assistant_teacher_name": (
-                        group.assistant_teacher.user.full_name
+                        group.assistant_teacher.user.display_name
                         if group.assistant_teacher_id and group.assistant_teacher and group.assistant_teacher.user
                         else None
                     ),

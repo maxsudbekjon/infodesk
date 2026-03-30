@@ -7,8 +7,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.user.choices import GENDER, ROLE
-import re
-from django.core.exceptions import ValidationError
 
 
 def validate_phone_number(value):
@@ -59,6 +57,20 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = CustomUserManager()
+
+    def get_full_name(self):
+        if self.full_name and self.full_name.strip():
+            return self.full_name.strip()
+
+        fallback_name = super().get_full_name().strip()
+        if fallback_name:
+            return fallback_name
+
+        return self.phone_number or ""
+
+    @property
+    def display_name(self):
+        return self.get_full_name()
 
     def save(self, *args, **kwargs):
         if self.password and is_password_usable(self.password):

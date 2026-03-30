@@ -31,6 +31,28 @@ class UserLoginAPITests(APITestCase):
         self.assertEqual(response.data["user"]["role"], ROLE.TEACHER)
         self.assertIsNotNone(response.data["user"]["teacher_id"])
 
+    def test_teacher_login_falls_back_to_first_and_last_name(self):
+        user = User.objects.create_user(
+            phone_number="+998901234568",
+            password="secret123",
+            first_name="Teacher",
+            last_name="User",
+            role=ROLE.TEACHER,
+        )
+
+        from apps.teacher.models import Teacher
+
+        Teacher.objects.create(user=user)
+
+        response = self.client.post(
+            reverse("user-login"),
+            {"phone_number": "+998901234568", "password": "secret123"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["user"]["full_name"], "Teacher User")
+
     def test_student_login_auto_links_student_profile_by_phone(self):
         user = User.objects.create_user(
             phone_number="+998909998877",

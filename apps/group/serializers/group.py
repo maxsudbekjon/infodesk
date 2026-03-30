@@ -14,6 +14,11 @@ class UserModelSerializerForGroup(serializers.ModelSerializer):
             'full_name',
         )
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["full_name"] = instance.display_name
+        return data
+
 class CourseTemplateModelSerializer(serializers.ModelSerializer):
     class Meta:
         model=CourseTemplate

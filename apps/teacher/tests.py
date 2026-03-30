@@ -241,6 +241,21 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         self.assertEqual(second_group["course_name"], self.course_english.name)
         self.assertNotIn("user", response.data)
 
+    def test_owner_can_fetch_teacher_detail_with_full_name_fallback(self):
+        self.teacher_user.full_name = ""
+        self.teacher_user.first_name = "Teacher"
+        self.teacher_user.last_name = "User"
+        self.teacher_user.save(update_fields=["full_name", "first_name", "last_name"])
+
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.get(f"/apps/teachers/detail/{self.teacher.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["full_name"], "Teacher User")
+        self.assertEqual(response.data["user"]["full_name"], "Teacher User")
+        self.assertEqual(response.data["courses_count"], 2)
+
     def test_owner_cannot_fetch_teacher_profile_endpoint(self):
         self.client.force_authenticate(user=self.owner)
 

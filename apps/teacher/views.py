@@ -124,6 +124,7 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
         ).filter(branch__organization__owner=self.request.user).annotate(
             groups_count=Count('main_groups', distinct=True),
             students_count=Count('main_groups__students', distinct=True),
+            courses_count=Count('main_groups__course', distinct=True),
         )
 
 

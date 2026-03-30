@@ -34,6 +34,7 @@ class UserLoginSerializer(TokenObtainPairSerializer):
         self.user = user
         student = self._resolve_student_profile(user)
         teacher = get_teacher_profile(user)
+        display_name = user.display_name
 
         if teacher:
             role = ROLE.TEACHER
@@ -46,7 +47,7 @@ class UserLoginSerializer(TokenObtainPairSerializer):
 
         refresh = self.get_token(user)
         refresh["role"] = role
-        refresh["full_name"] = user.full_name or ""
+        refresh["full_name"] = display_name
         refresh["phone_number"] = user.phone_number
 
         profile = {
@@ -61,7 +62,7 @@ class UserLoginSerializer(TokenObtainPairSerializer):
             "access": str(refresh.access_token),
             "user": {
                 "id": user.id,
-                "full_name": user.full_name,
+                "full_name": display_name,
                 "phone_number": user.phone_number,
                 "role": role,
                 **profile,
