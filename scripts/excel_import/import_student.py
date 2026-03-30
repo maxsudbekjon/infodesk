@@ -39,7 +39,7 @@ def load_student_sheets(excel_path: str) -> list[dict]:
         if len(rows) < 2:
             continue
 
-        title = rows[0][0]
+        title = " ".join(clean_text(value) for value in rows[0] if clean_text(value))
         headers = rows[1]
         data_rows = []
         for excel_row_number, row in enumerate(rows[2:], start=3):
@@ -153,11 +153,12 @@ def parse_day_and_time(value: object) -> tuple[str, time]:
 def detect_column_indexes(headers: object) -> dict[str, object]:
     phone_indexes: list[int] = []
     contract_indexes: list[int] = []
+    arrival_indexes: list[int] = []
     indexes: dict[str, object] = {
         "last_name": None,
         "first_name": None,
         "birthday": None,
-        "arrival_date": None,
+        "arrival_indexes": arrival_indexes,
         "time": None,
         "coin": None,
         "phone_indexes": phone_indexes,
@@ -174,8 +175,8 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
             phone_indexes.append(index)
         elif "birth" in text or "brith" in text:
             indexes["birthday"] = index
-        elif "kelgan" in text:
-            indexes["arrival_date"] = index
+        elif "kelgan" in text or "sana" in text:
+            arrival_indexes.append(index)
         elif "vaqt" in text:
             indexes["time"] = index
         elif "coin" in text:
@@ -278,7 +279,7 @@ def select_group(teacher: Teacher, sheet_name: str, header_text: str, days_choic
 
 
 def _interesting_tokens(normalized_text: str) -> list[str]:
-    raw_tokens = re.findall(r"[a-z0-9]+", normalized_text)
+    raw_tokens = re.findall(r"[a-z0-9']+", normalize_spaces(str(normalized_text or "")).lower())
     stopwords = {
         "ingliz",
         "tili",
@@ -296,24 +297,56 @@ def _interesting_tokens(normalized_text: str) -> list[str]:
         "ai",
         "opa",
     }
-    return [token for token in raw_tokens if len(token) >= 3 and token not in stopwords]
+    normalized_stopwords = {normalize_key(token) for token in stopwords}
+    tokens: list[str] = []
+    for token in raw_tokens:
+        normalized = normalize_key(token)
+        if len(normalized) >= 3 and normalized not in normalized_stopwords:
+            tokens.append(normalized)
+    return tokens
 
 
 def normalize_contract(value: object) -> bool:
-    text = (clean_text(value) or "").lower()
-    return text in {"bor", "shartnoma", "bor.", "shartnoma."}
+    text = normalize_key(clean_text(value) or "")
+    return text.startswith("bor") or "shartnoma" in text
 
 
 def normalize_arrival_date(value: object) -> date | None:
-    if value is None:
+    if value is None or normalize_contract(value):
         return None
     if isinstance(value, datetime):
         value = value.date()
-    if not isinstance(value, date):
-        raise ValueError(f"KELGAN SANA formatini tushunib bo'lmadi: {value}")
+    if isinstance(value, date):
+        year = 2026 if 1 <= value.month <= 3 else 2025
+        return value.replace(year=year)
 
-    year = 2026 if 1 <= value.month <= 3 else 2025
-    return value.replace(year=year)
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if isinstance(value, int):
+        return None
+
+    text = clean_text(value)
+    if not text:
+        return None
+    normalized_text = text.replace("/", ".").replace("-", ".")
+    match = re.fullmatch(r"(?P<day>\d{1,2})\.(?P<month>\d{1,2})(?:\.(?P<year>\d{2,4}))?", normalized_text)
+    if not match:
+        return None
+
+    day = int(match.group("day"))
+    month = int(match.group("month"))
+    if not 1 <= day <= 31 or not 1 <= month <= 12:
+        return None
+    year = 2026 if 1 <= month <= 3 else 2025
+    return date(year, month, day)
+
+
+def extract_arrival_date(values: list[object], arrival_indexes: list[int]) -> date | None:
+    for arrival_index in arrival_indexes:
+        normalized = normalize_arrival_date(row_value(values, arrival_index))
+        if normalized:
+            return normalized
+    return None
 
 
 def normalize_birthday(value: object) -> date | None:
@@ -329,13 +362,30 @@ def normalize_birthday(value: object) -> date | None:
         value = int(value)
 
     if isinstance(value, int):
+        if not 1 <= value <= 120:
+            return None
         return date(CURRENT_YEAR_FOR_AGE - value, 1, 1)
 
     text = clean_text(value)
     if not text:
         return None
+    normalized_text = text.replace("/", ".").replace("-", ".")
+    match = re.fullmatch(r"(?P<day>\d{1,2})\.(?P<month>\d{1,2})\.(?P<year>\d{2,4})", normalized_text)
+    if match:
+        day = int(match.group("day"))
+        month = int(match.group("month"))
+        year = int(match.group("year"))
+        if year < 100:
+            year += 2000
+        try:
+            return date(year, month, day)
+        except ValueError:
+            return None
     if text.isdigit():
-        return date(CURRENT_YEAR_FOR_AGE - int(text), 1, 1)
+        age = int(text)
+        if not 1 <= age <= 120:
+            return None
+        return date(CURRENT_YEAR_FOR_AGE - age, 1, 1)
     return None
 
 
@@ -464,15 +514,42 @@ def get_or_create_student(full_name: str, primary_phone: str | None, group: Grou
         if student.group_id is None:
             student.group = group
             update_fields.append("group")
+        elif student.group_id != group.id and student.group and student.group.course_id == group.course_id:
+            student.group = group
+            update_fields.append("group")
         if student.contract != contract:
             student.contract = contract
             update_fields.append("contract")
         if update_fields:
             student.save(update_fields=update_fields)
 
-    student.groups.add(group)
+    _sync_import_group_membership(student, group)
     _sync_import_coin(student, group, coin)
     return student, created
+
+
+def _sync_import_group_membership(student: Student, group: Group) -> None:
+    stale_scores = GroupScore.objects.filter(
+        student=student,
+        reason=IMPORT_SCORE_REASON,
+        group__course=group.course,
+    ).exclude(group=group)
+    stale_group_ids = list(stale_scores.values_list("group_id", flat=True))
+    if stale_group_ids:
+        stale_scores.delete()
+        student.groups.remove(*stale_group_ids)
+
+    same_course_group_ids = list(
+        student.groups.filter(course=group.course).exclude(pk=group.pk).values_list("pk", flat=True)
+    )
+    removable_group_ids = [group_id for group_id in same_course_group_ids if group_id not in stale_group_ids]
+    if removable_group_ids:
+        student.groups.remove(*removable_group_ids)
+
+    student.groups.add(group)
+    if student.group_id is None or (student.group_id != group.id and student.group and student.group.course_id == group.course_id):
+        Student.objects.filter(pk=student.pk).update(group=group)
+        student.group = group
 
 
 def _sync_import_coin(student: Student, group: Group, coin: int) -> None:
@@ -527,6 +604,7 @@ def import_students(excel_path: str) -> None:
 
                     phone_indexes = column_indexes["phone_indexes"]
                     contract_indexes = column_indexes["contract_indexes"]
+                    arrival_indexes = column_indexes["arrival_indexes"]
 
                     primary_phone, secondary_phone = choose_primary_phone(
                         *[row_value(values, phone_index) for phone_index in phone_indexes]
@@ -535,7 +613,9 @@ def import_students(excel_path: str) -> None:
                     contract = any(
                         normalize_contract(row_value(values, contract_index)) for contract_index in contract_indexes
                     )
-                    arrival_date = normalize_arrival_date(row_value(values, column_indexes["arrival_date"]))
+                    if not contract:
+                        contract = any(normalize_contract(row_value(values, arrival_index)) for arrival_index in arrival_indexes)
+                    arrival_date = extract_arrival_date(values, arrival_indexes)
                     raw_time = row_value(values, column_indexes["time"])
                     if clean_text(raw_time) is None:
                         skipped_count += 1

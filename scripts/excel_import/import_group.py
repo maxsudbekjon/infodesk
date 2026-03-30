@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from django.db import transaction
 
 from common import (
@@ -22,6 +24,53 @@ bootstrap_django()
 from apps.group.models import CourseTemplate, Group
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
+
+
+def normalize_spaces(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def normalize_key(value: str | None) -> str:
+    if not value:
+        return ""
+    lowered = normalize_spaces(value).lower()
+    lowered = lowered.replace("o'", "o").replace("g'", "g").replace("sh", "s")
+    lowered = lowered.replace("’", "").replace("'", "")
+    return re.sub(r"[^a-z0-9]+", "", lowered)
+
+
+def extract_teacher_hint_from_title(title: str | None) -> str | None:
+    if not title or "/" not in title:
+        return None
+    tail = title.split("/")[-1].strip()
+    tail = re.sub(r"\s+[ds]\s*/?\s*\d+$", "", tail, flags=re.IGNORECASE)
+    tail = re.sub(r"\s+[ds]\d+$", "", tail, flags=re.IGNORECASE)
+    return clean_text(tail)
+
+
+def resolve_teacher(branch: Branch, title: str, teacher_phone: str | None) -> Teacher | None:
+    phone_teacher = None
+    if teacher_phone:
+        phone_teacher = Teacher.objects.filter(user__phone_number=teacher_phone).first()
+
+    teacher_hint = extract_teacher_hint_from_title(title)
+    if not teacher_hint:
+        return phone_teacher
+
+    hint_key = normalize_key(teacher_hint)
+    candidates = list(Teacher.objects.select_related("user").filter(branch=branch).order_by("id"))
+    for teacher in candidates:
+        full_name = clean_text(getattr(teacher.user, "full_name", "")) or ""
+        teacher_tokens = [normalize_key(token) for token in full_name.split()]
+        if hint_key and hint_key in teacher_tokens:
+            if phone_teacher and phone_teacher.id != teacher.id:
+                print(
+                    f"[WARN] Group title bo'yicha teacher tuzatildi: title={title!r}, "
+                    f"phone_teacher_id={phone_teacher.id}, matched_teacher_id={teacher.id}"
+                )
+            return teacher
+
+    return phone_teacher
 
 
 def import_groups(excel_path: str) -> None:
@@ -70,17 +119,18 @@ def import_groups(excel_path: str) -> None:
                     f"CourseTemplate topilmadi. Avval import_course_template.py ni ishga tushiring. name={course_name}"
                 )
 
-            teacher_row = require_row(teacher_rows, teacher_ref, "Teacher")
-            teacher_phone = normalize_phone_number(teacher_row.get("phone_number"))
-            teacher = Teacher.objects.filter(user__phone_number=teacher_phone).first()
-            if not teacher:
-                raise ValueError(
-                    f"Teacher topilmadi. Avval import_teacher.py ni ishga tushiring. phone={teacher_phone}"
-                )
-
             title = clean_text(row.get("guruh nomi"))
             if not title:
                 raise ValueError(f"Group sheet {row['__row__']}-qatorda guruh nomi yo'q.")
+
+            teacher_row = require_row(teacher_rows, teacher_ref, "Teacher")
+            teacher_phone = normalize_phone_number(teacher_row.get("phone_number"))
+            teacher = resolve_teacher(branch, title, teacher_phone)
+            if not teacher:
+                raise ValueError(
+                    f"Teacher topilmadi. Avval import_teacher.py ni ishga tushiring. "
+                    f"phone={teacher_phone}, title={title}"
+                )
 
             group, created = Group.objects.update_or_create(
                 branch=branch,
