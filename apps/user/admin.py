@@ -17,7 +17,7 @@ class UserCreationForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("phone_number", "first_name", "last_name", "email", "role")
+        fields = ("phone_number", "full_name", "first_name", "last_name", "email", "role")
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -41,8 +41,7 @@ class UserChangeForm(forms.ModelForm):
         model = User
         fields = (
             "phone_number",
-            "first_name",
-            "last_name",
+            'full_name',
             "email",
             "password",
             "role",
@@ -61,21 +60,25 @@ class UserChangeForm(forms.ModelForm):
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
-    list_display = ("id", "phone_number", "first_name", "last_name", "email", "role", "is_active", "is_staff")
+    list_display = ("id", "phone_number", "display_name", "email", "role", "is_active", "is_staff")
     list_filter = ("is_active", "is_staff", "is_superuser", "role")
-    search_fields = ("phone_number", "first_name", "last_name", "email")
+    search_fields = ("phone_number", "full_name", "first_name", "last_name", "email")
     ordering = ("id",)
     fieldsets = (
         (None, {"fields": ("phone_number", "password")}),
-        ("Personal info", {"fields": ("first_name", "last_name", "email", "role", "gender", "birthday", "phone_number2")}),
+        ("Personal info", {"fields": ("full_name", "first_name", "last_name", "email", "role", "gender", "birthday", "phone_number2")}),
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
     )
     add_fieldsets = (
         (None, {
             "classes": ("wide",),
-            "fields": ("phone_number", "first_name", "last_name", "email", "role", "password1", "password2"),
+            "fields": ("phone_number", "full_name", "first_name", "last_name", "email", "role", "password1", "password2"),
         }),
     )
+
+    @admin.display(description="Full name", ordering="full_name")
+    def display_name(self, obj):
+        return obj.get_full_name() or "-"
 
 
 def _register_all_models():

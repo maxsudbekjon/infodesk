@@ -19,7 +19,7 @@ bootstrap_django()
 
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
-from apps.user.models import User
+from apps.user.models import User, split_full_name_parts
 
 
 def extract_teacher_full_name(row: dict) -> str | None:
@@ -28,6 +28,18 @@ def extract_teacher_full_name(row: dict) -> str | None:
         if full_name:
             return full_name
     return None
+
+
+def build_name_fields(full_name: str | None) -> dict[str, str]:
+    if not full_name:
+        return {}
+
+    first_name, last_name = split_full_name_parts(full_name)
+    return {
+        "full_name": full_name,
+        "first_name": first_name,
+        "last_name": last_name,
+    }
 
 
 def import_teachers(excel_path: str) -> None:
@@ -66,19 +78,21 @@ def import_teachers(excel_path: str) -> None:
             if not phone_number:
                 raise ValueError(f"Teacher sheet {row['__row__']}-qatorda phone_number yo'q.")
 
+            name_fields = build_name_fields(full_name)
             user = User.objects.filter(phone_number=phone_number).first()
             if not user:
                 user = User.objects.create_user(
                     phone_number=phone_number,
                     password=default_password(phone_number),
-                    full_name=full_name,
                     role="teacher",
+                    **name_fields,
                 )
             else:
                 user_updates = []
-                if full_name and user.full_name != full_name:
-                    user.full_name = full_name
-                    user_updates.append("full_name")
+                for field_name, field_value in name_fields.items():
+                    if getattr(user, field_name) != field_value:
+                        setattr(user, field_name, field_value)
+                        user_updates.append(field_name)
                 if user.role != "teacher":
                     user.role = "teacher"
                     user_updates.append("role")

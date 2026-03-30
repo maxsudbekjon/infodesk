@@ -1,3 +1,4 @@
+from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -197,3 +198,28 @@ class UserLoginAPITests(APITestCase):
             response.data["new_password_confirm"][0],
             "Yangi parollar bir xil emas.",
         )
+
+
+class UserNameSyncTests(TestCase):
+    def test_full_name_populates_first_and_last_name(self):
+        user = User.objects.create_user(
+            phone_number="+998909000001",
+            password="secret123",
+            full_name="Sadullayeva Sabohat",
+            role=ROLE.TEACHER,
+        )
+
+        self.assertEqual(user.full_name, "Sadullayeva Sabohat")
+        self.assertEqual(user.first_name, "Sabohat")
+        self.assertEqual(user.last_name, "Sadullayeva")
+
+    def test_first_and_last_name_populate_full_name(self):
+        user = User.objects.create_user(
+            phone_number="+998909000002",
+            password="secret123",
+            first_name="Teacher",
+            last_name="User",
+            role=ROLE.TEACHER,
+        )
+
+        self.assertEqual(user.full_name, "Teacher User")
