@@ -74,6 +74,12 @@ def normalize_key(value: str | None) -> str:
     return re.sub(r"[^a-z0-9]+", "", lowered)
 
 
+def names_match(left: str | None, right: str | None) -> bool:
+    left_key = normalize_key(left)
+    right_key = normalize_key(right)
+    return bool(left_key and right_key and left_key == right_key)
+
+
 def extract_header_phone(header_text: str) -> str | None:
     matches = re.findall(r"(?:\d[\s-]*){9,12}", header_text or "")
     for match in matches:
@@ -436,6 +442,19 @@ def resolve_secondary_phone(user: User | None, primary_phone: str | None, second
     return secondary_phone
 
 
+def can_reuse_user_for_student(user: User, full_name: str) -> bool:
+    existing_student = Student.objects.filter(user=user).first()
+    if existing_student and existing_student.full_name and not names_match(existing_student.full_name, full_name):
+        return False
+
+    if user.full_name and not names_match(user.full_name, full_name):
+        if existing_student:
+            return False
+        if user.role != "student":
+            return False
+    return True
+
+
 def upsert_student_user(full_name: str, primary_phone: str | None, secondary_phone: str | None, birthday: date | None):
     if not primary_phone:
         return None
@@ -453,13 +472,13 @@ def upsert_student_user(full_name: str, primary_phone: str | None, secondary_pho
         )
         return user
 
+    if not can_reuse_user_for_student(user, full_name):
+        return None
+
     update_fields = []
     if full_name and user.full_name != full_name:
         user.full_name = full_name
         update_fields.append("full_name")
-    if user.role != "student":
-        user.role = "student"
-        update_fields.append("role")
     if birthday and user.birthday != birthday:
         user.birthday = birthday
         update_fields.append("birthday")
@@ -473,17 +492,32 @@ def upsert_student_user(full_name: str, primary_phone: str | None, secondary_pho
     return user
 
 
-def get_or_create_student(full_name: str, primary_phone: str | None, group: Group, contract: bool, user: User | None, coin: int):
+def find_existing_student(user: User | None, full_name: str, primary_phone: str | None, group: Group) -> Student | None:
     if user:
         student = Student.objects.filter(user=user).first()
-    elif primary_phone:
-        student = Student.objects.filter(phone_number=primary_phone).first()
-    else:
-        student = Student.objects.filter(
-            full_name=full_name,
-            center=group.course.center,
-            group=group,
-        ).first()
+        if student and (not student.full_name or names_match(student.full_name, full_name)):
+            return student
+
+    if primary_phone:
+        phone_candidates = Student.objects.filter(phone_number=primary_phone, center=group.course.center)
+        for student in phone_candidates:
+            if names_match(student.full_name, full_name):
+                return student
+
+    if full_name:
+        name_candidates = Student.objects.filter(center=group.course.center)
+        for student in name_candidates:
+            if not names_match(student.full_name, full_name):
+                continue
+            if primary_phone and student.phone_number and student.phone_number != primary_phone:
+                continue
+            return student
+
+    return None
+
+
+def get_or_create_student(full_name: str, primary_phone: str | None, group: Group, contract: bool, user: User | None, coin: int):
+    student = find_existing_student(user, full_name, primary_phone, group)
 
     created = False
     if not student:
