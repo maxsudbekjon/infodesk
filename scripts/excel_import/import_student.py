@@ -133,18 +133,68 @@ def find_teacher(sheet_name: str, header_text: str, sheet_index: int) -> Teacher
 
 
 def parse_day_and_time(value: object) -> tuple[str, time]:
-    text = normalize_spaces(str(value or ""))
-    prefix, _, raw_time = text.partition("/")
-    prefix = prefix.lower()
-    if prefix.startswith("d"):
+    text = normalize_spaces(str(value or "")).replace(";", ":")
+    match = re.match(r"^(?P<prefix>[dDsS])\s*/?\s*(?P<time>\d{1,2}:\d{2})$", text)
+    if not match:
+        raise ValueError(f"VAQT formatini tushunib bo'lmadi: {value}")
+
+    prefix = match.group("prefix").lower()
+    if prefix == "d":
         days_choice = "odd_days"
-    elif prefix.startswith("s"):
+    elif prefix == "s":
         days_choice = "even_days"
     else:
         raise ValueError(f"VAQT formatini tushunib bo'lmadi: {value}")
 
-    parsed_time = datetime.strptime(raw_time.strip(), "%H:%M").time()
+    parsed_time = datetime.strptime(match.group("time"), "%H:%M").time()
     return days_choice, parsed_time
+
+
+def detect_column_indexes(headers: object) -> dict[str, object]:
+    phone_indexes: list[int] = []
+    contract_indexes: list[int] = []
+    indexes: dict[str, object] = {
+        "last_name": None,
+        "first_name": None,
+        "birthday": None,
+        "arrival_date": None,
+        "time": None,
+        "coin": None,
+        "phone_indexes": phone_indexes,
+        "contract_indexes": contract_indexes,
+    }
+
+    for index, header in enumerate(headers or []):
+        text = normalize_spaces(str(header or "")).lower()
+        if "famili" in text:
+            indexes["last_name"] = index
+        elif text in {"ism", "ismi"} or text.endswith(" ism"):
+            indexes["first_name"] = index
+        elif "telefon" in text or "tel nomer" in text:
+            phone_indexes.append(index)
+        elif "birth" in text or "brith" in text:
+            indexes["birthday"] = index
+        elif "kelgan" in text:
+            indexes["arrival_date"] = index
+        elif "vaqt" in text:
+            indexes["time"] = index
+        elif "coin" in text:
+            indexes["coin"] = index
+        elif "shart" in text:
+            contract_indexes.append(index)
+
+    birthday_index = indexes["birthday"]
+    if phone_indexes and birthday_index is not None:
+        for extra_index in range(phone_indexes[-1] + 1, birthday_index):
+            phone_indexes.append(extra_index)
+
+    return indexes
+
+
+def row_value(values: list[object], index: int | None):
+    if index is None or index >= len(values):
+        return None
+    return values[index]
 
 
 def group_candidates_for_teacher(teacher: Teacher, days_choice: str, start_lesson: time) -> list[Group]:
@@ -264,10 +314,16 @@ def build_full_name(last_name: object, first_name: object) -> str:
     return " ".join(part for part in parts if part)
 
 
-def choose_primary_phone(phone1: object, phone2: object) -> tuple[str | None, str | None]:
-    first = extract_phone_number(phone1)
-    second = extract_phone_number(phone2)
-    return first or second, second if first and second and first != second else None
+def choose_primary_phone(*phone_values: object) -> tuple[str | None, str | None]:
+    phones: list[str] = []
+    for raw_value in phone_values:
+        phone = extract_phone_number(raw_value)
+        if phone and phone not in phones:
+            phones.append(phone)
+
+    primary_phone = phones[0] if phones else None
+    secondary_phone = phones[1] if len(phones) > 1 else None
+    return primary_phone, secondary_phone
 
 
 def make_aware_midday(value: date | None):
@@ -394,24 +450,46 @@ def import_students(excel_path: str) -> None:
     with transaction.atomic():
         for sheet in sheets:
             teacher = find_teacher(sheet["sheet_name"], sheet["title"], sheet["index"])
+            column_indexes = detect_column_indexes(sheet["headers"])
             print(f"[SHEET] {sheet['sheet_name']} -> teacher_id={teacher.id}")
 
             for row in sheet["rows"]:
                 values = list(row["values"])
-                while len(values) < 10:
-                    values.append(None)
-
-                full_name = build_full_name(values[1], values[2])
+                full_name = build_full_name(
+                    row_value(values, column_indexes["last_name"]),
+                    row_value(values, column_indexes["first_name"]),
+                )
                 if not full_name:
                     print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} full_name bo'sh")
                     continue
 
-                primary_phone, secondary_phone = choose_primary_phone(values[3], values[4])
-                birthday = normalize_birthday(values[5])
-                contract = normalize_contract(values[6])
-                arrival_date = normalize_arrival_date(values[7])
-                days_choice, start_lesson = parse_day_and_time(values[8])
-                coin = normalize_coin(values[9])
+                phone_indexes = column_indexes["phone_indexes"]
+                contract_indexes = column_indexes["contract_indexes"]
+
+                primary_phone, secondary_phone = choose_primary_phone(
+                    *[row_value(values, phone_index) for phone_index in phone_indexes]
+                )
+                birthday = normalize_birthday(row_value(values, column_indexes["birthday"]))
+                contract = any(
+                    normalize_contract(row_value(values, contract_index)) for contract_index in contract_indexes
+                )
+                arrival_date = normalize_arrival_date(row_value(values, column_indexes["arrival_date"]))
+                raw_time = row_value(values, column_indexes["time"])
+                if clean_text(raw_time) is None:
+                    print(
+                        f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                        f"DARS VAQTI bo'sh"
+                    )
+                    continue
+                try:
+                    days_choice, start_lesson = parse_day_and_time(raw_time)
+                except ValueError as exc:
+                    print(
+                        f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
+                        f"{exc}"
+                    )
+                    continue
+                coin = normalize_coin(row_value(values, column_indexes["coin"]))
 
                 group = select_group(teacher, sheet["sheet_name"], sheet["title"], days_choice, start_lesson)
                 user = upsert_student_user(full_name, primary_phone, secondary_phone, birthday)
