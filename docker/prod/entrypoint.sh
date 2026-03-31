@@ -19,7 +19,7 @@ python manage.py collectstatic --noinput
 echo "🚀 Starting Gunicorn..."
 
 exec gunicorn config.wsgi:application \
-    --bind 0.0.0.0:$BACKEND_PORT \
+    --bind 0.0.0.0:4100 \
     --workers 4 \
     --threads 2 \
     --timeout 120 \
