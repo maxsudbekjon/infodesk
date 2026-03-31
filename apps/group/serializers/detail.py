@@ -89,7 +89,7 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
                 "coin": max(int(student.total_coin or 0), 0),
                 "earned_coin": max(int(student.total_coin or 0) + int(student.used_coin or 0), 0),
                 "used_coin": student.used_coin or 0,
-                "today_coin": max(today_score_map.get(student.id, 0), 0),
+                "today_coin": int(today_score_map.get(student.id, 0) or 0),
                 "today_coin_id": today_score_id_map.get(student.id),
             }
             for student in ordered_students

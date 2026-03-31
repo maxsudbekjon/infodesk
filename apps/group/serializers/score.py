@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models import Case, IntegerField, Sum, Value, When
 from django.db.models.functions import Coalesce
 from rest_framework import serializers
 
@@ -42,10 +42,6 @@ class GroupScoreCreateSerializer(serializers.ModelSerializer):
             )
 
         score_value = attrs.get("score", getattr(self.instance, "score", 0))
-        if score_value < 0:
-            raise serializers.ValidationError(
-                {"score": "Coin manfiy bo'lishi mumkin emas."}
-            )
 
         score_date = timezone.localdate(self.instance.created_at) if self.instance else timezone.localdate()
         today_total_qs = GroupScore.objects.filter(
@@ -55,8 +51,19 @@ class GroupScoreCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             today_total_qs = today_total_qs.exclude(pk=self.instance.pk)
 
-        today_total = today_total_qs.aggregate(total_score=Coalesce(Sum("score"), 0))["total_score"]
-        if today_total + score_value > 20:
+        today_positive_total = today_total_qs.aggregate(
+            total_score=Coalesce(
+                Sum(
+                    Case(
+                        When(score__gt=0, then="score"),
+                        default=Value(0),
+                        output_field=IntegerField(),
+                    )
+                ),
+                0,
+            )
+        )["total_score"]
+        if score_value > 0 and today_positive_total + score_value > 20:
             raise serializers.ValidationError(
                 {"score": "Bir studentga bir kunda 20 tadan ko'p coin qo'yib bo'lmaydi."}
             )

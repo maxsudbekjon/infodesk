@@ -311,7 +311,7 @@ class GroupRolePermissionTests(APITestCase):
             "Bir studentga bir kunda 20 tadan ko'p coin qo'yib bo'lmaydi.",
         )
 
-    def test_teacher_cannot_create_negative_score(self):
+    def test_teacher_can_create_negative_score_and_reduce_balance(self):
         self.client.force_authenticate(user=self.teacher_user)
 
         response = self.client.post(
@@ -325,10 +325,36 @@ class GroupRolePermissionTests(APITestCase):
             format="json",
         )
 
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.student.refresh_from_db()
+        created_score = GroupScore.objects.get(pk=response.data["id"])
+        self.assertEqual(created_score.score, -5)
+        self.assertEqual(self.student.total_coin, 5)
+
+    def test_teacher_cannot_bypass_daily_positive_limit_with_penalty(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        GroupScore.objects.create(
+            group=self.group,
+            student=self.student,
+            score=-10,
+            reason="Penalty",
+        )
+
+        response = self.client.post(
+            reverse("group-score-create"),
+            {
+                "group": self.group.id,
+                "student": self.student.id,
+                "score": 20,
+                "reason": "Too much reward",
+            },
+            format="json",
+        )
+
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(
             response.data["score"][0],
-            "Coin manfiy bo'lishi mumkin emas.",
+            "Bir studentga bir kunda 20 tadan ko'p coin qo'yib bo'lmaydi.",
         )
 
     def test_teacher_cannot_update_old_score(self):
@@ -387,7 +413,7 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(students[2]["today_coin"], 0)
         self.assertIsNone(students[2]["today_coin_id"])
 
-    def test_group_student_list_clamps_existing_negative_scores_to_zero(self):
+    def test_group_student_list_shows_negative_today_coin_when_penalty_exists(self):
         self.client.force_authenticate(user=self.teacher_user)
         negative_score = GroupScore.objects.create(
             group=self.group,
@@ -403,7 +429,7 @@ class GroupRolePermissionTests(APITestCase):
         third_student = next(item for item in students if item["id"] == self.fk_only_student.id)
         self.assertEqual(third_student["coin"], 0)
         self.assertEqual(third_student["earned_coin"], 0)
-        self.assertEqual(third_student["today_coin"], 0)
+        self.assertEqual(third_student["today_coin"], -7)
         self.assertEqual(third_student["today_coin_id"], negative_score.id)
 
     def test_group_student_list_uses_student_balance_fields_for_totals(self):
@@ -425,7 +451,7 @@ class GroupRolePermissionTests(APITestCase):
         third_student = next(item for item in students if item["id"] == self.fk_only_student.id)
         self.assertEqual(third_student["coin"], 75)
         self.assertEqual(third_student["earned_coin"], 75)
-        self.assertEqual(third_student["today_coin"], 0)
+        self.assertEqual(third_student["today_coin"], -75)
         self.assertEqual(third_student["today_coin_id"], negative_score.id)
 
     def test_group_ranking_returns_student_cards_with_image(self):
