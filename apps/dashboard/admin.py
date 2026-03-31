@@ -1,15 +1,7 @@
-from django.apps import apps as django_apps
 from django.contrib import admin
-from django.contrib.admin.sites import AlreadyRegistered
 
 
-def _register_all_models():
-    app_config = django_apps.get_app_config("dashboard")
-    for model in app_config.get_models():
-        try:
-            admin.site.register(model)
-        except AlreadyRegistered:
-            pass
-
-
-_register_all_models()
+admin.site.site_header = "Infodesk Boshqaruv Paneli"
+admin.site.site_title = "Infodesk Admin"
+admin.site.index_title = "Kerakli bo'limni tanlang"
+admin.site.empty_value_display = "-"

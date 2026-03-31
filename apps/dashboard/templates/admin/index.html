@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+    <section class="dashboard-hero">
+        <div>
+            <h2>Kundalik ishlarni tez topish uchun</h2>
+            <p>Pastdagi bo'limlardan keraklisini tanlang yoki ro'yxat sahifalarida qidiruv va filterlardan foydalaning.</p>
+        </div>
+        <div class="dashboard-tip-list">
+            <div class="dashboard-tip-card">
+                <strong>Qidiruv</strong>
+                <span>Telefon raqami, ism yoki kod bo'yicha tez toping.</span>
+            </div>
+            <div class="dashboard-tip-card">
+                <strong>Filter</strong>
+                <span>Holat, filial, sana va mas'ul xodim bo'yicha saralang.</span>
+            </div>
+            <div class="dashboard-tip-card">
+                <strong>Tez amallar</strong>
+                <span>Buyurtmalarni cancel/deliver, teacherlarni archive qilish endi qulayroq.</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="quick-links-grid">
+        <a class="quick-link-card" href="{% url 'admin:pupil_student_changelist' %}">
+            <strong>Talabalar</strong>
+            <span>Coin, to'lov va guruh holatini ko'ring.</span>
+        </a>
+        <a class="quick-link-card" href="{% url 'admin:lead_lead_changelist' %}">
+            <strong>Lidlar</strong>
+            <span>Yangi murojaatlar va operator ishini kuzating.</span>
+        </a>
+        <a class="quick-link-card" href="{% url 'admin:group_group_changelist' %}">
+            <strong>Guruhlar</strong>
+            <span>Teacher, xona va dars vaqtini boshqaring.</span>
+        </a>
+        <a class="quick-link-card" href="{% url 'admin:market_marketorder_changelist' %}">
+            <strong>Market</strong>
+            <span>Buyurtmalar, status va refund jarayonlarini nazorat qiling.</span>
+        </a>
+    </section>
+
+    {% if app_list %}
+        {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+    {% else %}
+        <p>{% translate "You don't have permission to view or edit anything." %}</p>
+    {% endif %}
+</div>
+{% endblock %}
