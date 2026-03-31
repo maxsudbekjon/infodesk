@@ -311,6 +311,26 @@ class GroupRolePermissionTests(APITestCase):
             "Bir studentga bir kunda 20 tadan ko'p coin qo'yib bo'lmaydi.",
         )
 
+    def test_teacher_cannot_create_negative_score(self):
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.post(
+            reverse("group-score-create"),
+            {
+                "group": self.group.id,
+                "student": self.student.id,
+                "score": -5,
+                "reason": "Penalty",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["score"][0],
+            "Coin manfiy bo'lishi mumkin emas.",
+        )
+
     def test_teacher_cannot_update_old_score(self):
         self.client.force_authenticate(user=self.teacher_user)
         score = GroupScore.objects.create(
@@ -366,6 +386,47 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(students[2]["used_coin"], 0)
         self.assertEqual(students[2]["today_coin"], 0)
         self.assertIsNone(students[2]["today_coin_id"])
+
+    def test_group_student_list_clamps_existing_negative_scores_to_zero(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        negative_score = GroupScore.objects.create(
+            group=self.group,
+            student=self.fk_only_student,
+            score=-7,
+            reason="Legacy penalty",
+        )
+
+        response = self.client.get(reverse("group-student", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        students = response.data["students"]
+        third_student = next(item for item in students if item["id"] == self.fk_only_student.id)
+        self.assertEqual(third_student["coin"], 0)
+        self.assertEqual(third_student["earned_coin"], 0)
+        self.assertEqual(third_student["today_coin"], 0)
+        self.assertEqual(third_student["today_coin_id"], negative_score.id)
+
+    def test_group_student_list_uses_student_balance_fields_for_totals(self):
+        self.client.force_authenticate(user=self.teacher_user)
+        self.fk_only_student.coin_offset = 150
+        self.fk_only_student.total_coin = 75
+        self.fk_only_student.save(update_fields=["coin_offset", "total_coin"])
+        negative_score = GroupScore.objects.create(
+            group=self.group,
+            student=self.fk_only_student,
+            score=-75,
+            reason="Legacy penalty",
+        )
+
+        response = self.client.get(reverse("group-student", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        students = response.data["students"]
+        third_student = next(item for item in students if item["id"] == self.fk_only_student.id)
+        self.assertEqual(third_student["coin"], 75)
+        self.assertEqual(third_student["earned_coin"], 75)
+        self.assertEqual(third_student["today_coin"], 0)
+        self.assertEqual(third_student["today_coin_id"], negative_score.id)
 
     def test_group_ranking_returns_student_cards_with_image(self):
         self.client.force_authenticate(user=self.teacher_user)

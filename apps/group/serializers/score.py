@@ -42,6 +42,11 @@ class GroupScoreCreateSerializer(serializers.ModelSerializer):
             )
 
         score_value = attrs.get("score", getattr(self.instance, "score", 0))
+        if score_value < 0:
+            raise serializers.ValidationError(
+                {"score": "Coin manfiy bo'lishi mumkin emas."}
+            )
+
         score_date = timezone.localdate(self.instance.created_at) if self.instance else timezone.localdate()
         today_total_qs = GroupScore.objects.filter(
             student=student,

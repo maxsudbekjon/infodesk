@@ -5,7 +5,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.group.models import Group
-from apps.group.utils import build_student_image_url, get_group_students
+from apps.group.utils import build_student_image_url, get_group_students_queryset
 from apps.pupil.coin import IMPORT_SCORE_REASON
 
 
@@ -55,8 +55,7 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(GroupStudentCardSerializer(many=True))
     def get_students(self, obj):
-        students = get_group_students(obj)
-        score_map = defaultdict(int)
+        students = list(get_group_students_queryset(obj.id))
         today_score_map = defaultdict(int)
         today_score_id_map = {}
         today_score_sort_key_map = {}
@@ -65,7 +64,6 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
         for score in obj.scores.all():
             if score.reason == IMPORT_SCORE_REASON:
                 continue
-            score_map[score.student_id] += score.score
             if timezone.localdate(score.created_at) == today:
                 today_score_map[score.student_id] += score.score
                 current_sort_key = (score.created_at, score.id)
@@ -77,7 +75,7 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
         ordered_students = sorted(
             students,
             key=lambda student: (
-                -score_map.get(student.id, 0),
+                -max(int(student.total_coin or 0), 0),
                 (student.full_name or "").lower(),
                 student.id,
             ),
@@ -88,10 +86,10 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
                 "id": student.id,
                 "full_name": student.full_name,
                 "image": build_student_image_url(student, request=self.context.get("request")),
-                "coin": max(score_map.get(student.id, 0) - (student.used_coin or 0), 0),
-                "earned_coin": score_map.get(student.id, 0),
+                "coin": max(int(student.total_coin or 0), 0),
+                "earned_coin": max(int(student.total_coin or 0) + int(student.used_coin or 0), 0),
                 "used_coin": student.used_coin or 0,
-                "today_coin": today_score_map.get(student.id, 0),
+                "today_coin": max(today_score_map.get(student.id, 0), 0),
                 "today_coin_id": today_score_id_map.get(student.id),
             }
             for student in ordered_students
