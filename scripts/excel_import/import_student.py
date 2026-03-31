@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
+from collections import Counter
 from datetime import date, datetime, time
 
+from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
 from openpyxl import load_workbook
@@ -80,7 +82,15 @@ def normalize_key(value: str | None) -> str:
 def names_match(left: str | None, right: str | None) -> bool:
     left_key = normalize_key(left)
     right_key = normalize_key(right)
-    return bool(left_key and right_key and left_key == right_key)
+    if left_key and right_key and left_key == right_key:
+        return True
+
+    left_tokens = [normalize_key(token) for token in normalize_spaces(left or "").split() if normalize_key(token)]
+    right_tokens = [normalize_key(token) for token in normalize_spaces(right or "").split() if normalize_key(token)]
+    if not left_tokens or not right_tokens:
+        return False
+
+    return Counter(left_tokens) == Counter(right_tokens)
 
 
 def extract_header_phone(header_text: str) -> str | None:
@@ -496,25 +506,103 @@ def upsert_student_user(full_name: str, primary_phone: str | None, secondary_pho
 
 
 def find_existing_student(user: User | None, full_name: str, primary_phone: str | None, group: Group) -> Student | None:
+    base_queryset = Student.objects.select_related("user", "group").prefetch_related("groups").filter(
+        center=group.course.center
+    )
+
     if user:
         student = Student.objects.filter(user=user).first()
-        if student and (not student.full_name or names_match(student.full_name, full_name)):
+        if student and _student_name_matches(student, full_name):
             return student
 
     if primary_phone:
-        phone_candidates = Student.objects.filter(phone_number=primary_phone, center=group.course.center)
-        for student in phone_candidates:
-            if names_match(student.full_name, full_name):
-                return student
+        phone_candidates = base_queryset.filter(
+            Q(phone_number=primary_phone)
+            | Q(user__phone_number=primary_phone)
+            | Q(user__phone_number2=primary_phone)
+        ).distinct()
+        matched_student = _pick_matching_student(phone_candidates, full_name, primary_phone, group)
+        if matched_student:
+            return matched_student
 
     if full_name:
-        name_candidates = Student.objects.filter(center=group.course.center)
-        for student in name_candidates:
-            if not names_match(student.full_name, full_name):
-                continue
-            if primary_phone and student.phone_number and student.phone_number != primary_phone:
-                continue
-            return student
+        exact_group_candidates = base_queryset.filter(Q(group=group) | Q(groups=group)).distinct()
+        matched_student = _pick_matching_student(exact_group_candidates, full_name, primary_phone, group)
+        if matched_student:
+            return matched_student
+
+        same_course_candidates = base_queryset.filter(
+            Q(group__course=group.course) | Q(groups__course=group.course)
+        ).distinct()
+        matched_student = _pick_matching_student(same_course_candidates, full_name, primary_phone, group)
+        if matched_student:
+            return matched_student
+
+        matched_student = _pick_matching_student(base_queryset, full_name, primary_phone, group)
+        if matched_student:
+            return matched_student
+
+    return None
+
+
+def _student_name_matches(student: Student, full_name: str) -> bool:
+    if names_match(student.full_name, full_name):
+        return True
+
+    user = getattr(student, "user", None)
+    if user and names_match(user.display_name, full_name):
+        return True
+
+    return False
+
+
+def _student_phones(student: Student) -> set[str]:
+    phones = {student.phone_number}
+    user = getattr(student, "user", None)
+    if user:
+        phones.add(user.phone_number)
+        phones.add(user.phone_number2)
+    return {phone for phone in phones if phone}
+
+
+def _pick_matching_student(candidates, full_name: str, primary_phone: str | None, group: Group) -> Student | None:
+    matched_by_name = [student for student in candidates if _student_name_matches(student, full_name)]
+    if not matched_by_name:
+        return None
+
+    if primary_phone:
+        matched_by_phone = [
+            student for student in matched_by_name if primary_phone in _student_phones(student)
+        ]
+        if len(matched_by_phone) == 1:
+            return matched_by_phone[0]
+        if matched_by_phone:
+            matched_by_name = matched_by_phone
+
+    exact_group_matches = [
+        student
+        for student in matched_by_name
+        if student.group_id == group.id or any(related_group.id == group.id for related_group in student.groups.all())
+    ]
+    if len(exact_group_matches) == 1:
+        return exact_group_matches[0]
+    if exact_group_matches:
+        matched_by_name = exact_group_matches
+
+    same_course_matches = [
+        student
+        for student in matched_by_name
+        if (
+            student.group and student.group.course_id == group.course_id
+        ) or any(related_group.course_id == group.course_id for related_group in student.groups.all())
+    ]
+    if len(same_course_matches) == 1:
+        return same_course_matches[0]
+    if same_course_matches:
+        matched_by_name = same_course_matches
+
+    if len(matched_by_name) == 1:
+        return matched_by_name[0]
 
     return None
 

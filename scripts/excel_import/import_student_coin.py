@@ -92,7 +92,7 @@ def import_student_coins(excel_path: str) -> None:
                         skipped_count += 1
                         print(
                             f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                            f"student topilmadi: {full_name}"
+                            f"student topilmadi: {full_name}, phone={primary_phone}, group={group.title}"
                         )
                         continue
 
