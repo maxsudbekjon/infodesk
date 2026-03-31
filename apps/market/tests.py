@@ -7,7 +7,7 @@ from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.group.models.course import CourseTemplate
 from apps.group.models.group import Group
 from apps.group.models.score import GroupScore
-from apps.market.models import MarketOrder, Product
+from apps.market.models import MARKET_ORDER_STATUS, MarketOrder, Product
 from apps.pupil.models import Student
 from apps.settings.models import Branch, Organization
 from apps.user.choices import ROLE
@@ -185,6 +185,50 @@ class MarketAPITests(APITestCase):
         self.assertEqual(order["status"], "created")
         self.assertTrue(order["secret_code"])
         self.assertRegex(order["secret_code"], r"^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{6}$")
+
+    def test_cancelled_created_order_returns_product_and_student_coins(self):
+        self.client.force_authenticate(user=self.student_user)
+        self.client.post(
+            reverse("market-order-create"),
+            {"product": self.product.id},
+            format="json",
+        )
+
+        order = MarketOrder.objects.get(student=self.student, product=self.product)
+        order.status = MARKET_ORDER_STATUS.CANCELLED
+        order.save(update_fields=["status"])
+
+        self.student.refresh_from_db()
+        self.product.refresh_from_db()
+        order.refresh_from_db()
+
+        self.assertEqual(order.status, MARKET_ORDER_STATUS.CANCELLED)
+        self.assertEqual(self.student.used_coin, 0)
+        self.assertEqual(self.student.total_coin, 40)
+        self.assertEqual(self.product.count, 3)
+
+    def test_cancelled_delivered_order_does_not_return_product_or_coins(self):
+        self.client.force_authenticate(user=self.student_user)
+        self.client.post(
+            reverse("market-order-create"),
+            {"product": self.product.id},
+            format="json",
+        )
+
+        order = MarketOrder.objects.get(student=self.student, product=self.product)
+        order.status = MARKET_ORDER_STATUS.DELIVERED
+        order.save(update_fields=["status"])
+        order.status = MARKET_ORDER_STATUS.CANCELLED
+        order.save(update_fields=["status"])
+
+        self.student.refresh_from_db()
+        self.product.refresh_from_db()
+        order.refresh_from_db()
+
+        self.assertEqual(order.status, MARKET_ORDER_STATUS.CANCELLED)
+        self.assertEqual(self.student.used_coin, 25)
+        self.assertEqual(self.student.total_coin, 15)
+        self.assertEqual(self.product.count, 2)
 
     def test_cannot_create_order_when_product_is_out_of_stock(self):
         sold_out_product = Product.objects.create(
