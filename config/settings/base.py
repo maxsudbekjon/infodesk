@@ -14,7 +14,7 @@ SECRET_KEY = env.str("SECRET_KEY", "django-insecure-change-me")
 
 DEBUG = env.bool("DEBUG", False)
 
-ALLOWED_HOSTS = [h.strip() for h in env.list("ALLOWED_HOSTS", [])]
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", [])
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", [])
 CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", [])
 CORS_ALLOW_CREDENTIALS = env.bool("CORS_ALLOW_CREDENTIALS", True)
