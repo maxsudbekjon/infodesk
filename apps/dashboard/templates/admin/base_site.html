@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_("Infodesk Admin") }}{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/custom_admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div class="brand-shell">
+    <div>
+        <h1 id="site-name">
+            <a href="{% url 'admin:index' %}">Infodesk Boshqaruv Paneli</a>
+        </h1>
+        <p class="brand-subtitle">Talabalar, guruhlar, lidlar va market buyurtmalarini oddiyroq usulda boshqaring.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block nav-global %}
+<div class="admin-top-links">
+    <a href="{% url 'admin:pupil_student_changelist' %}">Talabalar</a>
+    <a href="{% url 'admin:group_group_changelist' %}">Guruhlar</a>
+    <a href="{% url 'admin:lead_lead_changelist' %}">Lidlar</a>
+    <a href="{% url 'admin:teacher_teacher_changelist' %}">Teacherlar</a>
+    <a href="{% url 'admin:market_marketorder_changelist' %}">Buyurtmalar</a>
+</div>
+{% endblock %}

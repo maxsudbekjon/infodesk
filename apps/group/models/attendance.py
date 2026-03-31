@@ -15,7 +15,7 @@ class Attendance(models.Model):
         related_name='attendances'
     )
     date = models.DateField()
-    is_present = models.BooleanField(default=False)
+    is_present = models.BooleanField(null=True, blank=True, default=None)
 
     # Optional: Add a note for reasons behind absence
     note = models.TextField(null=True,blank=True)
@@ -29,5 +29,10 @@ class Attendance(models.Model):
         ]
 
     def __str__(self):
-        status = 'Present' if self.is_present else 'Absent'
+        if self.is_present is True:
+            status = 'Present'
+        elif self.is_present is False:
+            status = 'Absent'
+        else:
+            status = 'Unmarked'
         return f"{self.student} - {self.group.title} - {self.date}: {status}"

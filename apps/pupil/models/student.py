@@ -25,15 +25,24 @@ class Student(TimeStampedModel):
     )
     lead = models.ForeignKey("lead.Lead", on_delete=models.SET_NULL,null=True,blank=True)
     full_name = models.CharField(max_length=100,null=True,blank=True)
+    image = models.ImageField(
+        upload_to="student-avatar",
+        null=True,
+        blank=True,
+    )
     next_payment_date = models.DateField(null=True, blank=True)
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    contract = models.BooleanField(default=False)
     payment_status = models.CharField(
         max_length=30,
         choices=STUDENT_PAYMENT.choices,
         default=STUDENT_PAYMENT.NO_DEBT,
     )
+    used_coin = models.PositiveIntegerField(default=0)
     phone_number = models.CharField(max_length=30,validators=[validate_phone_number],null=True,blank=True)
     comment = models.TextField(null=True, blank=True)
+    coin_offset = models.IntegerField(default=0)
+    total_coin = models.IntegerField(default=0)
     group = models.ForeignKey(
         "group.Group",
         on_delete=models.SET_NULL,
@@ -54,6 +63,12 @@ class Student(TimeStampedModel):
             models.Index(fields=["next_payment_date"], name="student_next_pay_idx"),
         ]
     def save(self, *args, **kwargs):
+        previous_values = None
+        if self.pk:
+            previous_values = (
+                type(self).objects.filter(pk=self.pk).values("used_coin", "total_coin").first()
+            )
+
         if self.lead:
             if not self.full_name:
                 self.full_name = self.lead.full_name
@@ -69,6 +84,22 @@ class Student(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+        should_sync_total_coin = False
+        update_fields = kwargs.get("update_fields")
+
+        if previous_values and previous_values["used_coin"] != self.used_coin:
+            if update_fields is not None:
+                should_sync_total_coin = "used_coin" in update_fields and "total_coin" not in update_fields
+            else:
+                should_sync_total_coin = previous_values["total_coin"] == self.total_coin
+        elif not previous_values and self.used_coin and not self.total_coin:
+            should_sync_total_coin = True
+
+        if should_sync_total_coin:
+            from apps.pupil.coin import recalculate_student_total_coin
+
+            self.total_coin = recalculate_student_total_coin(self.pk)
+
     @property
     def latest_grade(self):
         latest = self.grades.order_by("-date").first()
@@ -80,6 +111,19 @@ class Student(TimeStampedModel):
         if not grades:
             return None
         return sum(grades) / len(grades)
+
+    @property
+    def earned_coin(self):
+        if not self.pk:
+            return max(int(self.coin_offset or 0), 0)
+
+        from apps.pupil.coin import get_student_total_earned_coin
+
+        return get_student_total_earned_coin(self.pk)
+
+    @property
+    def available_coin(self):
+        return max(self.total_coin or 0, 0)
 
     def __str__(self) -> str:
         if self.full_name:

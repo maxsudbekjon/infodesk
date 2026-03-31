@@ -1,5 +1,6 @@
 from django.db import OperationalError, ProgrammingError
 from django.contrib.auth import authenticate
+from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -33,6 +34,7 @@ class UserLoginSerializer(TokenObtainPairSerializer):
         self.user = user
         student = self._resolve_student_profile(user)
         teacher = get_teacher_profile(user)
+        display_name = user.display_name
 
         if teacher:
             role = ROLE.TEACHER
@@ -45,7 +47,7 @@ class UserLoginSerializer(TokenObtainPairSerializer):
 
         refresh = self.get_token(user)
         refresh["role"] = role
-        refresh["full_name"] = user.full_name or ""
+        refresh["full_name"] = display_name
         refresh["phone_number"] = user.phone_number
 
         profile = {
@@ -60,7 +62,7 @@ class UserLoginSerializer(TokenObtainPairSerializer):
             "access": str(refresh.access_token),
             "user": {
                 "id": user.id,
-                "full_name": user.full_name,
+                "full_name": display_name,
                 "phone_number": user.phone_number,
                 "role": role,
                 **profile,
@@ -83,3 +85,45 @@ class UserLoginSerializer(TokenObtainPairSerializer):
             return find_student_by_phone_number(user.phone_number)
 
         return student
+
+
+class UserPasswordChangeSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+    new_password_confirm = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        old_password = attrs.get("old_password")
+        new_password = attrs.get("new_password")
+        new_password_confirm = attrs.get("new_password_confirm")
+
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError({"detail": "Foydalanuvchi topilmadi."})
+
+        if not user.check_password(old_password):
+            raise serializers.ValidationError({"old_password": "Eski parol noto'g'ri."})
+
+        if new_password != new_password_confirm:
+            raise serializers.ValidationError(
+                {"new_password_confirm": "Yangi parollar bir xil emas."}
+            )
+
+        if old_password == new_password:
+            raise serializers.ValidationError(
+                {"new_password": "Yangi parol eski parol bilan bir xil bo'lmasligi kerak."}
+            )
+
+        validate_password(new_password, user=user)
+        return attrs
+
+    def save(self, **kwargs):
+        user = self.context["request"].user
+        user.set_password(self.validated_data["new_password"])
+        user.save(update_fields=["password"])
+        return user
+
+
+class UserPasswordChangeResponseSerializer(serializers.Serializer):
+    detail = serializers.CharField()

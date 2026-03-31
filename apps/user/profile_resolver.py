@@ -7,8 +7,12 @@ from apps.user.choices import ROLE
 
 SAFE_STUDENT_ONLY_FIELDS = (
     "id",
+    "user_id",
     "full_name",
+    "image",
     "phone_number",
+    "total_coin",
+    "used_coin",
     "group_id",
     "center_id",
     "status",
@@ -26,7 +30,11 @@ def get_student_profile(user):
         return None
 
     try:
-        student = getattr(user, "student_profile")
+        student = (
+            Student.objects.only(*SAFE_STUDENT_ONLY_FIELDS)
+            .filter(user_id=user.id)
+            .first()
+        )
         if student:
             return student
     except (ObjectDoesNotExist, OperationalError, ProgrammingError):

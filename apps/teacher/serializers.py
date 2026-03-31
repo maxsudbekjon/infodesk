@@ -1,15 +1,57 @@
+import calendar
+import re
+
 from django.db.models import Count, Q
 from django.db import transaction
 from django.contrib.auth import get_user_model
 from django.template.context_processors import request
+from django.utils import timezone
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.teacher.models import Teacher, Specialty
 from apps.group.models import Group, CourseTemplate
+from apps.group.choices import GROUP_DAYS_CHOICES
+from apps.group.utils import count_group_students
 from apps.user.choices import ROLE
 
 User = get_user_model()
+
+
+DAY_ALIASES = {
+    "mon": "monday",
+    "monday": "monday",
+    "dushanba": "monday",
+    "tue": "tuesday",
+    "tuesday": "tuesday",
+    "seshanba": "tuesday",
+    "wed": "wednesday",
+    "wednesday": "wednesday",
+    "chorshanba": "wednesday",
+    "thu": "thursday",
+    "thursday": "thursday",
+    "payshanba": "thursday",
+    "fri": "friday",
+    "friday": "friday",
+    "juma": "friday",
+    "sat": "saturday",
+    "saturday": "saturday",
+    "shanba": "saturday",
+    "sun": "sunday",
+    "sunday": "sunday",
+    "yakshanba": "sunday",
+}
+
+
+def normalize_day_value(value):
+    cleaned = re.sub(r"[^a-z]+", "", str(value).lower())
+    return DAY_ALIASES.get(cleaned, cleaned)
+
+
+def today_day_value():
+    return normalize_day_value(calendar.day_name[timezone.localdate().weekday()])
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
@@ -19,6 +61,11 @@ class SimpleUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'full_name', 'email', 'phone_number', 'password')
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["full_name"] = instance.display_name
+        return data
+
 
 class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:
@@ -27,42 +74,73 @@ class SpecialtySerializer(serializers.ModelSerializer):
 
 
 class TeacherGroupSerializer(serializers.ModelSerializer):
-    course = serializers.CharField(source='course.name', read_only=True)
-    room = serializers.CharField(source='room.name', read_only=True)
+    lessons_days = serializers.SerializerMethodField()
+    room = serializers.CharField(source="room.name", read_only=True, allow_null=True)
+    duration_months = serializers.IntegerField(source="course.duration_months", read_only=True)
+    attendance_today = serializers.SerializerMethodField()
+    total_student = serializers.SerializerMethodField()
 
     class Meta:
         model = Group
         fields = (
-            'id',
+           'id',
             'title',
-            "course",
-            'room',
-            'status',
+            "lessons_days",
             "lessons_days_choice",
+            "room",
             'start_lesson',
             'end_lesson',
+            'duration_months',
             'total_student',
+            'attendance_today',
         )
+
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
+    def get_lessons_days(self, obj):
+        return [day.day for day in sorted(obj.lessons_days.all(), key=lambda item: item.id or 0)]
+
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_attendance_today(self, obj):
+        lessons_days = list(obj.lessons_days.all())
+        if lessons_days:
+            today_value = today_day_value()
+            return any(normalize_day_value(day.day) == today_value for day in lessons_days)
+
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.EVERAY_DAY:
+            return True
+
+        current_day = timezone.localdate().day
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.ODD_DAYS:
+            return current_day % 2 == 1
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.EVEN_DAYS:
+            return current_day % 2 == 0
+        return False
+
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_total_student(self, obj):
+        return count_group_students(obj)
 
 
 class TeacherSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source="user.display_name", read_only=True)
     user = SimpleUserSerializer()
     specialties = SpecialtySerializer(source='specialty', many=True, read_only=True)
     groups = TeacherGroupSerializer(source='main_groups', many=True, read_only=True)
     groups_count = serializers.IntegerField(read_only=True)
     students_count = serializers.IntegerField(read_only=True)
+    courses_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Teacher
         fields = (
-            'id', 'user', 'image',
+            'id', 'full_name', 'user', 'image',
             'specialties', 'groups',
             'monthly_salary', 'kpi', 'monthly_per_lesson', 'monthly_per_student',
             'contract_date', 'percentage_share', 'lesson_fee', 'per_student_fee',
             'branch', 'is_archived',
-            'created_at', 'updated_at', 'groups_count', 'students_count'
+            'created_at', 'updated_at', 'groups_count', 'students_count', 'courses_count'
         )
-        read_only_fields = ('created_at', 'updated_at', 'groups_count', 'students_count')
+        read_only_fields = ('created_at', 'updated_at', 'groups_count', 'students_count', 'courses_count')
 
 
     def update(self, instance, validated_data):
@@ -73,8 +151,95 @@ class TeacherSerializer(serializers.ModelSerializer):
         return teacher
 
 
+class TeacherProfileSerializer(serializers.ModelSerializer):
+    groups = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    phone_number = serializers.CharField(source="user.phone_number", read_only=True, allow_null=True)
+    birth_date = serializers.DateField(source="user.birthday", read_only=True, allow_null=True)
+    image = serializers.SerializerMethodField()
+    specialties = SpecialtySerializer(source="specialty", many=True, read_only=True)
+    branch_name = serializers.CharField(source="branch.name", read_only=True, allow_null=True)
+    organization_id = serializers.IntegerField(source="branch.organization_id", read_only=True, allow_null=True)
+    organization_name = serializers.CharField(source="branch.organization.name", read_only=True, allow_null=True)
+    groups_count = serializers.IntegerField(read_only=True)
+    students_count = serializers.IntegerField(read_only=True)
+    courses_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Teacher
+        fields = (
+            "id",
+            "full_name",
+            "phone_number",
+            "birth_date",
+            "image",
+            "specialties",
+            "branch",
+            "branch_name",
+            "organization_id",
+            "organization_name",
+            "monthly_salary",
+            "kpi",
+            "monthly_per_lesson",
+            "monthly_per_student",
+            "contract_date",
+            "percentage_share",
+            "lesson_fee",
+            "per_student_fee",
+            "is_archived",
+            "groups",
+            "groups_count",
+            "students_count",
+            "courses_count",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = fields
+
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_image(self, obj):
+        request = self.context.get("request")
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        return None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_full_name(self, obj):
+        user = getattr(obj, "user", None)
+        if not user:
+            return None
+        return user.display_name
+
+    @extend_schema_field(serializers.ListField(child=serializers.DictField()))
+    def get_groups(self, obj):
+        groups = getattr(obj, "profile_groups", [])
+        payload = []
+
+        for group in groups:
+            payload.append(
+                {
+                    "id": group.id,
+                    "title": group.title,
+                    "course_id": group.course_id,
+                    "course_name": group.course.name if group.course_id else None,
+                    "duration_months": group.course.duration_months if group.course_id else None,
+                    "room": group.room.name if group.room_id else None,
+                    "lessons_days": [day.day for day in sorted(group.lessons_days.all(), key=lambda item: item.id or 0)],
+                    "lessons_days_choice": group.lessons_days_choice,
+                    "status": group.status,
+                    "start_lesson": group.start_lesson,
+                    "end_lesson": group.end_lesson,
+                    "total_student": count_group_students(group),
+                    "started_at": group.started_at,
+                    "closed_at": group.closed_at,
+                }
+            )
+
+        return payload
+
+
 class TeacherListSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='user.full_name', read_only=True)
+    full_name = serializers.CharField(source='user.display_name', read_only=True)
     phone = serializers.CharField(source='user.phone_number', read_only=True)
     image_url = serializers.SerializerMethodField()
 
@@ -90,11 +255,21 @@ class TeacherListSerializer(serializers.ModelSerializer):
             'branch_id',
         )
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_image_url(self, obj):
         request = self.context.get('request')
         if obj.image:
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
+
+
+class TeacherArchiveToggleResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    is_archived = serializers.BooleanField()
+
+
+class TeacherDeleteResponseSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
 
 
 class TeacherImageUploadSerializer(serializers.Serializer):

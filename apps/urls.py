@@ -5,5 +5,7 @@ urlpatterns =[
     path('user/', include('apps.user.urls')),
     path('teachers/', include('apps.teacher.urls')),
     path('lead/',include('apps.lead.urls')),
-    path('group/',include('apps.group.urls'))
+    path('group/',include('apps.group.urls')),
+    path('pupil/', include('apps.pupil.urls')),
+    path('market/', include('apps.market.urls')),
 ]

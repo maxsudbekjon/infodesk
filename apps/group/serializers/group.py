@@ -3,6 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.group.models import Group
 from apps.group.models.course import CourseTemplate
+from apps.group.utils import count_group_students
 from apps.teacher.models import Teacher
 from apps.user.models.user import User
 
@@ -12,6 +13,11 @@ class UserModelSerializerForGroup(serializers.ModelSerializer):
         fields=(
             'full_name',
         )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data["full_name"] = instance.display_name
+        return data
 
 class CourseTemplateModelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -39,6 +45,7 @@ class GroupModelSerializer(serializers.ModelSerializer):
     )
     teacher = TeacherSerializerForGroup(read_only=True)
     assistant_teacher = TeacherSerializerForGroup(read_only=True)
+    total_student = serializers.SerializerMethodField()
     class Meta:
         model = Group
         fields = (
@@ -57,6 +64,9 @@ class GroupModelSerializer(serializers.ModelSerializer):
             "started_at",
             "closed_at",
         )
+
+    def get_total_student(self, obj):
+        return count_group_students(obj)
 
     def validate(self, attrs):
         course = attrs.get("course")

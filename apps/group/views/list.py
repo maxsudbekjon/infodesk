@@ -81,6 +81,7 @@ class GroupListAPIView(generics.ListAPIView):
 
         return (
             Group.objects.select_related("course", "teacher", "room", "branch")
+            .prefetch_related("students", "student_set")
             .filter(**filters)
             .only(
                 "id",

@@ -168,7 +168,11 @@ class LeadViewTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # 1 ta static + 1 ta org situation = 2 ta bo'lishi kerak
-        self.assertEqual(len(response.data), 2)
+        if isinstance(response.data, dict) and "count" in response.data and "results" in response.data:
+            self.assertEqual(response.data["count"], 2)
+            self.assertEqual(len(response.data["results"]), 2)
+        else:
+            self.assertEqual(len(response.data), 2)
 
     def test_create_lead_authenticated(self):
         """Lead yaratilganda center avtomatik birikishini tekshirish"""
