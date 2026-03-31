@@ -85,7 +85,7 @@ class TeacherGroupSerializer(serializers.ModelSerializer):
         fields = (
            'id',
             'title',
-            "lessons_days",
+            "lessons_days_choice",
             "room",
             'start_lesson',
             'end_lesson',
