@@ -8,9 +8,11 @@ from django.utils import timezone
 from openpyxl import load_workbook
 
 from common import (
+    PROJECT_ROOT,
     bootstrap_django,
     clean_text,
     default_password,
+    ensure_excel_path,
     extract_phone_number,
     parse_args,
 )
@@ -25,13 +27,13 @@ from apps.teacher.models import Teacher
 from apps.user.models import User
 
 
-DEFAULT_STUDENT_EXCEL_PATH = "/home/ubuntu/projects/backends/infodesk/CRM-2.xlsx"
+DEFAULT_STUDENT_EXCEL_PATH = PROJECT_ROOT / "CRM-2.xlsx"
 CURRENT_YEAR_FOR_AGE = 2026
 IMPORT_SCORE_REASON = "CRM-2.xlsx import coin"
 
 
 def load_student_sheets(excel_path: str) -> list[dict]:
-    workbook = load_workbook(excel_path, read_only=True, data_only=True)
+    workbook = load_workbook(ensure_excel_path(excel_path), read_only=True, data_only=True)
     sheets = []
 
     for index, sheet_name in enumerate(workbook.sheetnames, start=1):
