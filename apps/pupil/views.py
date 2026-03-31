@@ -102,11 +102,8 @@ class StudentMeAPIView(generics.GenericAPIView):
             total_count=Count("id"),
         )
         grade_row = Grade.objects.filter(student_id=student.id).aggregate(avg_grade=Avg("grade"))
-        coin_row = GroupScore.objects.filter(student_id=student.id).exclude(reason=IMPORT_SCORE_REASON).aggregate(
-            total_coin=Coalesce(Sum("score"), 0)
-        )
-        earned_coin = coin_row["total_coin"]
         available_coin = student.available_coin
+        earned_coin = student.earned_coin
 
         average_grade_percent = None
         if grade_row["avg_grade"] is not None:
@@ -125,6 +122,7 @@ class StudentMeAPIView(generics.GenericAPIView):
                 overall_attendance["total_count"],
             ),
             "total_coin": available_coin,
+            "available_coin": available_coin,
             "earned_coin": earned_coin,
             "used_coin": student.used_coin or 0,
             "course_count": len(active_groups),

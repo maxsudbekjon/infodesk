@@ -19,6 +19,11 @@ def get_student_earned_coin(student_id: int, *, include_import: bool = False) ->
     return int(earned_coin)
 
 
+def get_student_total_earned_coin(student_id: int) -> int:
+    student = Student.objects.only("id", "coin_offset").get(pk=student_id)
+    return max(int(student.coin_offset or 0) + get_student_earned_coin(student_id), 0)
+
+
 def calculate_student_coin_offset(student_id: int, target_balance: int) -> int:
     student = Student.objects.only("id", "used_coin").get(pk=student_id)
     earned_coin = get_student_earned_coin(student_id)

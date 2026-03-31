@@ -77,6 +77,7 @@ class StudentProfileResponseSerializer(serializers.Serializer):
     average_grade_percent = serializers.IntegerField(allow_null=True, required=False)
     attendance_percent = serializers.IntegerField(allow_null=True, required=False)
     total_coin = serializers.IntegerField()
+    available_coin = serializers.IntegerField()
     earned_coin = serializers.IntegerField()
     used_coin = serializers.IntegerField()
     course_count = serializers.IntegerField()

@@ -106,6 +106,7 @@ class ImportStudentMatchingTests(TestCase):
 
         self.assertEqual(student.total_coin, 459)
         self.assertEqual(student.coin_offset, 918)
+        self.assertEqual(student.earned_coin, 918)
         self.assertFalse(
             GroupScore.objects.filter(student=student, reason=IMPORT_SCORE_REASON).exists()
         )

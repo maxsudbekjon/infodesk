@@ -2,8 +2,6 @@ from django.db import models
 from django.conf import settings
 import re
 from django.core.exceptions import ValidationError
-from django.db.models import Sum
-from django.db.models.functions import Coalesce
 from apps.base_models import TimeStampedModel
 from apps.pupil.choices import DISCOUNT_TYPE, STUDENT_PAYMENT, TRANSFER_REASON
 from apps.pupil.choices import STUDENT_STATUS
@@ -116,12 +114,12 @@ class Student(TimeStampedModel):
 
     @property
     def earned_coin(self):
-        from apps.pupil.coin import IMPORT_SCORE_REASON
+        if not self.pk:
+            return max(int(self.coin_offset or 0), 0)
 
-        return (
-            self.scores.exclude(reason=IMPORT_SCORE_REASON).aggregate(total=Coalesce(Sum("score"), 0))["total"]
-            or 0
-        )
+        from apps.pupil.coin import get_student_total_earned_coin
+
+        return get_student_total_earned_coin(self.pk)
 
     @property
     def available_coin(self):
