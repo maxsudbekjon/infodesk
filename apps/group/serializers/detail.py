@@ -6,6 +6,7 @@ from rest_framework import serializers
 
 from apps.group.models import Group
 from apps.group.utils import build_student_image_url, get_group_students
+from apps.pupil.coin import IMPORT_SCORE_REASON
 
 
 class GroupDetailModelSerializer(serializers.ModelSerializer):
@@ -62,6 +63,8 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
         today = timezone.localdate()
 
         for score in obj.scores.all():
+            if score.reason == IMPORT_SCORE_REASON:
+                continue
             score_map[score.student_id] += score.score
             if timezone.localdate(score.created_at) == today:
                 today_score_map[score.student_id] += score.score

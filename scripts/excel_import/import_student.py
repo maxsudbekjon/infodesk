@@ -23,7 +23,11 @@ from common import (
 bootstrap_django()
 
 from apps.group.models import Group, GroupScore
-from apps.pupil.coin import recalculate_student_total_coin
+from apps.pupil.coin import (
+    IMPORT_SCORE_REASON,
+    calculate_student_coin_offset,
+    recalculate_student_total_coin,
+)
 from apps.pupil.models import Student
 from apps.teacher.models import Teacher
 from apps.user.models import User
@@ -31,9 +35,6 @@ from apps.user.models import User
 
 DEFAULT_STUDENT_EXCEL_PATH = PROJECT_ROOT / "CRM-2.xlsx"
 CURRENT_YEAR_FOR_AGE = 2026
-IMPORT_SCORE_REASON = "CRM-2.xlsx import coin"
-
-
 def load_student_sheets(excel_path: str) -> list[dict]:
     workbook = load_workbook(ensure_excel_path(excel_path), read_only=True, data_only=True)
     sheets = []
@@ -677,25 +678,15 @@ def _sync_import_group_membership(student: Student, group: Group) -> None:
         student.group = group
 
 
-def _sync_import_coin(student: Student, group: Group, coin: int) -> None:
-    score = GroupScore.objects.filter(student=student, group=group, reason=IMPORT_SCORE_REASON).first()
-    if score:
-        changed = False
-        if score.score != coin:
-            score.score = coin
-            changed = True
-        if changed:
-            score.save(update_fields=["score"])
-        else:
-            recalculate_student_total_coin(student.id)
-        return
+def _sync_import_coin(student: Student, _group: Group, coin: int) -> None:
+    GroupScore.objects.filter(student=student, reason=IMPORT_SCORE_REASON).delete()
 
-    GroupScore.objects.create(
-        student=student,
-        group=group,
-        score=coin,
-        reason=IMPORT_SCORE_REASON,
-    )
+    target_offset = calculate_student_coin_offset(student.id, coin)
+    if student.coin_offset != target_offset:
+        Student.objects.filter(pk=student.pk).update(coin_offset=target_offset)
+        student.coin_offset = target_offset
+
+    recalculate_student_total_coin(student.id)
 
 
 def import_students(excel_path: str) -> None:

@@ -43,6 +43,7 @@ class Student(TimeStampedModel):
     used_coin = models.PositiveIntegerField(default=0)
     phone_number = models.CharField(max_length=30,validators=[validate_phone_number],null=True,blank=True)
     comment = models.TextField(null=True, blank=True)
+    coin_offset = models.IntegerField(default=0)
     total_coin = models.IntegerField(default=0)
     group = models.ForeignKey(
         "group.Group",
@@ -115,7 +116,12 @@ class Student(TimeStampedModel):
 
     @property
     def earned_coin(self):
-        return self.scores.aggregate(total=Coalesce(Sum("score"), 0))["total"] or 0
+        from apps.pupil.coin import IMPORT_SCORE_REASON
+
+        return (
+            self.scores.exclude(reason=IMPORT_SCORE_REASON).aggregate(total=Coalesce(Sum("score"), 0))["total"]
+            or 0
+        )
 
     @property
     def available_coin(self):

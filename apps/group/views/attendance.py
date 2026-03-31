@@ -30,6 +30,7 @@ from apps.group.serializers.attendance import (
 )
 from apps.group.serializers.monthly_attendance import GroupMonthlyAttendanceResponseSerializer
 from apps.group.utils import build_student_image_url, get_group_students, parse_month_year_query_params
+from apps.pupil.coin import IMPORT_SCORE_REASON
 
 class AttendancePagination(PageNumberPagination):
     page_size = 20
@@ -171,6 +172,7 @@ class GroupMonthlyAttendanceAPIView(generics.ListAPIView):
                     created_at__year=year,
                     created_at__month=month,
                 )
+                .exclude(reason=IMPORT_SCORE_REASON)
                 .values("student_id")
                 .annotate(total_coin=Coalesce(Sum("score"), 0))
             )

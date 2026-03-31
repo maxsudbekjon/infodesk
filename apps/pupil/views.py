@@ -28,6 +28,7 @@ from apps.group.utils import (
 from apps.group.utils import get_student_groups_queryset
 from apps.pupil.models.student import Student
 from apps.pupil.models.note import StudentNote
+from apps.pupil.coin import IMPORT_SCORE_REASON
 from apps.pupil.serializers.dashboard import (
     StudentCourseSummaryResponseSerializer,
     StudentGroupListResponseSerializer,
@@ -101,7 +102,7 @@ class StudentMeAPIView(generics.GenericAPIView):
             total_count=Count("id"),
         )
         grade_row = Grade.objects.filter(student_id=student.id).aggregate(avg_grade=Avg("grade"))
-        coin_row = GroupScore.objects.filter(student_id=student.id).aggregate(
+        coin_row = GroupScore.objects.filter(student_id=student.id).exclude(reason=IMPORT_SCORE_REASON).aggregate(
             total_coin=Coalesce(Sum("score"), 0)
         )
         earned_coin = coin_row["total_coin"]
@@ -228,6 +229,7 @@ class StudentTodayCoinAPIView(generics.GenericAPIView):
         today = timezone.localdate()
         today_coins = list(
             GroupScore.objects.filter(student=student, created_at__date=today)
+            .exclude(reason=IMPORT_SCORE_REASON)
             .select_related("group__course")
             .order_by("-created_at", "-id")
         )
@@ -312,6 +314,7 @@ class StudentMonthlyAttendanceAPIView(generics.GenericAPIView):
                 created_at__year=year,
                 created_at__month=month,
             )
+            .exclude(reason=IMPORT_SCORE_REASON)
             .aggregate(total_coin=Coalesce(Sum("score"), 0))
         )
 
@@ -387,7 +390,11 @@ class StudentCourseSummaryAPIView(generics.GenericAPIView):
             elif attendance.is_present is False:
                 item["absent_count"] += 1
 
-        score_rows = GroupScore.objects.filter(student=student).select_related("group__course")
+        score_rows = (
+            GroupScore.objects.filter(student=student)
+            .exclude(reason=IMPORT_SCORE_REASON)
+            .select_related("group__course")
+        )
         for score in score_rows:
             if not score.group_id or not score.group.course_id:
                 continue

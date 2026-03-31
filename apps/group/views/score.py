@@ -15,6 +15,7 @@ from apps.group.permissions import (
     user_can_access_group_as_student,
 )
 from apps.group.serializers.score import GroupScoreCreateSerializer, GroupScoreUpdateSerializer
+from apps.pupil.coin import IMPORT_SCORE_REASON
 
 @extend_schema(tags=['Group'])
 class GroupScoreCreateAPIView(generics.CreateAPIView):
@@ -51,6 +52,7 @@ class GroupScoreListAPIView(generics.ListAPIView):
             pk=group_id,
         )
         qs = GroupScore.objects.filter(group_id=group_id).select_related("group", "student")
+        qs = qs.exclude(reason=IMPORT_SCORE_REASON)
 
         teacher = get_teacher_profile(user)
         student = get_student_profile(user)
