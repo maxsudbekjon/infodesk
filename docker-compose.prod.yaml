@@ -28,7 +28,7 @@ services:
       - ./media:/app/media
       - ./static:/app/static
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       - redis
 
