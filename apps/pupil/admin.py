@@ -4,7 +4,7 @@ from django.contrib.admin.sites import AlreadyRegistered
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.pupil.choices import STUDENT_STATUS
-from apps.pupil.coin import recalculate_student_total_coin
+from apps.pupil.coin import calculate_student_coin_offset, recalculate_student_total_coin
 from apps.pupil.models import Parent, Student, StudentNote
 from apps.pupil.models.student import StudnetTransfer
 
@@ -100,7 +100,6 @@ class StudentAdmin(FriendlyAdminMixin):
     readonly_fields = (
         "created_at",
         "updated_at",
-        "total_coin",
         "available_coin_display",
         "earned_coin_display",
     )
@@ -138,6 +137,19 @@ class StudentAdmin(FriendlyAdminMixin):
     @admin.display(description="Jami yig'ilgan coin")
     def earned_coin_display(self, obj):
         return obj.earned_coin
+
+    def save_model(self, request, obj, form, change):
+        desired_total_coin = form.cleaned_data.get("total_coin")
+
+        super().save_model(request, obj, form, change)
+
+        if desired_total_coin is not None and "total_coin" in getattr(form, "changed_data", []):
+            obj.coin_offset = calculate_student_coin_offset(obj.pk, desired_total_coin)
+            Student.objects.filter(pk=obj.pk).update(
+                coin_offset=obj.coin_offset,
+                total_coin=desired_total_coin,
+            )
+            obj.total_coin = desired_total_coin
 
     @admin.action(description="Tanlangan talabalar coin balansini qayta hisoblash")
     def recalculate_coin_balance_action(self, request, queryset):
