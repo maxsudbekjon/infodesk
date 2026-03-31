@@ -1,11 +1,8 @@
 from django.db import transaction
-from django.db.models import Sum
-from django.db.models.functions import Coalesce
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.group.models.score import GroupScore
 from apps.market.models import MarketOrder, Product
 from apps.pupil.models import Student
 from apps.user.profile_resolver import get_student_profile
@@ -80,7 +77,11 @@ class MarketOrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"detail": "Bu endpoint faqat student account uchun."})
 
         with transaction.atomic():
-            locked_student = Student.objects.select_for_update().only("id", "used_coin").get(pk=student.pk)
+            locked_student = Student.objects.select_for_update().only(
+                "id",
+                "used_coin",
+                "total_coin",
+            ).get(pk=student.pk)
             product = (
                 Product.objects.select_for_update()
                 .only("id", "title", "price", "count", "image")
@@ -95,12 +96,7 @@ class MarketOrderSerializer(serializers.ModelSerializer):
                     {"product": "Mahsulot narxi coin uchun butun son bo'lishi kerak."}
                 )
 
-            earned_coin = (
-                GroupScore.objects.filter(student_id=locked_student.id)
-                .aggregate(total_coin=Coalesce(Sum("score"), 0))
-                .get("total_coin", 0)
-            )
-            available_coin = max(earned_coin - locked_student.used_coin, 0)
+            available_coin = max(int(locked_student.total_coin or 0), 0)
             price_coin = int(product.price)
 
             if available_coin < price_coin:
@@ -109,7 +105,8 @@ class MarketOrderSerializer(serializers.ModelSerializer):
             product.count -= 1
             product.save(update_fields=["count"])
             locked_student.used_coin += price_coin
-            locked_student.save(update_fields=["used_coin"])
+            locked_student.total_coin = available_coin - price_coin
+            locked_student.save(update_fields=["used_coin", "total_coin"])
 
             return MarketOrder.objects.create(
                 student=locked_student,

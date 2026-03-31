@@ -19,14 +19,15 @@ from common import (
 bootstrap_django()
 
 from apps.group.models import Group, GroupScore
+from apps.pupil.coin import recalculate_student_total_coin
 from apps.pupil.models import Student
 from apps.teacher.models import Teacher
 from apps.user.models import User
 
 
-DEFAULT_STUDENT_EXCEL_PATH = "/Users/maxsudtoshpulat/Downloads/CRM.xlsx"
+DEFAULT_STUDENT_EXCEL_PATH = "/home/ubuntu/projects/backends/infodesk/CRM-2.xlsx"
 CURRENT_YEAR_FOR_AGE = 2026
-IMPORT_SCORE_REASON = "CRM.xlsx import coin"
+IMPORT_SCORE_REASON = "CRM-2.xlsx import coin"
 
 
 def load_student_sheets(excel_path: str) -> list[dict]:
@@ -595,6 +596,8 @@ def _sync_import_coin(student: Student, group: Group, coin: int) -> None:
             changed = True
         if changed:
             score.save(update_fields=["score"])
+        else:
+            recalculate_student_total_coin(student.id)
         return
 
     GroupScore.objects.create(

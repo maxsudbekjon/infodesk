@@ -105,7 +105,7 @@ class StudentMeAPIView(generics.GenericAPIView):
             total_coin=Coalesce(Sum("score"), 0)
         )
         earned_coin = coin_row["total_coin"]
-        available_coin = max(earned_coin - (student.used_coin or 0), 0)
+        available_coin = student.available_coin
 
         average_grade_percent = None
         if grade_row["avg_grade"] is not None:

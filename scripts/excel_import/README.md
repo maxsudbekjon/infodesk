@@ -7,6 +7,7 @@ Excel importerlar ushbu tartibda ishga tushiriladi:
 5. `env DEBUG=false .venv/bin/python scripts/excel_import/import_teacher.py`
 6. `env DEBUG=false .venv/bin/python scripts/excel_import/import_group.py`
 7. `env DEBUG=false .venv/bin/python scripts/excel_import/import_student.py "/Users/maxsudtoshpulat/Downloads/CRM.xlsx"`
+8. `env DEBUG=false .venv/bin/python scripts/excel_import/import_student_coin.py "/Users/maxsudtoshpulat/Downloads/CRM.xlsx"`
 
 Istasangiz Excel file path ni argument qilib berishingiz mumkin:
 
@@ -19,5 +20,6 @@ Eslatma:
 - `owner.role` ustunidagi `SEO` qiymati `ceo` sifatida import qilinadi.
 - `branch.courses` ustuni bitta yoki bir nechta qator raqamini qabul qiladi. Masalan `1`, `1,2,3`.
 - `CRM.xlsx` importida `SHARTNOMA` ustuni `Student.contract` boolean maydoniga yoziladi.
+- `import_student_coin.py` mavjud studentlarni Excel bo'yicha topib, `Student.total_coin` balansini va import coin yozuvini sync qiladi.
 - `KELGAN SANA` da oy `01-03` bo'lsa yil majburan `2026`, boshqa oylar `2025` qilinadi.
 - `BIRTHDAY` maydoni agar yosh ko'rinishida kelsa, yil `2026 - yosh` formulasi bilan topiladi va sana `01-01` qilinadi.

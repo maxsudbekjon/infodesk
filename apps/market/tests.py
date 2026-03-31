@@ -121,6 +121,8 @@ class MarketAPITests(APITestCase):
         )
         self.student.used_coin = 30
         self.student.save(update_fields=["used_coin"])
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 10)
         self.client.force_authenticate(user=self.student_user)
 
         response = self.client.get(
@@ -156,6 +158,7 @@ class MarketAPITests(APITestCase):
         self.student.refresh_from_db()
         self.assertEqual(self.product.count, 2)
         self.assertEqual(self.student.used_coin, 25)
+        self.assertEqual(self.student.total_coin, 15)
 
     def test_student_orders_list_shows_only_own_orders(self):
         MarketOrder.objects.create(student=self.student, product=self.product)

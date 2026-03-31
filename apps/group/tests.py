@@ -286,8 +286,10 @@ class GroupRolePermissionTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         score.refresh_from_db()
+        self.student.refresh_from_db()
         self.assertEqual(score.score, 10)
         self.assertEqual(score.reason, "Updated reason")
+        self.assertEqual(self.student.total_coin, 20)
 
     def test_teacher_cannot_create_score_above_daily_limit(self):
         self.client.force_authenticate(user=self.teacher_user)
