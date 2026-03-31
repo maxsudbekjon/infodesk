@@ -44,6 +44,10 @@ def get_teacher_groups_queryset(teacher, course_id=None):
     return queryset.prefetch_related("lessons_days", "students", "student_set").order_by("-created_at")
 
 
+def count_distinct_teacher_courses(groups_queryset):
+    return groups_queryset.order_by().values_list("course_id", flat=True).distinct().count()
+
+
 @extend_schema(tags=["Teachers"])
 class TeacherListAPIView(generics.ListAPIView):
     serializer_class = TeacherListSerializer
@@ -290,7 +294,7 @@ class TeacherMeAPIView(generics.RetrieveAPIView):
         groups_qs = get_teacher_groups_queryset(teacher)
         teacher.profile_groups = list(groups_qs)
         teacher.groups_count = groups_qs.count()
-        teacher.courses_count = groups_qs.values("course_id").distinct().count()
+        teacher.courses_count = count_distinct_teacher_courses(groups_qs)
         teacher.students_count = (
             Student.objects.filter(
                 Q(group__in=groups_qs) | Q(groups__in=groups_qs)

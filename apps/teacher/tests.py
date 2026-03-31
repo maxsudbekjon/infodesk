@@ -241,6 +241,26 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
         self.assertEqual(second_group["course_name"], self.course_english.name)
         self.assertNotIn("user", response.data)
 
+    def test_logged_in_teacher_profile_counts_distinct_courses(self):
+        Group.objects.create(
+            title="Math-2",
+            course=self.course_math,
+            branch=self.branch,
+            teacher=self.teacher,
+            room=self.room_1,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            start_lesson=time(12, 0),
+            end_lesson=time(13, 0),
+        )
+
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("teacher-me"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["groups_count"], 3)
+        self.assertEqual(response.data["courses_count"], 2)
+
     def test_owner_can_fetch_teacher_detail_with_full_name_fallback(self):
         self.teacher_user.full_name = ""
         self.teacher_user.first_name = "Teacher"
