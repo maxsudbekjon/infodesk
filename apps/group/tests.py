@@ -125,13 +125,13 @@ class GroupRolePermissionTests(APITestCase):
             date=self.attendance_date,
             grade=3,
         )
-        GroupScore.objects.create(
+        self.student_score = GroupScore.objects.create(
             group=self.group,
             student=self.student,
             score=10,
             reason="Excellent",
         )
-        GroupScore.objects.create(
+        self.other_student_score = GroupScore.objects.create(
             group=self.group,
             student=self.other_student,
             score=4,
@@ -348,6 +348,7 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(students[0]["earned_coin"], 10)
         self.assertEqual(students[0]["used_coin"], 0)
         self.assertEqual(students[0]["today_coin"], 10)
+        self.assertEqual(students[0]["today_coin_id"], self.student_score.id)
         self.assertIsNotNone(students[0]["image"])
         self.assertIn("student-avatar", students[0]["image"])
         self.assertNotIn("rating", students[0])
@@ -357,12 +358,14 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(students[1]["earned_coin"], 4)
         self.assertEqual(students[1]["used_coin"], 0)
         self.assertEqual(students[1]["today_coin"], 4)
+        self.assertEqual(students[1]["today_coin_id"], self.other_student_score.id)
 
         self.assertEqual(students[2]["id"], self.fk_only_student.id)
         self.assertEqual(students[2]["coin"], 0)
         self.assertEqual(students[2]["earned_coin"], 0)
         self.assertEqual(students[2]["used_coin"], 0)
         self.assertEqual(students[2]["today_coin"], 0)
+        self.assertIsNone(students[2]["today_coin_id"])
 
     def test_group_ranking_returns_student_cards_with_image(self):
         self.client.force_authenticate(user=self.teacher_user)

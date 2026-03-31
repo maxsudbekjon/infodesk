@@ -42,6 +42,7 @@ class GroupStudentCardSerializer(serializers.Serializer):
     earned_coin = serializers.IntegerField()
     used_coin = serializers.IntegerField()
     today_coin = serializers.IntegerField()
+    today_coin_id = serializers.IntegerField(allow_null=True, required=False)
 
 
 class GroupStudentModelSerializer(serializers.ModelSerializer):
@@ -56,12 +57,19 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
         students = get_group_students(obj)
         score_map = defaultdict(int)
         today_score_map = defaultdict(int)
+        today_score_id_map = {}
+        today_score_sort_key_map = {}
         today = timezone.localdate()
 
         for score in obj.scores.all():
             score_map[score.student_id] += score.score
             if timezone.localdate(score.created_at) == today:
                 today_score_map[score.student_id] += score.score
+                current_sort_key = (score.created_at, score.id)
+                previous_sort_key = today_score_sort_key_map.get(score.student_id)
+                if previous_sort_key is None or current_sort_key >= previous_sort_key:
+                    today_score_sort_key_map[score.student_id] = current_sort_key
+                    today_score_id_map[score.student_id] = score.id
 
         ordered_students = sorted(
             students,
@@ -81,6 +89,7 @@ class GroupStudentModelSerializer(serializers.ModelSerializer):
                 "earned_coin": score_map.get(student.id, 0),
                 "used_coin": student.used_coin or 0,
                 "today_coin": today_score_map.get(student.id, 0),
+                "today_coin_id": today_score_id_map.get(student.id),
             }
             for student in ordered_students
         ]
