@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "WORKING PRODUCTION ENTRYPOINT..."
+
 set -e
 
 echo "⏳ Waiting for PostgreSQL..."
