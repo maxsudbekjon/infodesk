@@ -37,6 +37,7 @@ SECURE_BROWSER_XSS_FILTER = env.bool("SECURE_BROWSER_XSS_FILTER", True)
 X_FRAME_OPTIONS = env.str("X_FRAME_OPTIONS", "DENY")
 
 INSTALLED_APPS = [
+    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -56,7 +57,7 @@ INSTALLED_APPS = [
     "apps.market",
     "apps.dashboard",
     "apps.user",
-    "apps.settings"
+    "apps.settings",
 ]
 
 MIDDLEWARE = [
@@ -108,6 +109,7 @@ DBS = {
 DATABASES = {
     "default": DBS.get(env.str("DB_TYPE", "SQLITE")),
 }
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -221,4 +223,259 @@ SIMPLE_JWT = {
     "CHECK_REVOKE_TOKEN": False,
     "REVOKE_TOKEN_CLAIM": "hash_password",
     "CHECK_USER_IS_ACTIVE": True,
+}
+
+# =============================================================================
+# JAZZMIN — Production Admin Panel Configuration
+# =============================================================================
+
+JAZZMIN_SETTINGS = {
+    # ── Branding ──────────────────────────────────────────────────────────────
+    "site_title": "Infodesk Admin",
+    "site_header": "Infodesk",
+    "site_brand": "Infodesk",
+    "site_logo": None,
+    "login_logo": None,
+    "login_logo_dark": None,
+    "site_logo_classes": "img-circle",
+    "site_icon": None,
+    "welcome_sign": "Infodesk Boshqaruv Paneliga Xush Kelibsiz",
+    "copyright": "Infodesk © 2025",
+
+    # ── Global Search ─────────────────────────────────────────────────────────
+    # Models that appear in the top search bar
+    "search_model": [
+        "user.User",
+        "pupil.Student",
+        "lead.Lead",
+        "teacher.Teacher",
+    ],
+
+    # Field on user model for avatar (None = use default gravatar)
+    "user_avatar": None,
+
+    # ── Top Menu ──────────────────────────────────────────────────────────────
+    "topmenu_links": [
+        {
+            "name": "Bosh sahifa",
+            "url": "admin:index",
+            "permissions": ["auth.view_user"],
+            "icon": "fas fa-home",
+        },
+        {
+            "name": "API Docs",
+            "url": "/api/docs/",
+            "new_window": True,
+            "icon": "fas fa-book",
+        },
+        {"app": "lead"},
+        {"app": "pupil"},
+        {"app": "group"},
+    ],
+
+    # ── User Dropdown Menu ────────────────────────────────────────────────────
+    "usermenu_links": [
+        {
+            "name": "API Docs",
+            "url": "/api/docs/",
+            "new_window": True,
+            "icon": "fas fa-book-open",
+        },
+        {"model": "user.user"},
+    ],
+
+    # ── Sidebar ───────────────────────────────────────────────────────────────
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+
+    # App ordering in sidebar
+    "order_with_respect_to": [
+        "settings",
+        "user",
+        "teacher",
+        "lead",
+        "pupil",
+        "group",
+        "market",
+        "django_celery_beat",
+        "auth",
+    ],
+
+    # Custom quick links per app section
+    "custom_links": {
+        "pupil": [
+            {
+                "name": "O'quvchilar ro'yxati",
+                "url": "admin:pupil_student_changelist",
+                "icon": "fas fa-list-ul",
+                "permissions": ["pupil.view_student"],
+            },
+        ],
+        "lead": [
+            {
+                "name": "Lidlar ro'yxati",
+                "url": "admin:lead_lead_changelist",
+                "icon": "fas fa-list-ul",
+                "permissions": ["lead.view_lead"],
+            },
+        ],
+        "group": [
+            {
+                "name": "Guruhlar ro'yxati",
+                "url": "admin:group_group_changelist",
+                "icon": "fas fa-list-ul",
+                "permissions": ["group.view_group"],
+            },
+        ],
+    },
+
+    # ── Icons (FontAwesome 5 Free) ────────────────────────────────────────────
+    "icons": {
+        # Built-in Django auth
+        "auth":                              "fas fa-users-cog",
+        "auth.user":                         "fas fa-user-shield",
+        "auth.group":                        "fas fa-users",
+
+        # django-celery-beat
+        "django_celery_beat":                "fas fa-clock",
+        "django_celery_beat.periodictask":   "fas fa-tasks",
+        "django_celery_beat.crontabschedule":"fas fa-calendar-alt",
+        "django_celery_beat.intervalschedule":"fas fa-stopwatch",
+        "django_celery_beat.solarschedule":  "fas fa-sun",
+        "django_celery_beat.clockedschedule":"fas fa-bell",
+
+        # user app
+        "user":                              "fas fa-user-circle",
+        "user.user":                         "fas fa-user",
+        "user.operator":                     "fas fa-headset",
+
+        # settings app  (app label: "settings")
+        "settings":                          "fas fa-cogs",
+        "settings.organization":             "fas fa-building",
+        "settings.branch":                   "fas fa-code-branch",
+        "settings.receiptsettings":          "fas fa-receipt",
+        "settings.paymentmethod":            "fas fa-credit-card",
+        "settings.weekend":                  "fas fa-calendar-times",
+
+        # teacher app
+        "teacher":                           "fas fa-chalkboard-teacher",
+        "teacher.teacher":                   "fas fa-chalkboard-teacher",
+        "teacher.specialty":                 "fas fa-graduation-cap",
+
+        # lead app
+        "lead":                              "fas fa-filter",
+        "lead.lead":                         "fas fa-funnel-dollar",
+        "lead.note":                         "fas fa-comment-alt",
+        "lead.situation":                    "fas fa-sitemap",
+        "lead.source":                       "fas fa-broadcast-tower",
+
+        # pupil app
+        "pupil":                             "fas fa-user-graduate",
+        "pupil.student":                     "fas fa-user-graduate",
+        "pupil.parent":                      "fas fa-users",
+        "pupil.studentnote":                 "fas fa-sticky-note",
+        "pupil.studnettransfer":             "fas fa-exchange-alt",
+
+        # group app
+        "group":                             "fas fa-layer-group",
+        "group.group":                       "fas fa-layer-group",
+        "group.coursetemplate":              "fas fa-book",
+        "group.day":                         "fas fa-calendar-day",
+        "group.room":                        "fas fa-door-open",
+        "group.attendance":                  "fas fa-clipboard-check",
+        "group.grade":                       "fas fa-star",
+        "group.groupscore":                  "fas fa-coins",
+        "group.groupnote":                   "fas fa-clipboard",
+        "group.groupdiscount":               "fas fa-tags",
+        "group.groupfreeze":                 "fas fa-snowflake",
+        "group.grouphistory":                "fas fa-history",
+        "group.grouprankingcomment":         "fas fa-medal",
+        "group.exam":                        "fas fa-file-alt",
+
+        # market app
+        "market":                            "fas fa-store",
+        "market.product":                    "fas fa-box",
+        "market.marketorder":                "fas fa-shopping-cart",
+    },
+
+    # Fallback icons for apps/models without explicit icon
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    # ── UX Options ────────────────────────────────────────────────────────────
+    # Open related object in a modal instead of a new page
+    "related_modal_active": True,
+
+    # Custom static assets
+    "custom_css": None,
+    "custom_js": None,
+    "use_google_fonts_cdn": True,
+
+    # Disable the UI builder in production (prevents accidental style changes)
+    "show_ui_builder": False,
+
+    # ── Change Form Layout ────────────────────────────────────────────────────
+    # Options: single | horizontal_tabs | vertical_tabs | collapsible | carousel
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_override": {
+        "user.user":      "collapsible",
+        "pupil.student":  "collapsible",
+        "teacher.teacher":"collapsible",
+        "group.group":    "collapsible",
+        "lead.lead":      "collapsible",
+    },
+
+    "language_chooser": False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    # ── Typography ────────────────────────────────────────────────────────────
+    "navbar_small_text":      False,
+    "footer_small_text":      False,
+    "body_small_text":        True,   # compact body text for data-dense pages
+    "brand_small_text":       False,
+
+    # ── Colors ────────────────────────────────────────────────────────────────
+    "brand_colour":           "navbar-primary",
+    "accent":                 "accent-primary",
+    "navbar":                 "navbar-dark navbar-primary",
+    "no_navbar_border":       True,
+
+    # ── Layout ────────────────────────────────────────────────────────────────
+    "navbar_fixed":           True,   # sticky top navbar
+    "layout_boxed":           False,  # full-width layout
+    "footer_fixed":           False,
+    "sidebar_fixed":          True,   # sticky sidebar
+
+    # ── Sidebar Style ─────────────────────────────────────────────────────────
+    "sidebar":                        "sidebar-dark-primary",
+    "sidebar_nav_small_text":         False,
+    "sidebar_disable_expand":         False,
+    "sidebar_nav_child_indent":       True,
+    "sidebar_nav_compact_style":      True,  # tighter spacing = more items visible
+    "sidebar_nav_legacy_style":       False,
+    "sidebar_nav_flat_style":         False,
+
+    # ── Theme ─────────────────────────────────────────────────────────────────
+    # Available: default, cerulean, cosmo, cyborg, darkly, flatly, journal,
+    #            litera, lumen, lux, materia, minty, pulse, sandstone,
+    #            simplex, sketchy, slate, solar, spacelab, superhero,
+    #            united, yeti
+    "theme":            "flatly",
+    "dark_mode_theme":  "darkly",
+
+    # ── Button Classes ────────────────────────────────────────────────────────
+    "button_classes": {
+        "primary":   "btn-primary",
+        "secondary": "btn-secondary",
+        "info":      "btn-outline-info",
+        "warning":   "btn-warning",
+        "danger":    "btn-danger",
+        "success":   "btn-success",
+    },
+
+    # ── Action Button Styles ──────────────────────────────────────────────────
+    "actions_sticky_top": True,  # keep action bar visible while scrolling
 }
