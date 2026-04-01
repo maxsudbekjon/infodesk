@@ -29,6 +29,7 @@ services:
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
+      - db
       - redis
 
   redis:
