@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.db import transaction
 
+from apps.user.models.user import split_full_name_parts
 from common import (
     bootstrap_django,
     clean_text,
@@ -19,7 +20,7 @@ bootstrap_django()
 
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
-from apps.user.models import User, split_full_name_parts
+from apps.user.models import User
 
 
 def extract_teacher_full_name(row: dict) -> str | None:
