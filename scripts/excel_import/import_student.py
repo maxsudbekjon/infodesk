@@ -177,6 +177,7 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
     indexes: dict[str, object] = {
         "last_name": None,
         "first_name": None,
+        "full_name": None,
         "birthday": None,
         "arrival_indexes": arrival_indexes,
         "time": None,
@@ -191,6 +192,14 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
             indexes["last_name"] = index
         elif text in {"ism", "ismi"} or text.endswith(" ism"):
             indexes["first_name"] = index
+        elif (
+            "fio" in text
+            or "full name" in text
+            or "full_name" in text
+            or "ism famili" in text
+            or "ism familya" in text
+        ):
+            indexes["full_name"] = index
         elif "telefon" in text or "tel nomer" in text:
             phone_indexes.append(index)
         elif "birth" in text or "brith" in text:
@@ -711,10 +720,14 @@ def import_students(excel_path: str) -> None:
             try:
                 with transaction.atomic():
                     values = list(row["values"])
-                    full_name = build_full_name(
-                        row_value(values, column_indexes["last_name"]),
-                        row_value(values, column_indexes["first_name"]),
-                    )
+            raw_full_name = row_value(values, column_indexes.get("full_name"))
+            if clean_text(raw_full_name):
+                full_name = clean_text(raw_full_name)
+            else:
+                full_name = build_full_name(
+                    row_value(values, column_indexes["last_name"]),
+                    row_value(values, column_indexes["first_name"]),
+                )
                     if not full_name:
                         skipped_count += 1
                         print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} full_name bo'sh")
