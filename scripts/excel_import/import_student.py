@@ -188,9 +188,15 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
 
     for index, header in enumerate(headers or []):
         text = normalize_spaces(str(header or "")).lower()
-        if "famili" in text or "family" in text or text.startswith("fam"):
+        if (
+            "famili" in text
+            or "family" in text
+            or text.startswith("fam")
+            or "фам" in text
+            or "last name" in text
+        ):
             indexes["last_name"] = index
-        elif text in {"ism", "ismi"} or text.endswith(" ism"):
+        elif text in {"ism", "ismi"} or text.endswith(" ism") or "имя" in text or "first name" in text:
             indexes["first_name"] = index
         elif (
             "fio" in text
@@ -198,6 +204,11 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
             or "full_name" in text
             or "ism famili" in text
             or "ism familya" in text
+            or "fish" in text
+            or "фио" in text
+            or "talaba" in text
+            or "student" in text
+            or "oquvchi" in text
         ):
             indexes["full_name"] = index
         elif "telefon" in text or "tel nomer" in text:
@@ -429,6 +440,22 @@ def normalize_coin(value: object) -> int:
 def build_full_name(last_name: object, first_name: object) -> str:
     parts = [clean_text(last_name), clean_text(first_name)]
     return " ".join(part for part in parts if part)
+
+
+def guess_full_name_from_row(values: list[object]) -> str | None:
+    for value in values:
+        text = clean_text(value)
+        if not text:
+            continue
+        if extract_phone_number(text):
+            continue
+        # Skip pure numeric/time-like cells
+        if re.fullmatch(r"[\\d\\s\\+\\-\\.\\/()]+", text):
+            continue
+        if len(text) < 3:
+            continue
+        return text
+    return None
 
 
 def choose_primary_phone(*phone_values: object) -> tuple[str | None, str | None]:
@@ -728,6 +755,8 @@ def import_students(excel_path: str) -> None:
                             row_value(values, column_indexes["last_name"]),
                             row_value(values, column_indexes["first_name"]),
                         )
+                    if not full_name:
+                        full_name = guess_full_name_from_row(values)
                     if not full_name:
                         skipped_count += 1
                         print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} full_name bo'sh")
