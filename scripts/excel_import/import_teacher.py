@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from django.db import transaction
-
 from common import (
     bootstrap_django,
     clean_text,
@@ -15,11 +13,15 @@ from common import (
 )
 
 
+# Configure Django before importing any project modules
 bootstrap_django()
+
+from django.db import transaction
 
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
-from apps.user.models import User, split_full_name_parts
+from apps.user.models import User
+from apps.user.models.user import split_full_name_parts
 
 
 def extract_teacher_full_name(row: dict) -> str | None:
