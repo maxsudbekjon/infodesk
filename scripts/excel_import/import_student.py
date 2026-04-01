@@ -720,14 +720,14 @@ def import_students(excel_path: str) -> None:
             try:
                 with transaction.atomic():
                     values = list(row["values"])
-            raw_full_name = row_value(values, column_indexes.get("full_name"))
-            if clean_text(raw_full_name):
-                full_name = clean_text(raw_full_name)
-            else:
-                full_name = build_full_name(
-                    row_value(values, column_indexes["last_name"]),
-                    row_value(values, column_indexes["first_name"]),
-                )
+                    raw_full_name = row_value(values, column_indexes.get("full_name"))
+                    if clean_text(raw_full_name):
+                        full_name = clean_text(raw_full_name)
+                    else:
+                        full_name = build_full_name(
+                            row_value(values, column_indexes["last_name"]),
+                            row_value(values, column_indexes["first_name"]),
+                        )
                     if not full_name:
                         skipped_count += 1
                         print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} full_name bo'sh")
@@ -745,7 +745,9 @@ def import_students(excel_path: str) -> None:
                         normalize_contract(row_value(values, contract_index)) for contract_index in contract_indexes
                     )
                     if not contract:
-                        contract = any(normalize_contract(row_value(values, arrival_index)) for arrival_index in arrival_indexes)
+                        contract = any(
+                            normalize_contract(row_value(values, arrival_index)) for arrival_index in arrival_indexes
+                        )
                     arrival_date = extract_arrival_date(values, arrival_indexes)
                     raw_time = row_value(values, column_indexes["time"])
                     if clean_text(raw_time) is None:
