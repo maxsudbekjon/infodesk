@@ -1,8 +1,11 @@
-from django.conf import settings
 from django.db import models
+from django.contrib.auth import get_user_model
 
 from apps.base_models import TimeStampedModel
 from apps.settings.choices import LEAD_CONSOLIDATION
+
+
+User = get_user_model()
 
 
 class Organization(TimeStampedModel):
@@ -12,7 +15,7 @@ class Organization(TimeStampedModel):
         ("ielts", "IELTS"),
     ]
 
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="organization")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organization")
     # lead_consolidation - leadga operatorni qaysi usulda biriktirishni bildiradi.
     lead_consolidation = models.CharField(
         max_length=20,

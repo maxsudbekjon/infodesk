@@ -1,10 +1,15 @@
-from django.db import models
-from django.conf import settings
 import re
+
+from django.db import models
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+
 from apps.base_models import TimeStampedModel
 from apps.pupil.choices import DISCOUNT_TYPE, STUDENT_PAYMENT, TRANSFER_REASON
 from apps.pupil.choices import STUDENT_STATUS
+
+
+User = get_user_model()
 
 
 def validate_phone_number(value):
@@ -17,7 +22,7 @@ def validate_phone_number(value):
 
 class Student(TimeStampedModel):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
