@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "WORKING PRODUCTION ENTRYPOINT..."
+
 set -e
 
 echo "⏳ Waiting for PostgreSQL..."
@@ -19,7 +21,7 @@ python manage.py collectstatic --noinput
 echo "🚀 Starting Gunicorn..."
 
 exec gunicorn config.wsgi:application \
-    --bind 0.0.0.0:8000 \
+    --bind 0.0.0.0:4100 \
     --workers 4 \
     --threads 2 \
     --timeout 120 \

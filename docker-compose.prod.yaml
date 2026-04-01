@@ -3,7 +3,7 @@ services:
 
   db:
     image: postgres:15-alpine
-    container_name: ${CONTAINER_NAME_TEMPLATE}_db
+    container_name: ${CONTAINER_NAME_TEMPLATE:-prod_infodesk}_db
     env_file:
       - .env
     volumes:
@@ -18,8 +18,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/prod/Dockerfile
-    container_name: ${CONTAINER_NAME_TEMPLATE}_web
-    command: python manage.py runserver 0.0.0.0:8000
+    container_name: ${CONTAINER_NAME_TEMPLATE:-prod_infodesk}_web
     restart: unless-stopped
     env_file:
       - ./.env
@@ -28,20 +27,21 @@ services:
       - ./media:/app/media
       - ./static:/app/static
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
+      - db
       - redis
 
   redis:
     image: redis:7
     restart: unless-stopped
-    container_name: ${CONTAINER_NAME_TEMPLATE}_redis
+    container_name: ${CONTAINER_NAME_TEMPLATE:-prod_infodesk}_redis
 
   worker:
     build:
       context: .
       dockerfile: ./docker/prod/Dockerfile
-    container_name: ${CONTAINER_NAME_TEMPLATE}_worker
+    container_name: ${CONTAINER_NAME_TEMPLATE:-prod_infodesk}_worker
     environment:
       DJANGO_ENV: dev
     command: celery -A config worker -l info
@@ -56,7 +56,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/prod/Dockerfile
-    container_name: ${CONTAINER_NAME_TEMPLATE}_beat
+    container_name: ${CONTAINER_NAME_TEMPLATE:-prod_infodesk}_beat
     environment:
       DJANGO_ENV: dev
     command: celery -A config beat -l info

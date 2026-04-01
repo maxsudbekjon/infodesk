@@ -32,4 +32,4 @@ RUN chmod +x /app/docker/prod/entrypoint.sh
 # =========================
 # DEFAULT
 # =========================
-ENTRYPOINT ["bash", "/app/entrypoint.sh"]
+ENTRYPOINT ["bash", "/app/docker/prod/entrypoint.sh"]

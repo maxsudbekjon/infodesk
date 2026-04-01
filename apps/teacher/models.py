@@ -1,11 +1,12 @@
 from django.db import models
 from apps.base_models import TimeStampedModel
-from config import settings
+from django.contrib.auth import get_user_model
+
 
 from decimal import Decimal
 
 
-
+User = get_user_model()
 
 
 class Specialty(models.Model):
@@ -26,7 +27,7 @@ GENDER_CHOICES = (
 
 class Teacher(TimeStampedModel):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+        User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

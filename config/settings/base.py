@@ -15,6 +15,9 @@ SECRET_KEY = env.str("SECRET_KEY", "django-insecure-change-me")
 DEBUG = env.bool("DEBUG", False)
 
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", [])
+
+print("ALLOWED_HOSTS", ALLOWED_HOSTS)
+
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", [])
 CORS_ALLOWED_ORIGIN_REGEXES = env.list("CORS_ALLOWED_ORIGIN_REGEXES", [])
 CORS_ALLOW_CREDENTIALS = env.bool("CORS_ALLOW_CREDENTIALS", True)
@@ -127,7 +130,6 @@ USE_TZ = True
 
 USE_I18N = True
 
-
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [STATIC_DIR] if STATIC_DIR.exists() else []
@@ -163,14 +165,10 @@ SPECTACULAR_SETTINGS = {
     ],
 }
 
-
-
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_RESULT_BACKEND = env.str("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
-
-
 
 CELERY_BEAT_SCHEDULE = {
     "daily-lead-job": {
@@ -178,7 +176,6 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=14, minute=36),
     },
 }
-
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),

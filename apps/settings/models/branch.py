@@ -1,8 +1,11 @@
-from django.conf import settings
 from django.db import models
+from django.contrib.auth import get_user_model
 
 from apps.base_models import TimeStampedModel
 from apps.settings.models.organization import Organization
+
+
+User = get_user_model()
 
 
 class Branch(TimeStampedModel):
@@ -22,7 +25,7 @@ class Branch(TimeStampedModel):
     )
     is_active = models.BooleanField(default=True)
     manager = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        User,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+echo "WORKING DEVELOPMENT ENTRYPOINT..."
+
 set -e
 
 echo "⏳ Waiting for PostgreSQL..."
@@ -18,4 +20,4 @@ python manage.py collectstatic --noinput
 
 echo "🚀 Starting Django DEV server..."
 
-exec python manage.py runserver 0.0.0.0:8000
+exec python manage.py runserver 0.0.0.0:9898
