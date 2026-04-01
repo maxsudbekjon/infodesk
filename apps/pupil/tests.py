@@ -211,11 +211,19 @@ class StudentDashboardTests(APITestCase):
         attendance_days = {item["day"]: item for item in row["attendance_days"]}
         self.assertTrue(attendance_days[self.today.day]["is_present"])
         self.assertEqual(attendance_days[self.today.day]["id"], self.today_math_attendance.id)
-        self.assertFalse(attendance_days[(self.today - timedelta(days=1)).day]["is_present"])
-        self.assertEqual(
-            attendance_days[(self.today - timedelta(days=1)).day]["id"],
-            self.previous_day_math_attendance.id,
-        )
+        previous_day = self.today - timedelta(days=1)
+
+        # When the current date is the first of a 30-day month (e.g. April 1st), the previous
+        # day lives in the previous month (March 31st) which is not part of the requested month
+        # calendar returned by the API. Guard the assertion to avoid KeyError on days that do not
+        # exist in the current month while still verifying data when the previous day belongs to
+        # the same month.
+        if previous_day.month == self.today.month:
+            self.assertFalse(attendance_days[previous_day.day]["is_present"])
+            self.assertEqual(
+                attendance_days[previous_day.day]["id"],
+                self.previous_day_math_attendance.id,
+            )
 
     def test_student_can_list_own_groups(self):
         self.client.force_authenticate(user=self.student_user)
