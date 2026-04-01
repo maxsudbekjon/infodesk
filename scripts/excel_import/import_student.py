@@ -188,15 +188,9 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
 
     for index, header in enumerate(headers or []):
         text = normalize_spaces(str(header or "")).lower()
-        if (
-            "famili" in text
-            or "family" in text
-            or text.startswith("fam")
-            or "фам" in text
-            or "last name" in text
-        ):
+        if "famili" in text or "family" in text or text.startswith("fam"):
             indexes["last_name"] = index
-        elif text in {"ism", "ismi"} or text.endswith(" ism") or "имя" in text or "first name" in text:
+        elif text in {"ism", "ismi"} or text.endswith(" ism"):
             indexes["first_name"] = index
         elif (
             "fio" in text
@@ -204,11 +198,6 @@ def detect_column_indexes(headers: object) -> dict[str, object]:
             or "full_name" in text
             or "ism famili" in text
             or "ism familya" in text
-            or "fish" in text
-            or "фио" in text
-            or "talaba" in text
-            or "student" in text
-            or "oquvchi" in text
         ):
             indexes["full_name"] = index
         elif "telefon" in text or "tel nomer" in text:
@@ -443,13 +432,15 @@ def build_full_name(last_name: object, first_name: object) -> str:
 
 
 def guess_full_name_from_row(values: list[object]) -> str | None:
+    """
+    Fallback: satrdagi birinchi matnli, telefon/raqamga o‘xshamagan qiymatni ism deb oladi.
+    """
     for value in values:
         text = clean_text(value)
         if not text:
             continue
         if extract_phone_number(text):
             continue
-        # Skip pure numeric/time-like cells
         if re.fullmatch(r"[\\d\\s\\+\\-\\.\\/()]+", text):
             continue
         if len(text) < 3:
@@ -736,46 +727,6 @@ def import_students(excel_path: str) -> None:
             teacher = find_teacher(sheet["sheet_name"], sheet["title"], sheet["index"])
             column_indexes = detect_column_indexes(sheet["headers"])
             print(f"[SHEET] {sheet['sheet_name']} -> teacher_id={teacher.id}")
-
-            # Non-student reference sheets (template/meta) — skip early to avoid noisy row-level skips
-            non_student_sheet_keys = {
-                "coursetemplate",
-                "centers",
-                "center",
-                "cennter",
-                "branch",
-                "owner",
-                "teacher",
-                "group",
-            }
-            sheet_key = normalize_key(sheet["sheet_name"])
-            if sheet_key in non_student_sheet_keys:
-                skipped_count += len(sheet["rows"])
-                print(f"[SKIPPED SHEET] {sheet['sheet_name']} talaba ma'lumotlari emas, o'tkazildi")
-                continue
-
-            # If no useful columns or all rows are empty for name/phone/time, skip the sheet
-            def _sheet_has_data() -> bool:
-                candidate_indexes = [
-                    column_indexes.get("full_name"),
-                    column_indexes.get("first_name"),
-                    column_indexes.get("last_name"),
-                    column_indexes.get("time"),
-                ] + column_indexes.get("phone_indexes", [])
-                candidate_indexes = [idx for idx in candidate_indexes if idx is not None]
-                if not candidate_indexes:
-                    return False
-                for row in sheet["rows"][:10]:  # sample first rows
-                    values = list(row["values"])
-                    for idx in candidate_indexes:
-                        if clean_text(row_value(values, idx)):
-                            return True
-                return False
-
-            if not _sheet_has_data():
-                skipped_count += len(sheet["rows"])
-                print(f"[SKIPPED SHEET] {sheet['sheet_name']} foydali ustun/qiymat topilmadi, o'tkazildi")
-                continue
         except Exception as exc:
             skipped_count += len(sheet["rows"])
             print(
@@ -787,6 +738,7 @@ def import_students(excel_path: str) -> None:
             try:
                 with transaction.atomic():
                     values = list(row["values"])
+
                     raw_full_name = row_value(values, column_indexes.get("full_name"))
                     if clean_text(raw_full_name):
                         full_name = clean_text(raw_full_name)
@@ -821,19 +773,13 @@ def import_students(excel_path: str) -> None:
                     raw_time = row_value(values, column_indexes["time"])
                     if clean_text(raw_time) is None:
                         skipped_count += 1
-                        print(
-                            f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                            f"DARS VAQTI bo'sh"
-                        )
+                        print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} DARS VAQTI bo'sh")
                         continue
                     try:
                         days_choice, start_lesson = parse_day_and_time(raw_time)
                     except ValueError as exc:
                         skipped_count += 1
-                        print(
-                            f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                            f"{exc}"
-                        )
+                        print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} {exc}")
                         continue
                     coin = normalize_coin(row_value(values, column_indexes["coin"]))
 
@@ -841,10 +787,7 @@ def import_students(excel_path: str) -> None:
                         group = select_group(teacher, sheet["sheet_name"], sheet["title"], days_choice, start_lesson)
                     except ValueError as exc:
                         skipped_count += 1
-                        print(
-                            f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                            f"{exc}"
-                        )
+                        print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} {exc}")
                         continue
                     user = upsert_student_user(full_name, primary_phone, secondary_phone, birthday)
                     student, created = get_or_create_student(full_name, primary_phone, group, contract, user, coin)
@@ -855,22 +798,13 @@ def import_students(excel_path: str) -> None:
 
                     if created:
                         created_count += 1
-                        print(
-                            f"[CREATED] student row={row['__excel_row__']} "
-                            f"name={full_name} group={group.title}"
-                        )
+                        print(f"[CREATED] student row={row['__excel_row__']} name={full_name} group={group.title}")
                     else:
                         updated_count += 1
-                        print(
-                            f"[UPDATED] student row={row['__excel_row__']} "
-                            f"name={full_name} group={group.title}"
-                        )
+                        print(f"[UPDATED] student row={row['__excel_row__']} name={full_name} group={group.title}")
             except Exception as exc:
                 skipped_count += 1
-                print(
-                    f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} "
-                    f"kutilmagan xato: {exc}"
-                )
+                print(f"[SKIPPED] {sheet['sheet_name']} row={row['__excel_row__']} kutilmagan xato: {exc}")
                 continue
     print(f"Student import yakunlandi. created={created_count}, updated={updated_count}, skipped={skipped_count}")
 
