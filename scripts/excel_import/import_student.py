@@ -736,6 +736,46 @@ def import_students(excel_path: str) -> None:
             teacher = find_teacher(sheet["sheet_name"], sheet["title"], sheet["index"])
             column_indexes = detect_column_indexes(sheet["headers"])
             print(f"[SHEET] {sheet['sheet_name']} -> teacher_id={teacher.id}")
+
+            # Non-student reference sheets (template/meta) — skip early to avoid noisy row-level skips
+            non_student_sheet_keys = {
+                "coursetemplate",
+                "centers",
+                "center",
+                "cennter",
+                "branch",
+                "owner",
+                "teacher",
+                "group",
+            }
+            sheet_key = normalize_key(sheet["sheet_name"])
+            if sheet_key in non_student_sheet_keys:
+                skipped_count += len(sheet["rows"])
+                print(f"[SKIPPED SHEET] {sheet['sheet_name']} talaba ma'lumotlari emas, o'tkazildi")
+                continue
+
+            # If no useful columns or all rows are empty for name/phone/time, skip the sheet
+            def _sheet_has_data() -> bool:
+                candidate_indexes = [
+                    column_indexes.get("full_name"),
+                    column_indexes.get("first_name"),
+                    column_indexes.get("last_name"),
+                    column_indexes.get("time"),
+                ] + column_indexes.get("phone_indexes", [])
+                candidate_indexes = [idx for idx in candidate_indexes if idx is not None]
+                if not candidate_indexes:
+                    return False
+                for row in sheet["rows"][:10]:  # sample first rows
+                    values = list(row["values"])
+                    for idx in candidate_indexes:
+                        if clean_text(row_value(values, idx)):
+                            return True
+                return False
+
+            if not _sheet_has_data():
+                skipped_count += len(sheet["rows"])
+                print(f"[SKIPPED SHEET] {sheet['sheet_name']} foydali ustun/qiymat topilmadi, o'tkazildi")
+                continue
         except Exception as exc:
             skipped_count += len(sheet["rows"])
             print(
