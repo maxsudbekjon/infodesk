@@ -2,6 +2,7 @@ from pathlib import Path
 from environs import Env
 
 from django.utils.timezone import timedelta
+from django.utils.translation import gettext_lazy as _
 from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -65,6 +66,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -77,7 +79,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -125,12 +127,19 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "uz"
+
+LANGUAGES = [
+    ("uz", _("Uzbek")),
+]
 
 TIME_ZONE = "Asia/Tashkent"
 USE_TZ = True
 
 USE_I18N = True
+USE_L10N = True
+
+LOCALE_PATHS = [BASE_DIR / "locale"]
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -231,8 +240,8 @@ SIMPLE_JWT = {
 
 JAZZMIN_SETTINGS = {
     # ── Branding ──────────────────────────────────────────────────────────────
-    "site_title": "Infodesk Admin",
-    "site_header": "Infodesk",
+    "site_title": "Admin panel",
+    "site_header": "Boshqaruv paneli",
     "site_brand": "Infodesk",
     "site_logo": None,
     "login_logo": None,
@@ -263,7 +272,7 @@ JAZZMIN_SETTINGS = {
             "icon": "fas fa-home",
         },
         {
-            "name": "API Docs",
+            "name": "API hujjatlari",
             "url": "/api/docs/",
             "new_window": True,
             "icon": "fas fa-book",
@@ -276,7 +285,7 @@ JAZZMIN_SETTINGS = {
     # ── User Dropdown Menu ────────────────────────────────────────────────────
     "usermenu_links": [
         {
-            "name": "API Docs",
+            "name": "API hujjatlari",
             "url": "/api/docs/",
             "new_window": True,
             "icon": "fas fa-book-open",
