@@ -296,8 +296,60 @@ JAZZMIN_SETTINGS = {
     # ── Sidebar ───────────────────────────────────────────────────────────────
     "show_sidebar": True,
     "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
+    "hide_apps": [
+        "lead",
+        "market",
+        "dashboard",
+        "django_celery_beat",
+    ],
+    "hide_models": [
+        # user
+        "user.operator",
+
+        # settings
+        "settings.receiptsettings",
+        "settings.paymentmethod",
+        "settings.weekend",
+
+        # group (leave only group & coursetemplate)
+        "group.day",
+        "group.room",
+        "group.attendance",
+        "group.grade",
+        "group.groupscore",
+        "group.groupnote",
+        "group.groupdiscount",
+        "group.groupfreeze",
+        "group.grouphistory",
+        "group.grouprankingcomment",
+        "group.exam",
+
+        # teacher (leave only teacher)
+        "teacher.specialty",
+
+        # pupil (leave only student)
+        "pupil.parent",
+        "pupil.studentnote",
+        "pupil.studnettransfer",
+
+        # lead
+        "lead.lead",
+        "lead.note",
+        "lead.situation",
+        "lead.source",
+
+        # market
+        "market.product",
+        "market.marketorder",
+
+        # auth & celery-beat
+        "auth.group",
+        "django_celery_beat.periodictask",
+        "django_celery_beat.crontabschedule",
+        "django_celery_beat.intervalschedule",
+        "django_celery_beat.solarschedule",
+        "django_celery_beat.clockedschedule",
+    ],
 
     # App ordering in sidebar
     "order_with_respect_to": [
