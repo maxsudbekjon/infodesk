@@ -1,0 +1,15 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Boshqaruv paneli{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name">
+    <a href="{% url 'admin:index' %}">Boshqaruv paneli</a>
+  </h1>
+{% endblock %}
+
+{% block nav-global %}
+  <div class="nav-global">
+    <a href="{% url 'admin:index' %}">Bosh sahifa</a>
+  </div>
+{% endblock %}

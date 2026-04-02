@@ -5,6 +5,11 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.user.views import UserLoginAPIView, UserTokenRefreshAPIView
+
+# Uzbek-facing admin branding
+admin.site.site_header = "Boshqaruv paneli"
+admin.site.site_title = "Admin panel"
+admin.site.index_title = "Xush kelibsiz"
 #
 # schema_view = get_schema_view(
 #     openapi.Info(

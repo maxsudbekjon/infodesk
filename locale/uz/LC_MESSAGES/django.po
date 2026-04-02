@@ -1,0 +1,80 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: infodesk\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-02 16:14+0500\n"
+"PO-Revision-Date: 2026-04-02 16:30+0500\n"
+"Last-Translator: Infodesk Team\n"
+"Language-Team: Uzbek\n"
+"Language: uz\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+# Admin chrome
+msgid "Site administration"
+msgstr "Boshqaruv paneli"
+
+msgid "Home"
+msgstr "Bosh sahifa"
+
+msgid "Infodesk Admin"
+msgstr "Infodesk Admin"
+
+msgid "You don't have permission to view or edit anything."
+msgstr "Sizda bu sahifani ko‘rish yoki tahrirlash huquqi yo‘q."
+
+msgid "Uzbek"
+msgstr "O‘zbekcha"
+
+msgid "Log in"
+msgstr "Kirish"
+
+msgid "Log out"
+msgstr "Chiqish"
+
+msgid "Username"
+msgstr "Foydalanuvchi nomi"
+
+msgid "Password"
+msgstr "Parol"
+
+# Object tools / actions
+msgid "Add"
+msgstr "Qo‘shish"
+
+msgid "Change"
+msgstr "Tahrirlash"
+
+msgid "Delete"
+msgstr "O‘chirish"
+
+msgid "Save"
+msgstr "Saqlash"
+
+msgid "Save and continue editing"
+msgstr "Saqlash va tahrirlashni davom ettirish"
+
+msgid "Save and add another"
+msgstr "Saqlash va yangisini qo‘shish"
+
+msgid "Save as new"
+msgstr "Yangi nusxa sifatida saqlash"
+
+# Filters / search
+msgid "Filter"
+msgstr "Filtrlash"
+
+msgid "Search"
+msgstr "Qidirish"
+
+# Forms and validation
+msgid "This field is required."
+msgstr "Ushbu maydon majburiy."
+
+msgid "Please correct the error below."
+msgstr "Iltimos, quyidagi xatoni to‘g‘rilang."
+
+msgid "Please correct the errors below."
+msgstr "Iltimos, quyidagi xatolarni to‘g‘rilang."
