@@ -65,6 +65,7 @@ class AttendanceUpdateSerializer(AttendanceModelSerializer):
             "student_name",
             "date",
             "is_present",
+            'is_rise',
             "note",
         )
         read_only_fields = ("id", "group", "student", "student_name", "date")
