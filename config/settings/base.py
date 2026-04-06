@@ -348,12 +348,12 @@ JAZZMIN_SETTINGS = {
         "auth.group":                        "fas fa-users",
 
         # django-celery-beat
-        "django_celery_beat":                "fas fa-clock",
-        "django_celery_beat.periodictask":   "fas fa-tasks",
-        "django_celery_beat.crontabschedule":"fas fa-calendar-alt",
-        "django_celery_beat.intervalschedule":"fas fa-stopwatch",
-        "django_celery_beat.solarschedule":  "fas fa-sun",
-        "django_celery_beat.clockedschedule":"fas fa-bell",
+        # "django_celery_beat":                "fas fa-clock",
+        # "django_celery_beat.periodictask":   "fas fa-tasks",
+        # "django_celery_beat.crontabschedule":"fas fa-calendar-alt",
+        # "django_celery_beat.intervalschedule":"fas fa-stopwatch",
+        # "django_celery_beat.solarschedule":  "fas fa-sun",
+        # "django_celery_beat.clockedschedule":"fas fa-bell",
 
         # user app
         "user":                              "fas fa-user-circle",
@@ -361,12 +361,12 @@ JAZZMIN_SETTINGS = {
         "user.operator":                     "fas fa-headset",
 
         # settings app  (app label: "settings")
-        "settings":                          "fas fa-cogs",
-        "settings.organization":             "fas fa-building",
-        "settings.branch":                   "fas fa-code-branch",
-        "settings.receiptsettings":          "fas fa-receipt",
-        "settings.paymentmethod":            "fas fa-credit-card",
-        "settings.weekend":                  "fas fa-calendar-times",
+        # "settings":                          "fas fa-cogs",
+        # "settings.organization":             "fas fa-building",
+        # "settings.branch":                   "fas fa-code-branch",
+        # "settings.receiptsettings":          "fas fa-receipt",
+        # "settings.paymentmethod":            "fas fa-credit-card",
+        # "settings.weekend":                  "fas fa-calendar-times",
 
         # teacher app
         "teacher":                           "fas fa-chalkboard-teacher",
@@ -374,11 +374,11 @@ JAZZMIN_SETTINGS = {
         "teacher.specialty":                 "fas fa-graduation-cap",
 
         # lead app
-        "lead":                              "fas fa-filter",
-        "lead.lead":                         "fas fa-funnel-dollar",
-        "lead.note":                         "fas fa-comment-alt",
-        "lead.situation":                    "fas fa-sitemap",
-        "lead.source":                       "fas fa-broadcast-tower",
+        # "lead":                              "fas fa-filter",
+        # "lead.lead":                         "fas fa-funnel-dollar",
+        # "lead.note":                         "fas fa-comment-alt",
+        # "lead.situation":                    "fas fa-sitemap",
+        # "lead.source":                       "fas fa-broadcast-tower",
 
         # pupil app
         "pupil":                             "fas fa-user-graduate",
@@ -389,19 +389,19 @@ JAZZMIN_SETTINGS = {
 
         # group app
         "group":                             "fas fa-layer-group",
-        "group.group":                       "fas fa-layer-group",
-        "group.coursetemplate":              "fas fa-book",
-        "group.day":                         "fas fa-calendar-day",
-        "group.room":                        "fas fa-door-open",
-        "group.attendance":                  "fas fa-clipboard-check",
-        "group.grade":                       "fas fa-star",
-        "group.groupscore":                  "fas fa-coins",
-        "group.groupnote":                   "fas fa-clipboard",
-        "group.groupdiscount":               "fas fa-tags",
-        "group.groupfreeze":                 "fas fa-snowflake",
-        "group.grouphistory":                "fas fa-history",
-        "group.grouprankingcomment":         "fas fa-medal",
-        "group.exam":                        "fas fa-file-alt",
+        # "group.group":                       "fas fa-layer-group",
+        # "group.coursetemplate":              "fas fa-book",
+        # "group.day":                         "fas fa-calendar-day",
+        # "group.room":                        "fas fa-door-open",
+        # "group.attendance":                  "fas fa-clipboard-check",
+        # "group.grade":                       "fas fa-star",
+        # "group.groupscore":                  "fas fa-coins",
+        # "group.groupnote":                   "fas fa-clipboard",
+        # "group.groupdiscount":               "fas fa-tags",
+        # "group.groupfreeze":                 "fas fa-snowflake",
+        # "group.grouphistory":                "fas fa-history",
+        # "group.grouprankingcomment":         "fas fa-medal",
+        # "group.exam":                        "fas fa-file-alt",
 
         # market app
         "market":                            "fas fa-store",
@@ -423,7 +423,7 @@ JAZZMIN_SETTINGS = {
     "use_google_fonts_cdn": True,
 
     # Disable the UI builder in production (prevents accidental style changes)
-    "show_ui_builder": False,
+    "show_ui_builder": True,
 
     # ── Change Form Layout ────────────────────────────────────────────────────
     # Options: single | horizontal_tabs | vertical_tabs | collapsible | carousel
@@ -440,51 +440,47 @@ JAZZMIN_SETTINGS = {
 }
 
 JAZZMIN_UI_TWEAKS = {
-    # ── Typography ────────────────────────────────────────────────────────────
-    "navbar_small_text":      False,
-    "footer_small_text":      False,
-    "body_small_text":        True,   # compact body text for data-dense pages
-    "brand_small_text":       False,
+    # Matn o'lchami
+    "navbar_small_text": False,
+    "footer_small_text": False,
+    "body_small_text": False,
+    "brand_small_text": False,
 
-    # ── Colors ────────────────────────────────────────────────────────────────
-    "brand_colour":           "navbar-primary",
-    "accent":                 "accent-primary",
-    "navbar":                 "navbar-dark navbar-primary",
-    "no_navbar_border":       True,
+    # Rang sxemasi — oq/yengil interfeys
+    "brand_colour": "navbar-white",
+    "accent": "accent-primary",
+    "navbar": "navbar-white navbar-light",
+    "no_navbar_border": False,
 
-    # ── Layout ────────────────────────────────────────────────────────────────
-    "navbar_fixed":           True,   # sticky top navbar
-    "layout_boxed":           False,  # full-width layout
-    "footer_fixed":           False,
-    "sidebar_fixed":          True,   # sticky sidebar
+    # Joylashuv
+    "navbar_fixed": True,
+    "layout_boxed": False,
+    "footer_fixed": False,
+    "sidebar_fixed": True,
 
-    # ── Sidebar Style ─────────────────────────────────────────────────────────
-    "sidebar":                        "sidebar-dark-primary",
-    "sidebar_nav_small_text":         False,
-    "sidebar_disable_expand":         False,
-    "sidebar_nav_child_indent":       True,
-    "sidebar_nav_compact_style":      True,  # tighter spacing = more items visible
-    "sidebar_nav_legacy_style":       False,
-    "sidebar_nav_flat_style":         False,
+    # Yon panel — yorqin va oddiy
+    "sidebar": "sidebar-light-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent": False,
+    "sidebar_nav_compact_style": False,
+    "sidebar_nav_legacy_style": False,
+    "sidebar_nav_flat_style": True,
 
-    # ── Theme ─────────────────────────────────────────────────────────────────
-    # Available: default, cerulean, cosmo, cyborg, darkly, flatly, journal,
-    #            litera, lumen, lux, materia, minty, pulse, sandstone,
-    #            simplex, sketchy, slate, solar, spacelab, superhero,
-    #            united, yeti
-    "theme":            "flatly",
-    "dark_mode_theme":  "darkly",
+    # Mavzu — eng sodda va toza ko'rinish
+    "theme": "default",
+    "dark_mode_theme": None,
 
-    # ── Button Classes ────────────────────────────────────────────────────────
+    # Tugma stillari — oddiy to'liq tugmalar
     "button_classes": {
-        "primary":   "btn-primary",
+        "primary": "btn-primary",
         "secondary": "btn-secondary",
-        "info":      "btn-outline-info",
-        "warning":   "btn-warning",
-        "danger":    "btn-danger",
-        "success":   "btn-success",
+        "info": "btn-info",
+        "warning": "btn-warning",
+        "danger": "btn-danger",
+        "success": "btn-success",
     },
 
-    # ── Action Button Styles ──────────────────────────────────────────────────
-    "actions_sticky_top": True,  # keep action bar visible while scrolling
+    # Amallar paneli doim ko'rinib tursin
+    "actions_sticky_top": True,
 }
