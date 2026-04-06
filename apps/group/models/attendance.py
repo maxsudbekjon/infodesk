@@ -15,6 +15,7 @@ class Attendance(models.Model):
         related_name='attendances'
     )
     date = models.DateField()
+    is_rise = models.BooleanField(default=False)
     is_present = models.BooleanField(null=True, blank=True, default=None)
 
     # Optional: Add a note for reasons behind absence
