@@ -15,6 +15,7 @@ class AttendanceModelSerializer(serializers.ModelSerializer):
             'student',
             'date',
             'is_present',
+            'is_rise',
             'note'
         )
     def validate(self, attrs):
