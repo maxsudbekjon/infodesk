@@ -1,6 +1,7 @@
 from django.apps import apps as django_apps
 from django.contrib import admin, messages
 from django.contrib.admin.sites import AlreadyRegistered
+from django.db.models import Count
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.teacher.models import Specialty, Teacher
@@ -15,11 +16,15 @@ class SpecialtyAdmin(FriendlyAdminMixin):
 
 @admin.register(Teacher)
 class TeacherAdmin(FriendlyAdminMixin):
+    admin_page_title = "O'qituvchilar"
+    admin_page_subtitle = "Ustozlar ro'yxati, biriktirilgan guruhlar va ish yuklamasini kuzating."
+    change_list_template = "admin/teacher/teacher/change_list.html"
     list_display = (
         "id",
         "display_name",
         "phone_number",
         "branch",
+        "assigned_groups_display",
         "specialties_list",
         "monthly_salary",
         "percentage_share",
@@ -51,7 +56,20 @@ class TeacherAdmin(FriendlyAdminMixin):
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.select_related("user", "branch").prefetch_related("specialty")
+        return queryset.select_related("user", "branch").prefetch_related(
+            "specialty",
+            "main_groups__course",
+        ).annotate(group_count=Count("main_groups", distinct=True))
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        queryset = self.get_queryset(request)
+        extra_context.setdefault("teacher_page_metrics", {
+            "total_teachers": queryset.count(),
+            "active_teachers": queryset.filter(is_archived=False).count(),
+            "busy_teachers": queryset.filter(group_count__gt=0).count(),
+        })
+        return super().changelist_view(request, extra_context=extra_context)
 
     @admin.display(description="Teacher")
     def display_name(self, obj):
@@ -67,13 +85,21 @@ class TeacherAdmin(FriendlyAdminMixin):
 
     @admin.display(description="Yo'nalishlar")
     def specialties_list(self, obj):
-        titles = list(obj.specialty.values_list("title", flat=True)[:3])
+        specialties = list(obj.specialty.all())
+        titles = [item.title for item in specialties[:3]]
         if not titles:
             return "-"
         text = ", ".join(titles)
-        if obj.specialty.count() > 3:
+        if len(specialties) > 3:
             return f"{text}..."
         return text
+
+    @admin.display(description="Biriktirilgan guruhlar")
+    def assigned_groups_display(self, obj):
+        count = getattr(obj, "group_count", None)
+        if count is None:
+            count = obj.main_groups.count()
+        return count
 
     @admin.action(description="Tanlangan teacherlarni arxivga o'tkazish")
     def archive_selected_teachers(self, request, queryset):

@@ -1,15 +1,14 @@
 {% extends "admin/base.html" %}
+{% load i18n %}
 
-{% block title %}Boshqaruv paneli{% endblock %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title|default:_("Boshqaruv paneli") }} | Infodesk Admin{% endblock %}
 
 {% block branding %}
-  <h1 id="site-name">
-    <a href="{% url 'admin:index' %}">Boshqaruv paneli</a>
-  </h1>
-{% endblock %}
-
-{% block nav-global %}
-  <div class="nav-global">
-    <a href="{% url 'admin:index' %}">Bosh sahifa</a>
-  </div>
+    <a href="{% url 'admin:index' %}" class="admin-brand">
+        <span class="admin-brand__mark">ID</span>
+        <span class="admin-brand__text">
+            <strong>Infodesk</strong>
+            <small>O'quv markazi boshqaruvi</small>
+        </span>
+    </a>
 {% endblock %}

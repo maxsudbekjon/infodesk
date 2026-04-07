@@ -1,4 +1,5 @@
 from django.contrib import admin, messages
+from django.utils.html import format_html
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.market.models import MARKET_ORDER_STATUS, MarketOrder, Product
@@ -6,6 +7,8 @@ from apps.market.models import MARKET_ORDER_STATUS, MarketOrder, Product
 
 @admin.register(Product)
 class ProductAdmin(FriendlyAdminMixin):
+    admin_page_title = "Market mahsulotlari"
+    admin_page_subtitle = "Sotuvdagi mahsulotlar, narx va qoldiqni boshqaring."
     list_display = ("id", "title", "price", "count", "created_at")
     list_filter = ("created_at",)
     search_fields = ("title", "description")
@@ -27,13 +30,15 @@ class ProductAdmin(FriendlyAdminMixin):
 
 @admin.register(MarketOrder)
 class MarketOrderAdmin(FriendlyAdminMixin):
+    admin_page_title = "Market buyurtmalari"
+    admin_page_subtitle = "Mahsulot buyurtmalarini status bo'yicha boshqaring."
     list_display = (
         "id",
         "student",
         "student_phone",
         "product",
         "price",
-        "status",
+        "status_badge",
         "secret_code",
         "created_at",
     )
@@ -50,20 +55,30 @@ class MarketOrderAdmin(FriendlyAdminMixin):
     def student_phone(self, obj):
         return obj.student.phone_number
 
-    @admin.action(description="Tanlangan buyurtmalarni delivered qilish")
+    @admin.display(description="Status", ordering="status")
+    def status_badge(self, obj):
+        palette = {
+            MARKET_ORDER_STATUS.CREATED: ("Yangi", "primary"),
+            MARKET_ORDER_STATUS.DELIVERED: ("Qabul qilindi", "success"),
+            MARKET_ORDER_STATUS.CANCELLED: ("Rad etildi", "danger"),
+        }
+        label, tone = palette.get(obj.status, (obj.get_status_display(), "info"))
+        return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
+
+    @admin.action(description="Tanlangan buyurtmalarni qabul qilish")
     def mark_as_delivered(self, request, queryset):
         updated = 0
         for order in queryset.exclude(status=MARKET_ORDER_STATUS.DELIVERED):
             order.status = MARKET_ORDER_STATUS.DELIVERED
             order.save(update_fields=["status"])
             updated += 1
-        self.message_user(request, f"{updated} ta buyurtma delivered qilindi.", level=messages.SUCCESS)
+        self.message_user(request, f"{updated} ta buyurtma qabul qilindi.", level=messages.SUCCESS)
 
-    @admin.action(description="Tanlangan buyurtmalarni cancelled qilish")
+    @admin.action(description="Tanlangan buyurtmalarni rad etish")
     def cancel_selected_orders(self, request, queryset):
         updated = 0
         for order in queryset.exclude(status=MARKET_ORDER_STATUS.CANCELLED):
             order.status = MARKET_ORDER_STATUS.CANCELLED
             order.save(update_fields=["status"])
             updated += 1
-        self.message_user(request, f"{updated} ta buyurtma cancelled qilindi.", level=messages.SUCCESS)
+        self.message_user(request, f"{updated} ta buyurtma rad etildi.", level=messages.SUCCESS)

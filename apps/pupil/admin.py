@@ -1,6 +1,7 @@
 from django.apps import apps as django_apps
 from django.contrib import admin, messages
 from django.contrib.admin.sites import AlreadyRegistered
+from django.utils.html import format_html
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.pupil.choices import STUDENT_STATUS
@@ -63,14 +64,16 @@ class StudentNoteInline(admin.TabularInline):
 
 @admin.register(Student)
 class StudentAdmin(FriendlyAdminMixin):
+    admin_page_title = "O'quvchilar"
+    admin_page_subtitle = "Talabalarni jadval, holat va to'lov kesimida tez boshqaring."
     list_display = (
         "id",
         "full_name",
         "phone_number",
         "center",
         "group",
-        "status",
-        "payment_status",
+        "status_badge",
+        "payment_status_badge",
         "contract",
         "available_coin_display",
         "used_coin",
@@ -137,6 +140,28 @@ class StudentAdmin(FriendlyAdminMixin):
     @admin.display(description="Jami yig'ilgan coin")
     def earned_coin_display(self, obj):
         return obj.earned_coin
+
+    @admin.display(description="Status", ordering="status")
+    def status_badge(self, obj):
+        palette = {
+            STUDENT_STATUS.ACTIVE: ("Aktiv", "success"),
+            STUDENT_STATUS.FROZEN: ("To'xtatilgan", "warning"),
+            STUDENT_STATUS.ARCHIVED: ("Arxiv", "muted"),
+            STUDENT_STATUS.LEAD: ("Lead", "info"),
+        }
+        label, tone = palette.get(obj.status, (obj.get_status_display(), "info"))
+        return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
+
+    @admin.display(description="To'lov", ordering="payment_status")
+    def payment_status_badge(self, obj):
+        palette = {
+            "near payment": ("Yaqin to'lov", "warning"),
+            "debtor": ("Qarzdor", "danger"),
+            "no debt": ("To'langan", "success"),
+            "over payment": ("Ortiqcha to'lov", "info"),
+        }
+        label, tone = palette.get(obj.payment_status, (obj.get_payment_status_display(), "info"))
+        return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
 
     def save_model(self, request, obj, form, change):
         desired_total_coin = form.cleaned_data.get("total_coin")

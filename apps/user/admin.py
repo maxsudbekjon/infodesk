@@ -5,7 +5,7 @@ from django.contrib.admin.sites import AlreadyRegistered
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
-from apps.dashboard.admin_utils import FriendlyAdminMixin
+from apps.dashboard.admin_utils import AdminUiResponseMixin, FriendlyAdminMixin
 from apps.user.models import Operator, User
 
 
@@ -56,6 +56,8 @@ class UserChangeForm(forms.ModelForm):
 
 @admin.register(Operator)
 class OperatorAdmin(FriendlyAdminMixin):
+    admin_page_title = "Operatorlar"
+    admin_page_subtitle = "Murojaatlar bilan ishlovchi operatorlar va KPI ko'rsatkichlari."
     list_display = (
         "id",
         "display_name",
@@ -99,7 +101,9 @@ class OperatorAdmin(FriendlyAdminMixin):
 
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin):
+class UserAdmin(AdminUiResponseMixin, BaseUserAdmin):
+    admin_page_title = "Foydalanuvchilar"
+    admin_page_subtitle = "Login va ruxsatlarni boshqarish sahifasi."
     form = UserChangeForm
     add_form = UserCreationForm
     list_display = ("id", "phone_number", "display_name", "email", "role", "is_active", "is_staff")

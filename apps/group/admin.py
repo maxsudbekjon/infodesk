@@ -1,20 +1,42 @@
 from django.apps import apps as django_apps
 from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
+from django.db.models import Count
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
+from apps.group.choices import GROUP_STATUS
 from apps.group.models import Attendance, CourseTemplate, Day, Grade, Group, GroupScore, Room
 
 
 @admin.register(CourseTemplate)
 class CourseTemplateAdmin(FriendlyAdminMixin):
-    list_display = ("id", "name", "price", "duration_months", "center", "created_at")
+    admin_page_title = "Fanlar"
+    admin_page_subtitle = "Yo'nalishlar, narx va davomiylikni bir joydan boshqaring."
+    change_list_template = "admin/group/coursetemplate/change_list.html"
+    list_display = ("id", "name", "price", "duration_months", "center", "groups_count_display", "created_at")
     search_fields = ("name", "center__name")
     search_help_text = "Kurs nomi yoki organization bo'yicha qidiring."
     list_filter = ("center", "created_at")
     list_select_related = ("center",)
     ordering = ("-created_at",)
     readonly_fields = ("created_at", "updated_at")
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related("center").annotate(groups_count=Count("groups", distinct=True))
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        queryset = self.get_queryset(request)
+        extra_context.setdefault("subject_page_metrics", {
+            "total_subjects": queryset.count(),
+            "total_groups": sum(subject.groups_count for subject in queryset),
+        })
+        return super().changelist_view(request, extra_context=extra_context)
+
+    @admin.display(description="Guruhlar")
+    def groups_count_display(self, obj):
+        return getattr(obj, "groups_count", 0)
 
 
 @admin.register(Day)
@@ -38,6 +60,9 @@ class RoomAdmin(FriendlyAdminMixin):
 
 @admin.register(Group)
 class GroupAdmin(FriendlyAdminMixin):
+    admin_page_title = "Guruhlar"
+    admin_page_subtitle = "Jadval, ustoz va o'quvchilar kesimida guruhlarni boshqaring."
+    change_list_template = "admin/group/group/change_list.html"
     list_display = (
         "id",
         "title",
@@ -83,6 +108,26 @@ class GroupAdmin(FriendlyAdminMixin):
             "fields": ("created_at", "updated_at"),
         }),
     )
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related(
+            "course",
+            "branch",
+            "teacher__user",
+            "assistant_teacher__user",
+            "room",
+        ).prefetch_related("lessons_days").annotate(student_count=Count("students", distinct=True))
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        queryset = self.get_queryset(request)
+        extra_context.setdefault("group_page_metrics", {
+            "total_groups": queryset.count(),
+            "active_groups": queryset.filter(status=GROUP_STATUS.ACTIVE).count(),
+            "archived_groups": queryset.filter(status=GROUP_STATUS.ARCHIVED).count(),
+        })
+        return super().changelist_view(request, extra_context=extra_context)
 
     @admin.display(description="Dars vaqti")
     def lesson_time(self, obj):
