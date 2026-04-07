@@ -1,0 +1,119 @@
+{% extends "admin/change_list.html" %}
+{% load admin_urls i18n %}
+
+{% block bodyclass %}{{ block.super }} change-list--teachers{% endblock %}
+
+{% block content_title %}
+    <div class="page-heading">
+        <div>
+            <h1 class="admin-page-title">O'qituvchilar</h1>
+            <p class="admin-page-subtitle">Kartochka summary va jadval ko'rinishi bilan ustozlar yuklamasini ko'ring.</p>
+        </div>
+        <div class="page-metric-inline">
+            <div>
+                <strong>{{ teacher_page_metrics.total_teachers }}</strong>
+                <span>Jami</span>
+            </div>
+            <div>
+                <strong>{{ teacher_page_metrics.active_teachers }}</strong>
+                <span>Faol</span>
+            </div>
+            <div>
+                <strong>{{ teacher_page_metrics.busy_teachers }}</strong>
+                <span>Guruh biriktirilgan</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block result_list %}
+    <section class="teacher-spotlight-grid">
+        {% for result in cl.result_list|slice:":3" %}
+            <article class="teacher-spotlight-card">
+                <div class="teacher-spotlight-card__header">
+                    <div>
+                        <h3>{% if result.user %}{{ result.user.display_name }}{% else %}Teacher #{{ result.pk }}{% endif %}</h3>
+                        <p>{% if result.branch %}{{ result.branch.name }}{% else %}Filial biriktirilmagan{% endif %}</p>
+                    </div>
+                    <span class="status-badge status-badge--{% if result.is_archived %}muted{% else %}success{% endif %}">
+                        {% if result.is_archived %}Arxiv{% else %}Faol{% endif %}
+                    </span>
+                </div>
+                <div class="teacher-spotlight-card__meta">
+                    <div>
+                        <span>Telefon</span>
+                        <strong>{% if result.user %}{{ result.user.phone_number }}{% else %}-{% endif %}</strong>
+                    </div>
+                    <div>
+                        <span>Guruhlar</span>
+                        <strong>{{ result.group_count|default:0 }} ta</strong>
+                    </div>
+                </div>
+                <div class="teacher-chip-row">
+                    {% for group in result.main_groups.all|slice:":3" %}
+                        <span class="teacher-chip">{{ group.title }}</span>
+                    {% empty %}
+                        <span class="teacher-chip teacher-chip--muted">Guruh biriktirilmagan</span>
+                    {% endfor %}
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+
+    <div class="teacher-table-card">
+        <table class="teacher-table">
+            <thead>
+            <tr>
+                <th>O'qituvchi</th>
+                <th>Telefon</th>
+                <th>Filial</th>
+                <th>Biriktirilgan guruhlar</th>
+                <th>Holat</th>
+                <th>Amallar</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for result in cl.result_list %}
+                <tr>
+                    <td>
+                        <strong>{% if result.user %}{{ result.user.display_name }}{% else %}Teacher #{{ result.pk }}{% endif %}</strong>
+                        <small>
+                            {% for specialty in result.specialty.all|slice:":3" %}
+                                {{ specialty.title }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                Yo'nalish kiritilmagan
+                            {% endfor %}
+                        </small>
+                    </td>
+                    <td>{% if result.user %}{{ result.user.phone_number }}{% else %}-{% endif %}</td>
+                    <td>{% if result.branch %}{{ result.branch.name }}{% else %}-{% endif %}</td>
+                    <td>
+                        <div class="teacher-chip-row teacher-chip-row--compact">
+                            {% for group in result.main_groups.all|slice:":3" %}
+                                <span class="teacher-chip">{{ group.title }}</span>
+                            {% empty %}
+                                <span class="teacher-chip teacher-chip--muted">Yo'q</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-badge--{% if result.is_archived %}muted{% else %}success{% endif %}">
+                            {% if result.is_archived %}Arxiv{% else %}Faol{% endif %}
+                        </span>
+                    </td>
+                    <td class="table-actions">
+                        <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light">Ko'rish</a>
+                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost">O'chirish</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">O'qituvchilar ro'yxati bo'sh.</div>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

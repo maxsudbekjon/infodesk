@@ -1,0 +1,58 @@
+{% extends "admin/change_list.html" %}
+{% load admin_urls i18n %}
+
+{% block bodyclass %}{{ block.super }} change-list--cards change-list--subjects{% endblock %}
+
+{% block content_title %}
+    <div class="page-heading">
+        <div>
+            <h1 class="admin-page-title">Fanlar</h1>
+            <p class="admin-page-subtitle">Yo'nalishlar, davomiylik va narxlarni sodda kartochkalar orqali yangilang.</p>
+        </div>
+        <div class="page-metric-inline">
+            <div>
+                <strong>{{ subject_page_metrics.total_subjects }}</strong>
+                <span>Fanlar</span>
+            </div>
+            <div>
+                <strong>{{ subject_page_metrics.total_groups }}</strong>
+                <span>Biriktirilgan guruhlar</span>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block result_list %}
+    <div class="subject-card-grid">
+        {% for result in cl.result_list %}
+            <article class="subject-card">
+                <div class="subject-card__header">
+                    <div>
+                        <h3>{{ result.name }}</h3>
+                        <p>{% if result.center %}{{ result.center.name }}{% else %}Markaz kiritilmagan{% endif %}</p>
+                    </div>
+                    <span class="status-badge status-badge--info">{{ result.groups_count|default:0 }} ta guruh</span>
+                </div>
+                <div class="subject-card__stats">
+                    <div>
+                        <span>Narx</span>
+                        <strong>{{ result.price }}</strong>
+                    </div>
+                    <div>
+                        <span>Davomiylik</span>
+                        <strong>{{ result.duration_months }} oy</strong>
+                    </div>
+                </div>
+                {% if result.note %}
+                    <p class="subject-card__note">{{ result.note|truncatechars:140 }}</p>
+                {% endif %}
+                <div class="subject-card__actions">
+                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light">Tahrirlash</a>
+                    <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost">O'chirish</a>
+                </div>
+            </article>
+        {% empty %}
+            <div class="empty-state">Fanlar hali kiritilmagan.</div>
+        {% endfor %}
+    </div>
+{% endblock %}

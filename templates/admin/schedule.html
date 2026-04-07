@@ -1,0 +1,89 @@
+{% extends "admin/base_site.html" %}
+{% load admin_urls %}
+
+{% block content %}
+    <section class="dashboard-panel">
+        <form method="get" class="schedule-filter-bar">
+            <label>
+                <span>O'qituvchi</span>
+                <select name="teacher">
+                    <option value="">Barchasi</option>
+                    {% for teacher in schedule_teachers %}
+                        <option value="{{ teacher.pk }}" {% if selected_teacher == teacher.pk|stringformat:"s" %}selected{% endif %}>
+                            {% if teacher.user %}{{ teacher.user.display_name }}{% else %}Teacher #{{ teacher.pk }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                <span>Fan</span>
+                <select name="subject">
+                    <option value="">Barchasi</option>
+                    {% for subject in schedule_subjects %}
+                        <option value="{{ subject.pk }}" {% if selected_subject == subject.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ subject.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <div class="schedule-filter-bar__actions">
+                <button type="submit" class="button button-primary">Qo'llash</button>
+                <a href="{% url 'admin:ui_schedule' %}" class="button button-light">Tozalash</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel__header">
+            <strong>Dars jadvali</strong>
+            <span>{{ schedule_groups|length }} ta guruh</span>
+        </div>
+        <div class="schedule-table-shell">
+            <table class="teacher-table schedule-table">
+                <thead>
+                <tr>
+                    <th>Guruh</th>
+                    <th>Fan</th>
+                    <th>O'qituvchi</th>
+                    <th>Kunlar</th>
+                    <th>Vaqt</th>
+                    <th>O'quvchilar</th>
+                    <th>Amallar</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for group in schedule_groups %}
+                    <tr>
+                        <td>
+                            <strong>{{ group.title }}</strong>
+                            <small>{% if group.branch %}{{ group.branch.name }}{% else %}Filialsiz{% endif %}</small>
+                        </td>
+                        <td>{{ group.course.name }}</td>
+                        <td>{% if group.teacher and group.teacher.user %}{{ group.teacher.user.display_name }}{% else %}Biriktirilmagan{% endif %}</td>
+                        <td>
+                            {% if group.lessons_days.all %}
+                                {% for day in group.lessons_days.all %}
+                                    {{ day.day }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {{ group.get_lessons_days_choice_display }}
+                            {% endif %}
+                        </td>
+                        <td>{{ group.start_lesson|time:"H:i" }} - {{ group.end_lesson|time:"H:i" }}</td>
+                        <td>{{ group.student_count|default_if_none:group.total_student }} ta</td>
+                        <td class="table-actions">
+                            <a href="{% url 'admin:group_group_change' group.pk %}" class="button button-light">Tahrirlash</a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">Tanlangan filtrlar bo'yicha jadval topilmadi.</div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

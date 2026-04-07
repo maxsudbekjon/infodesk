@@ -1,6 +1,8 @@
 from django.contrib import admin, messages
+from django.utils.html import format_html
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
+from apps.lead.choices import LEAD_STATUS
 from apps.lead.models import Lead, Note, Situation, Source
 from apps.lead.services import assign_for_new_lead
 
@@ -14,12 +16,14 @@ class NoteInline(admin.TabularInline):
 
 @admin.register(Lead)
 class LeadAdmin(FriendlyAdminMixin):
+    admin_page_title = "Buyurtmalar"
+    admin_page_subtitle = "Yangi murojaatlarni qabul qiling, bog'laning va konversiyani kuzating."
     list_display = (
         "id",
         "full_name",
         "phone_number",
         "center",
-        "status",
+        "status_badge",
         "temperature",
         "operator",
         "course",
@@ -44,7 +48,14 @@ class LeadAdmin(FriendlyAdminMixin):
     autocomplete_fields = ("course", "operator", "group", "center", "source", "situation")
     filter_horizontal = ("days",)
     inlines = (NoteInline,)
-    actions = ("archive_selected", "unarchive_selected", "activate_selected", "deactivate_selected")
+    actions = (
+        "accept_selected_orders",
+        "reject_selected_orders",
+        "archive_selected",
+        "unarchive_selected",
+        "activate_selected",
+        "deactivate_selected",
+    )
     fieldsets = (
         ("Asosiy ma'lumotlar", {
             "fields": ("full_name", "phone_number", "center", "course", "group"),
@@ -64,6 +75,35 @@ class LeadAdmin(FriendlyAdminMixin):
         super().save_model(request, obj, form, change)
         if not change:
             assign_for_new_lead(obj)
+
+    @admin.display(description="Status", ordering="status")
+    def status_badge(self, obj):
+        palette = {
+            LEAD_STATUS.NEW: ("Yangi", "primary"),
+            LEAD_STATUS.PROCESS: ("Bog'langan", "warning"),
+            LEAD_STATUS.SOLD: ("Konversiya", "success"),
+            LEAD_STATUS.CANSELED: ("Rad etilgan", "danger"),
+        }
+        label, tone = palette.get(obj.status, (obj.get_status_display(), "info"))
+        return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
+
+    @admin.action(description="Tanlangan buyurtmalarni qabul qilish")
+    def accept_selected_orders(self, request, queryset):
+        updated = queryset.update(
+            status=LEAD_STATUS.PROCESS,
+            is_active=True,
+            is_archived=False,
+        )
+        self.message_user(request, f"{updated} ta buyurtma qabul qilindi.", level=messages.SUCCESS)
+
+    @admin.action(description="Tanlangan buyurtmalarni rad etish")
+    def reject_selected_orders(self, request, queryset):
+        updated = queryset.update(
+            status=LEAD_STATUS.CANSELED,
+            is_active=False,
+            is_archived=True,
+        )
+        self.message_user(request, f"{updated} ta buyurtma rad etildi.", level=messages.WARNING)
 
     @admin.action(description="Tanlangan lidlarni arxivga o'tkazish")
     def archive_selected(self, request, queryset):
