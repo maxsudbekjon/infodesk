@@ -1,0 +1,97 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+    <section class="metric-grid">
+        {% for metric in admin_global_metrics %}
+            <article class="metric-card">
+                <span class="metric-card__icon metric-card__icon--{{ metric.tone }}">
+                    <svg><use href="#icon-{{ metric.icon }}"></use></svg>
+                </span>
+                <div>
+                    <strong class="metric-card__value">{{ metric.value }}</strong>
+                    <span class="metric-card__label">{{ metric.label }}</span>
+                    <small class="metric-card__helper">{{ metric.helper }}</small>
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+
+    <section class="dashboard-columns">
+        <article class="stats-panel">
+            <div class="stats-panel__header">
+                <strong>O'quvchilar holati</strong>
+                <span>{{ upcoming_payments }} ta yaqin to'lov</span>
+            </div>
+            {% for item in student_status_breakdown %}
+                <div class="stats-bar">
+                    <div class="stats-bar__meta">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.value }}</strong>
+                    </div>
+                    <div class="stats-bar__track">
+                        <span class="stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></span>
+                    </div>
+                </div>
+            {% endfor %}
+        </article>
+
+        <article class="stats-panel">
+            <div class="stats-panel__header">
+                <strong>Guruhlar holati</strong>
+                <span>{{ active_groups }} ta aktiv guruh</span>
+            </div>
+            {% for item in group_status_breakdown %}
+                <div class="stats-bar">
+                    <div class="stats-bar__meta">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.value }}</strong>
+                    </div>
+                    <div class="stats-bar__track">
+                        <span class="stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></span>
+                    </div>
+                </div>
+            {% endfor %}
+        </article>
+    </section>
+
+    <section class="dashboard-columns">
+        <article class="stats-panel">
+            <div class="stats-panel__header">
+                <strong>Buyurtmalar bosqichi</strong>
+                <span>{{ new_leads }} ta yangi lead</span>
+            </div>
+            {% for item in lead_status_breakdown %}
+                <div class="stats-bar">
+                    <div class="stats-bar__meta">
+                        <span>{{ item.label }}</span>
+                        <strong>{{ item.value }}</strong>
+                    </div>
+                    <div class="stats-bar__track">
+                        <span class="stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></span>
+                    </div>
+                </div>
+            {% endfor %}
+        </article>
+
+        <article class="stats-panel">
+            <div class="stats-panel__header">
+                <strong>O'qituvchilar summary</strong>
+                <span>Jamoa holati</span>
+            </div>
+            <div class="teacher-summary-grid">
+                <div class="teacher-summary-tile">
+                    <strong>{{ teacher_summary.total }}</strong>
+                    <span>Jami ustoz</span>
+                </div>
+                <div class="teacher-summary-tile">
+                    <strong>{{ teacher_summary.active }}</strong>
+                    <span>Faol</span>
+                </div>
+                <div class="teacher-summary-tile">
+                    <strong>{{ teacher_summary.archived }}</strong>
+                    <span>Arxiv</span>
+                </div>
+            </div>
+        </article>
+    </section>
+{% endblock %}

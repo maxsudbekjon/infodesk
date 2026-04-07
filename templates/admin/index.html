@@ -1,0 +1,181 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block nav-breadcrumbs %}{% endblock %}
+
+{% block content_title %}
+    <section class="dashboard-hero">
+        <div>
+            <span class="dashboard-hero__eyebrow">Ta'lim markazi boshqaruvi</span>
+            <h1 class="dashboard-hero__title">Zamonaviy, tez va qulay admin panel</h1>
+            <p class="dashboard-hero__text">
+                Guruhlar, o'quvchilar, o'qituvchilar va buyurtmalarni bitta toza interfeysda boshqaring.
+            </p>
+        </div>
+        <div class="dashboard-hero__actions">
+            {% for item in admin_dashboard_quick_links|slice:":3" %}
+                <a href="{{ item.url }}" class="button button-primary">{{ item.title }}</a>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}
+
+{% block content_subtitle %}{% endblock %}
+
+{% block content %}
+    <section class="metric-grid">
+        {% for metric in admin_global_metrics %}
+            <article class="metric-card">
+                <span class="metric-card__icon metric-card__icon--{{ metric.tone }}">
+                    <svg><use href="#icon-{{ metric.icon }}"></use></svg>
+                </span>
+                <div>
+                    <strong class="metric-card__value">{{ metric.value }}</strong>
+                    <span class="metric-card__label">{{ metric.label }}</span>
+                    <small class="metric-card__helper">{{ metric.helper }}</small>
+                </div>
+            </article>
+        {% endfor %}
+    </section>
+
+    <section class="quick-link-grid">
+        {% for item in admin_dashboard_quick_links %}
+            <a href="{{ item.url }}" class="quick-link-card">
+                <span class="quick-link-card__icon">
+                    <svg><use href="#icon-{{ item.icon }}"></use></svg>
+                </span>
+                <strong>{{ item.title }}</strong>
+                <p>{{ item.description }}</p>
+            </a>
+        {% endfor %}
+    </section>
+
+    <section class="dashboard-columns">
+        <div class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <strong>So'nggi guruhlar</strong>
+                <a href="{% url 'admin:group_group_changelist' %}">Barchasi</a>
+            </div>
+            {% if admin_dashboard_snapshot.recent_groups %}
+                <div class="dashboard-list">
+                    {% for item in admin_dashboard_snapshot.recent_groups %}
+                        <a href="{{ item.url }}" class="dashboard-list__item">
+                            <div>
+                                <strong>{{ item.title }}</strong>
+                                <small>{{ item.subject }} · {{ item.teacher }}</small>
+                            </div>
+                            <div class="dashboard-list__meta">
+                                <span>{{ item.students }} ta</span>
+                                <small>{{ item.schedule }}</small>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">Guruhlar hali mavjud emas.</div>
+            {% endif %}
+        </div>
+
+        <div class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <strong>Yangi buyurtmalar</strong>
+                <a href="{% url 'admin:lead_lead_changelist' %}">Barchasi</a>
+            </div>
+            {% if admin_dashboard_snapshot.recent_leads %}
+                <div class="dashboard-list">
+                    {% for item in admin_dashboard_snapshot.recent_leads %}
+                        <a href="{{ item.url }}" class="dashboard-list__item">
+                            <div>
+                                <strong>{{ item.name }}</strong>
+                                <small>{{ item.phone }}</small>
+                            </div>
+                            <div class="dashboard-list__meta">
+                                <span>{{ item.status }}</span>
+                                <small>{{ item.course }}</small>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">Yangi buyurtmalar topilmadi.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="dashboard-columns">
+        <div class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <strong>So'nggi o'quvchilar</strong>
+                <a href="{% url 'admin:pupil_student_changelist' %}">Ro'yxat</a>
+            </div>
+            {% if admin_dashboard_snapshot.recent_students %}
+                <div class="dashboard-list">
+                    {% for item in admin_dashboard_snapshot.recent_students %}
+                        <a href="{{ item.url }}" class="dashboard-list__item">
+                            <div>
+                                <strong>{{ item.name }}</strong>
+                                <small>{{ item.phone }}</small>
+                            </div>
+                            <div class="dashboard-list__meta">
+                                <span>{{ item.group }}</span>
+                                <small>{{ item.status }}</small>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">O'quvchilar ro'yxati hali bo'sh.</div>
+            {% endif %}
+        </div>
+
+        <div class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <strong>So'nggi admin amallari</strong>
+                <a href="{% url 'admin:ui_statistics' %}">Statistika</a>
+            </div>
+            {% if admin_dashboard_snapshot.recent_actions %}
+                <div class="dashboard-list">
+                    {% for item in admin_dashboard_snapshot.recent_actions %}
+                        <a href="{{ item.url|default:'#' }}" class="dashboard-list__item">
+                            <div>
+                                <strong>{{ item.label }}</strong>
+                                <small>{{ item.content_type }}</small>
+                            </div>
+                            <div class="dashboard-list__meta">
+                                <span>{{ item.actor }}</span>
+                                <small>{{ item.time|date:"d M, H:i" }}</small>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">So'nggi amallar topilmadi.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if app_list %}
+        <section class="dashboard-panel">
+            <div class="dashboard-panel__header">
+                <strong>Barcha modullar</strong>
+                <span>Standart admin bo'limlari ham shu yerda mavjud</span>
+            </div>
+            <div class="app-grid">
+                {% for app in app_list %}
+                    <article class="app-grid__card">
+                        <h3>{{ app.name }}</h3>
+                        <div class="app-grid__models">
+                            {% for model in app.models %}
+                                {% if model.admin_url %}
+                                    <a href="{{ model.admin_url }}">{{ model.name }}</a>
+                                {% else %}
+                                    <span>{{ model.name }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+{% endblock %}
