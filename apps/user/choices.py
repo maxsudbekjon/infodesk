@@ -1,13 +1,13 @@
 from django.db import models
 
 class GENDER(models.TextChoices):
-    MALE='male','Male'
-    FEMALE='female','Female'
+    MALE='male','Erkak'
+    FEMALE='female','Ayol'
     
 class ROLE(models.TextChoices):
-    USER='user','User'
-    ADMIN='admin','Admin'
-    MANAGER='meneger','Meneger'
-    CEO='ceo','Ceo'
-    TEACHER='teacher','Teacher'
-    STUDENT='student','Student'
+    USER='user','Foydalanuvchi'
+    ADMIN='admin','Administrator'
+    MANAGER='meneger','Menejer'
+    CEO='ceo','Direktor'
+    TEACHER='teacher','O\'qituvchi'
+    STUDENT='student','O\'quvchi'

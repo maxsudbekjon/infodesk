@@ -15,7 +15,7 @@
     {% endif %}
     {% block dark-mode-vars %}{% endblock %}
     {% block extrastyle %}{% endblock %}
-    <link rel="stylesheet" href="{% static 'admin/css/custom_admin.css' %}">
+    <link rel="stylesheet" href="{% static 'admin/css/custom_admin.css' %}?v=20260408-2">
     {% block extrahead %}{% endblock %}
 </head>
 <body class="admin-ui {% if is_popup %}popup {% endif %}{% if is_ui_modal %}admin-ui--modal-frame {% endif %}{% block bodyclass %}{% endblock %}"
@@ -152,7 +152,7 @@
             {% block nav-breadcrumbs %}
                 <nav class="admin-breadcrumbs" aria-label="{% translate 'Breadcrumbs' %}">
                     {% block breadcrumbs %}
-                        <a href="{% url 'admin:index' %}">Dashboard</a>
+                        <a href="{% url 'admin:index' %}">Bosh sahifa</a>
                         {% if title %}
                             <span>/</span>
                             <span>{{ title }}</span>
@@ -236,7 +236,8 @@
     <symbol id="icon-pulse" viewBox="0 0 24 24"><path d="M3 13h4l2-5 4 10 2-5h6v-2h-4.6L13 17l-4-10-3 6H3v2Z" fill="currentColor"/></symbol>
 </svg>
 
-<script src="{% static 'admin/js/custom_admin.js' %}" defer></script>
+{% block extrajs %}{% endblock %}
+<script src="{% static 'admin/js/custom_admin.js' %}?v=20260408-2" defer></script>
 {% block extrabody %}{% endblock %}
 </body>
 </html>

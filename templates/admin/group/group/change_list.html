@@ -3,11 +3,20 @@
 
 {% block bodyclass %}{{ block.super }} change-list--cards change-list--groups{% endblock %}
 
+{% block object-tools-items %}
+    <li>
+        <a href="{% url opts|admin_urlname:'add' %}" class="addlink js-admin-modal-trigger">+ Yangi guruh</a>
+    </li>
+{% endblock %}
+
 {% block content_title %}
     <div class="page-heading">
         <div>
             <h1 class="admin-page-title">Guruhlar</h1>
             <p class="admin-page-subtitle">Fan, ustoz va dars vaqti bo'yicha guruhlarni kartochkalarda boshqaring.</p>
+        </div>
+        <div class="page-heading__actions">
+            <a href="{% url opts|admin_urlname:'add' %}" class="button button-primary js-admin-modal-trigger">+ Yangi guruh</a>
         </div>
         <div class="page-metric-inline">
             <div>
@@ -32,10 +41,10 @@
             <article class="group-card">
                 <div class="group-card__header">
                     <div>
-                        <h3>{{ result.title }}</h3>
+                        <h3><a href="{% url 'admin:group_group_overview' result.pk %}">{{ result.title }}</a></h3>
                         <p>{{ result.course.name }}</p>
                     </div>
-                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="group-card__edit">
+                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="group-card__edit js-admin-modal-trigger">
                         Tahrirlash
                     </a>
                 </div>
@@ -73,8 +82,8 @@
                         {{ result.get_status_display }}
                     </span>
                     <div class="group-card__actions">
-                        <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light">Ko'rish</a>
-                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost">O'chirish</a>
+                        <a href="{% url 'admin:group_group_overview' result.pk %}" class="button button-light">Ko'rish</a>
+                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost js-admin-modal-trigger">O'chirish</a>
                     </div>
                 </div>
             </article>

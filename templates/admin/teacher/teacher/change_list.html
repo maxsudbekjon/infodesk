@@ -3,11 +3,20 @@
 
 {% block bodyclass %}{{ block.super }} change-list--teachers{% endblock %}
 
+{% block object-tools-items %}
+    <li>
+        <a href="{% url opts|admin_urlname:'add' %}" class="addlink js-admin-modal-trigger">+ Yangi o'qituvchi</a>
+    </li>
+{% endblock %}
+
 {% block content_title %}
     <div class="page-heading">
         <div>
             <h1 class="admin-page-title">O'qituvchilar</h1>
             <p class="admin-page-subtitle">Kartochka summary va jadval ko'rinishi bilan ustozlar yuklamasini ko'ring.</p>
+        </div>
+        <div class="page-heading__actions">
+            <a href="{% url opts|admin_urlname:'add' %}" class="button button-primary js-admin-modal-trigger">+ Yangi o'qituvchi</a>
         </div>
         <div class="page-metric-inline">
             <div>
@@ -32,7 +41,7 @@
             <article class="teacher-spotlight-card">
                 <div class="teacher-spotlight-card__header">
                     <div>
-                        <h3>{% if result.user %}{{ result.user.display_name }}{% else %}Teacher #{{ result.pk }}{% endif %}</h3>
+                        <h3>{% if result.user %}{{ result.user.display_name }}{% else %}O'qituvchi #{{ result.pk }}{% endif %}</h3>
                         <p>{% if result.branch %}{{ result.branch.name }}{% else %}Filial biriktirilmagan{% endif %}</p>
                     </div>
                     <span class="status-badge status-badge--{% if result.is_archived %}muted{% else %}success{% endif %}">
@@ -76,7 +85,7 @@
             {% for result in cl.result_list %}
                 <tr>
                     <td>
-                        <strong>{% if result.user %}{{ result.user.display_name }}{% else %}Teacher #{{ result.pk }}{% endif %}</strong>
+                        <strong>{% if result.user %}{{ result.user.display_name }}{% else %}O'qituvchi #{{ result.pk }}{% endif %}</strong>
                         <small>
                             {% for specialty in result.specialty.all|slice:":3" %}
                                 {{ specialty.title }}{% if not forloop.last %}, {% endif %}
@@ -102,8 +111,8 @@
                         </span>
                     </td>
                     <td class="table-actions">
-                        <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light">Ko'rish</a>
-                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost">O'chirish</a>
+                        <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Ko'rish</a>
+                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost js-admin-modal-trigger">O'chirish</a>
                     </td>
                 </tr>
             {% empty %}
