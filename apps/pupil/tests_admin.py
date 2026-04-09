@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 
 from django.contrib.admin.sites import AdminSite
+from django.contrib.messages.storage.fallback import FallbackStorage
+from django.test import Client
 from django.test import RequestFactory, TestCase
 from datetime import time
 
@@ -20,6 +22,14 @@ class StudentAdminTests(TestCase):
     def setUp(self):
         self.request_factory = RequestFactory()
         self.admin = StudentAdmin(Student, AdminSite())
+        self.client = Client(HTTP_HOST="127.0.0.1")
+
+        self.admin_user = User.objects.create_superuser(
+            phone_number="+998900299999",
+            password="adminpass123",
+            full_name="Admin User",
+        )
+        self.client.force_login(self.admin_user)
 
         self.owner = User.objects.create_user(
             phone_number="+998900200001",
@@ -69,6 +79,14 @@ class StudentAdminTests(TestCase):
             used_coin=3,
         )
 
+    def _build_post_request(self):
+        request = self.request_factory.post("/admin/pupil/student/")
+        setattr(request, "session", self.client.session)
+        storage = FallbackStorage(request)
+        setattr(request, "_messages", storage)
+        request.user = self.owner
+        return request
+
     def test_total_coin_is_editable_in_admin(self):
         request = self.request_factory.get("/admin/pupil/student/")
 
@@ -84,7 +102,7 @@ class StudentAdminTests(TestCase):
         self.student.refresh_from_db()
         self.assertEqual(self.student.total_coin, 7)
 
-        request = self.request_factory.post("/admin/pupil/student/")
+        request = self._build_post_request()
         form = SimpleNamespace(
             cleaned_data={"total_coin": 50},
             changed_data=["total_coin"],
@@ -105,3 +123,108 @@ class StudentAdminTests(TestCase):
 
         self.student.refresh_from_db()
         self.assertEqual(self.student.total_coin, 55)
+
+    def test_admin_form_accepts_active_status_alias(self):
+        request = self.request_factory.post("/admin/pupil/student/add/")
+        form_class = self.admin.get_form(request)
+        form = form_class(
+            data={
+                "full_name": "Alias Student",
+                "phone_number": "+998900200099",
+                "center": self.organization.pk,
+                "group": self.group.pk,
+                "status": "active",
+                "payment_status": "debtor",
+                "balance": "0",
+                "used_coin": "0",
+                "total_coin": "0",
+                "coin_offset": "0",
+            }
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["status"], "avtive")
+
+    def test_admin_form_rejects_add_coin_above_limit(self):
+        request = self.request_factory.post("/admin/pupil/student/add/")
+        form_class = self.admin.get_form(request)
+        form = form_class(
+            data={
+                "full_name": "Coin Limit Student",
+                "phone_number": "+998900200100",
+                "center": self.organization.pk,
+                "group": self.group.pk,
+                "status": "avtive",
+                "payment_status": "debtor",
+                "balance": "0",
+                "used_coin": "0",
+                "total_coin": "0",
+                "coin_offset": "0",
+                "add_coin": "151",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("add_coin", form.errors)
+
+    def test_save_model_can_add_coin_with_limit(self):
+        GroupScore.objects.create(
+            group=self.group,
+            student=self.student,
+            score=10,
+            reason="Initial coin",
+        )
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 7)
+
+        request = self._build_post_request()
+        form = SimpleNamespace(
+            cleaned_data={"total_coin": self.student.total_coin, "add_coin": 150, "remove_coin": 0},
+            changed_data=["add_coin"],
+        )
+
+        self.admin.save_model(request, self.student, form, change=True)
+
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 157)
+        self.assertEqual(self.student.coin_offset, 150)
+
+    def test_save_model_can_remove_coin_without_limit(self):
+        GroupScore.objects.create(
+            group=self.group,
+            student=self.student,
+            score=10,
+            reason="Initial coin",
+        )
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 7)
+
+        request = self._build_post_request()
+        form = SimpleNamespace(
+            cleaned_data={"total_coin": self.student.total_coin, "add_coin": 0, "remove_coin": 999},
+            changed_data=["remove_coin"],
+        )
+
+        self.admin.save_model(request, self.student, form, change=True)
+
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 0)
+        self.assertEqual(self.student.coin_offset, -7)
+
+    def test_attendance_view_shows_current_total_coin(self):
+        GroupScore.objects.create(
+            group=self.group,
+            student=self.student,
+            score=55,
+            reason="Monthly coin",
+        )
+        self.student.coin_offset = 153
+        self.student.total_coin = 205
+        self.student.save(update_fields=["coin_offset", "total_coin"])
+
+        response = self.client.get(f"/admin/pupil/student/{self.student.pk}/attendance/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["student_attendance"]["summary"]["coin_total"], 205)
+        self.assertEqual(response.context["student_attendance"]["group_rows"][0]["coin"], 205)
+        self.assertEqual(response.context["student_attendance"]["group_rows"][0]["monthly_coin"], 55)

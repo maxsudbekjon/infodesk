@@ -1,10 +1,72 @@
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from django.contrib import admin
+from django.db.models import NOT_PROVIDED
 
 
 MODAL_REQUEST_PARAM = "_ui_modal"
 MODAL_UPDATED_PARAM = "_modal_updated"
+
+FIELD_LABEL_OVERRIDES = {
+    "full_name": "F.I.Sh",
+    "phone_number": "Telefon",
+    "phone_number2": "Qo'shimcha telefon",
+    "user": "Foydalanuvchi",
+    "lead": "Lid",
+    "image": "Rasm",
+    "comment": "Izoh",
+    "center": "Markaz",
+    "group": "Guruh",
+    "status": "Holat",
+    "contract": "Shartnoma",
+    "payment_status": "To'lov holati",
+    "next_payment_date": "Keyingi to'lov sanasi",
+    "balance": "Balans",
+    "used_coin": "Ishlatilgan coin",
+    "total_coin": "Jami coin",
+    "created_at": "Yaratilgan vaqti",
+    "updated_at": "Yangilangan vaqti",
+    "teacher": "O'qituvchi",
+    "assistant_teacher": "Yordamchi o'qituvchi",
+    "room": "Xona",
+    "branch": "Filial",
+    "lessons_days_choice": "Dars kunlari",
+    "lessons_days": "Dars kunlari tanlovi",
+    "start_lesson": "Dars boshlanishi",
+    "end_lesson": "Dars tugashi",
+    "started_at": "Boshlangan sana",
+    "closed_at": "Yakunlangan sana",
+    "title": "Nomi",
+    "name": "Nomi",
+    "price": "Narxi",
+    "duration_months": "Davomiyligi (oy)",
+    "operator": "Operator",
+    "source": "Manba",
+    "situation": "Vaziyat",
+    "temperature": "Qiziqish darajasi",
+    "days_choice": "Kunlar turi",
+    "days": "Kunlar",
+    "prefer_time": "Qulay vaqt",
+    "is_active": "Faol",
+    "is_archived": "Arxivlangan",
+    "monthly_salary": "Oylik maosh",
+    "kpi": "KPI",
+    "monthly_per_lesson": "Bir dars uchun to'lov",
+    "monthly_per_student": "Bir o'quvchi uchun to'lov",
+    "contract_date": "Shartnoma sanasi",
+    "percentage_share": "Ulush foizi",
+    "lesson_fee": "Dars narxi",
+    "per_student_fee": "Bir o'quvchi narxi",
+    "specialty": "Yo'nalish",
+    "note": "Izoh",
+    "date": "Sana",
+    "reason": "Sabab",
+    "reason_choice": "Sabab turi",
+    "is_present": "Davomat",
+    "capacity": "Sig'imi",
+    "day": "Kun",
+    "text": "Matn",
+}
 
 
 def append_query_params(url: str, **params) -> str:
@@ -69,14 +131,18 @@ class AdminUiResponseMixin:
         )
 
     def _preserve_modal_state(self, request, response, *, close_modal=False):
-        if not self.is_modal_request(request) or not getattr(response, "url", None):
+        if not self.is_modal_request(request):
+            return response
+
+        location = response.headers.get("Location") if hasattr(response, "headers") else None
+        if not location:
             return response
 
         params = {self.modal_request_param: 1}
         if close_modal:
             params[self.modal_updated_param] = 1
 
-        response.url = append_query_params(response.url, **params)
+        response["Location"] = append_query_params(location, **params)
         return response
 
     def response_add(self, request, obj, post_url_continue=None):
@@ -100,3 +166,28 @@ class FriendlyAdminMixin(AdminUiResponseMixin, admin.ModelAdmin):
     show_full_result_count = True
     show_facets = admin.ShowFacets.ALWAYS
     empty_value_display = "-"
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form_class = super().get_form(request, obj=obj, change=change, **kwargs)
+
+        for field_name, form_field in form_class.base_fields.items():
+            if field_name in FIELD_LABEL_OVERRIDES:
+                form_field.label = FIELD_LABEL_OVERRIDES[field_name]
+
+            try:
+                model_field = self.model._meta.get_field(field_name)
+            except Exception:
+                continue
+
+            if getattr(model_field, "default", NOT_PROVIDED) is NOT_PROVIDED:
+                continue
+
+            if form_field.required:
+                form_field.required = False
+
+            if form_field.initial in (None, ""):
+                default_value = model_field.get_default()
+                if default_value not in (None, ""):
+                    form_field.initial = default_value
+
+        return form_class

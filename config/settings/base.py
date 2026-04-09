@@ -418,12 +418,12 @@ JAZZMIN_SETTINGS = {
     "related_modal_active": True,
 
     # Custom static assets
-    "custom_css": None,
-    "custom_js": None,
+    "custom_css": "admin/css/custom_admin.css",
+    "custom_js": "admin/js/custom_admin.js",
     "use_google_fonts_cdn": True,
 
     # Disable the UI builder in production (prevents accidental style changes)
-    "show_ui_builder": True,
+    "show_ui_builder": False,
 
     # ── Change Form Layout ────────────────────────────────────────────────────
     # Options: single | horizontal_tabs | vertical_tabs | collapsible | carousel

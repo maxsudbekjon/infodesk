@@ -75,7 +75,7 @@ class TeacherAdmin(FriendlyAdminMixin):
     def display_name(self, obj):
         if obj.user:
             return obj.user.display_name
-        return f"Teacher #{obj.pk}"
+        return f"O'qituvchi #{obj.pk}"
 
     @admin.display(description="Telefon")
     def phone_number(self, obj):

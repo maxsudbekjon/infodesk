@@ -1,4 +1,9 @@
+from django.contrib.admin.utils import unquote
 from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponseNotAllowed
+from django.shortcuts import redirect
+from django.urls import path
 from django.utils.html import format_html
 
 from apps.dashboard.admin_utils import FriendlyAdminMixin
@@ -18,6 +23,7 @@ class NoteInline(admin.TabularInline):
 class LeadAdmin(FriendlyAdminMixin):
     admin_page_title = "Buyurtmalar"
     admin_page_subtitle = "Yangi murojaatlarni qabul qiling, bog'laning va konversiyani kuzating."
+    change_list_template = "admin/lead/lead/change_list.html"
     list_display = (
         "id",
         "full_name",
@@ -71,10 +77,71 @@ class LeadAdmin(FriendlyAdminMixin):
         }),
     )
 
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/accept/",
+                self.admin_site.admin_view(self.accept_order_view),
+                name="lead_lead_accept",
+            ),
+            path(
+                "<path:object_id>/reject/",
+                self.admin_site.admin_view(self.reject_order_view),
+                name="lead_lead_reject",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        queryset = self.get_queryset(request)
+        extra_context.setdefault("lead_page_metrics", {
+            "total_orders": queryset.count(),
+            "new_orders": queryset.filter(status=LEAD_STATUS.NEW, is_archived=False).count(),
+            "contacted_orders": queryset.filter(status=LEAD_STATUS.PROCESS, is_archived=False).count(),
+            "converted_orders": queryset.filter(status=LEAD_STATUS.SOLD, is_archived=False).count(),
+        })
+        return super().changelist_view(request, extra_context=extra_context)
+
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
         if not change:
             assign_for_new_lead(obj)
+
+    def _get_lead_for_action(self, request, object_id):
+        if request.method != "POST":
+            return HttpResponseNotAllowed(["POST"])
+        lead = self.get_object(request, unquote(object_id))
+        if lead is None:
+            raise Http404("Lead topilmadi.")
+        if not self.has_change_permission(request, lead):
+            raise PermissionDenied
+        return lead
+
+    def _redirect_after_row_action(self, request):
+        return redirect(request.POST.get("next") or request.META.get("HTTP_REFERER") or "admin:lead_lead_changelist")
+
+    def accept_order_view(self, request, object_id):
+        lead = self._get_lead_for_action(request, object_id)
+        if isinstance(lead, HttpResponseNotAllowed):
+            return lead
+        lead.status = LEAD_STATUS.PROCESS
+        lead.is_active = True
+        lead.is_archived = False
+        lead.save(update_fields=["status", "is_active", "is_archived"])
+        self.message_user(request, f"{lead.full_name} buyurtmasi qabul qilindi.", level=messages.SUCCESS)
+        return self._redirect_after_row_action(request)
+
+    def reject_order_view(self, request, object_id):
+        lead = self._get_lead_for_action(request, object_id)
+        if isinstance(lead, HttpResponseNotAllowed):
+            return lead
+        lead.status = LEAD_STATUS.CANSELED
+        lead.is_active = False
+        lead.is_archived = True
+        lead.save(update_fields=["status", "is_active", "is_archived"])
+        self.message_user(request, f"{lead.full_name} buyurtmasi rad etildi.", level=messages.WARNING)
+        return self._redirect_after_row_action(request)
 
     @admin.display(description="Status", ordering="status")
     def status_badge(self, obj):

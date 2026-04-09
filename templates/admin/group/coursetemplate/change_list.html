@@ -3,11 +3,20 @@
 
 {% block bodyclass %}{{ block.super }} change-list--cards change-list--subjects{% endblock %}
 
+{% block object-tools-items %}
+    <li>
+        <a href="{% url opts|admin_urlname:'add' %}" class="addlink js-admin-modal-trigger">+ Yangi fan</a>
+    </li>
+{% endblock %}
+
 {% block content_title %}
     <div class="page-heading">
         <div>
             <h1 class="admin-page-title">Fanlar</h1>
             <p class="admin-page-subtitle">Yo'nalishlar, davomiylik va narxlarni sodda kartochkalar orqali yangilang.</p>
+        </div>
+        <div class="page-heading__actions">
+            <a href="{% url opts|admin_urlname:'add' %}" class="button button-primary js-admin-modal-trigger">+ Yangi fan</a>
         </div>
         <div class="page-metric-inline">
             <div>
@@ -47,8 +56,8 @@
                     <p class="subject-card__note">{{ result.note|truncatechars:140 }}</p>
                 {% endif %}
                 <div class="subject-card__actions">
-                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light">Tahrirlash</a>
-                    <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost">O'chirish</a>
+                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
+                    <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost js-admin-modal-trigger">O'chirish</a>
                 </div>
             </article>
         {% empty %}

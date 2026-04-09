@@ -2,7 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 from apps.lead.models.situation import Situation
 from apps.pupil.choices import STUDENT_STATUS, TRANSFER_REASON
-from apps.pupil.models.student import Student, StudnetTransfer
+from apps.pupil.models.student import Student, StudentTransfer
 from apps.pupil.models.note import StudentNote
 
 
@@ -13,7 +13,7 @@ from apps.pupil.models.note import StudentNote
 class StudentChangeGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = StudnetTransfer
+        model = StudentTransfer
         fields = (
             "student",
             "to_group",
@@ -88,7 +88,7 @@ class StudentChangeGroupSerializer(serializers.ModelSerializer):
             student.group.branch if student.group else None
         )
 
-        transfer = StudnetTransfer.objects.create(**validated_data)
+        transfer = StudentTransfer.objects.create(**validated_data)
 
         return transfer
     
@@ -182,7 +182,7 @@ class StudentRemoveFromGroupSerializer(serializers.Serializer):
         from_group_id = student.group_id
 
         with transaction.atomic():
-            StudnetTransfer.objects.create(
+            StudentTransfer.objects.create(
                 student=student,
                 from_group=student.group,
                 from_branch=student.group.branch if student.group else None,

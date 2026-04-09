@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.admin.models import LogEntry
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import reverse
@@ -50,10 +51,86 @@ def _active_match(request_path: str, target_url: str) -> bool:
     return False
 
 
+def _shift_month(reference: date, offset: int) -> date:
+    total_months = reference.year * 12 + reference.month - 1 + offset
+    year, month_index = divmod(total_months, 12)
+    return date(year, month_index + 1, 1)
+
+
+def _month_label(value: date) -> str:
+    labels = {
+        1: "Yan",
+        2: "Fev",
+        3: "Mar",
+        4: "Apr",
+        5: "May",
+        6: "Iyn",
+        7: "Iyl",
+        8: "Avg",
+        9: "Sen",
+        10: "Okt",
+        11: "Noy",
+        12: "Dek",
+    }
+    return labels.get(value.month, value.strftime("%b"))
+
+
+def _monthly_overview(queryset, *, label: str, color: str, months: int = 6):
+    current_month = timezone.localdate().replace(day=1)
+    month_starts = [
+        _shift_month(current_month, -offset)
+        for offset in range(months - 1, -1, -1)
+    ]
+
+    aggregated = (
+        queryset.annotate(month=TruncMonth("created_at"))
+        .values("month")
+        .annotate(total=Count("id"))
+        .order_by("month")
+    )
+    counts = {
+        date(row["month"].year, row["month"].month, 1): row["total"]
+        for row in aggregated
+        if row["month"]
+    }
+
+    peak = max(counts.values(), default=0)
+    items = []
+    for month_start in month_starts:
+        total = counts.get(month_start, 0)
+        items.append({
+            "label": _month_label(month_start),
+            "value": total,
+            "height": 18 if peak == 0 else max(round(total / peak * 100, 2), 18),
+        })
+
+    current_total = items[-1]["value"] if items else 0
+    previous_total = items[-2]["value"] if len(items) > 1 else 0
+    delta = current_total - previous_total
+    if delta > 0:
+        change_text = f"+{delta} o'tgan oyga nisbatan"
+        change_tone = "success"
+    elif delta < 0:
+        change_text = f"{delta} o'tgan oyga nisbatan"
+        change_tone = "danger"
+    else:
+        change_text = "O'tgan oy bilan bir xil"
+        change_tone = "muted"
+
+    return {
+        "label": label,
+        "color": color,
+        "items": items,
+        "current": current_total,
+        "change_text": change_text,
+        "change_tone": change_tone,
+    }
+
+
 def _build_sidebar_links(request):
     candidates = [
         {
-            "label": "Dashboard",
+            "label": "Bosh sahifa",
             "icon": "dashboard",
             "url": reverse("admin:index"),
         },
@@ -226,6 +303,39 @@ def _build_global_metrics(request):
     return metrics
 
 
+def _build_dashboard_trends(request):
+    trends = []
+
+    if request.user.has_perm("pupil.view_student"):
+        trends.append(
+            _monthly_overview(
+                Student.objects.all(),
+                label="O'quvchilar oqimi",
+                color="#3B82F6",
+            )
+        )
+
+    if request.user.has_perm("group.view_group"):
+        trends.append(
+            _monthly_overview(
+                Group.objects.all(),
+                label="Yangi guruhlar",
+                color="#10B981",
+            )
+        )
+
+    if request.user.has_perm("lead.view_lead"):
+        trends.append(
+            _monthly_overview(
+                Lead.objects.all(),
+                label="Kelgan buyurtmalar",
+                color="#F59E0B",
+            )
+        )
+
+    return trends
+
+
 def _build_dashboard_snapshot(request):
     snapshot = {
         "recent_groups": [],
@@ -348,6 +458,11 @@ def build_admin_ui_context(request):
             "recent_leads": [],
             "recent_actions": [],
         }
+
+    if url_name in {"index", "ui_statistics"}:
+        context["admin_dashboard_trends"] = _build_dashboard_trends(request)
+    else:
+        context["admin_dashboard_trends"] = []
     return context
 
 
@@ -509,6 +624,13 @@ def ui_statistics_view(request, admin_site):
         ).count(),
         "active_groups": Group.objects.filter(status=GROUP_STATUS.ACTIVE).count(),
         "new_leads": Lead.objects.filter(status=LEAD_STATUS.NEW, is_archived=False).count(),
+        "top_subjects": CourseTemplate.objects.annotate(
+            group_total=Count("groups", distinct=True),
+            lead_total=Count("leads", distinct=True),
+        ).order_by("-group_total", "-lead_total", "name")[:5],
+        "teacher_workloads": Teacher.objects.select_related("user").annotate(
+            group_total=Count("main_groups", distinct=True),
+        ).order_by("-group_total", "user__full_name")[:5],
     }
     return TemplateResponse(request, "admin/statistics.html", context)
 
@@ -529,11 +651,19 @@ def ui_schedule_view(request, admin_site):
     if subject_id:
         groups = groups.filter(course_id=subject_id)
 
+    schedule_summary = {
+        "total_groups": groups.count(),
+        "total_teachers": groups.exclude(teacher__isnull=True).values("teacher").distinct().count(),
+        "total_subjects": groups.values("course").distinct().count(),
+        "total_students": groups.aggregate(total_students=Sum("student_count")).get("total_students") or 0,
+    }
+
     context = {
         **admin_site.each_context(request),
         "title": "Jadval",
         "subtitle": "Dars kunlari, vaqt va guruh yuklamalarini yagona jadvalda ko'ring.",
         "schedule_groups": groups,
+        "schedule_summary": schedule_summary,
         "schedule_teachers": Teacher.objects.select_related("user").order_by("user__full_name"),
         "schedule_subjects": CourseTemplate.objects.order_by("name"),
         "selected_teacher": teacher_id or "",

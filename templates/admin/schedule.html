@@ -2,6 +2,45 @@
 {% load admin_urls %}
 
 {% block content %}
+    <section class="metric-grid metric-grid--compact">
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--primary">
+                <svg><use href="#icon-groups"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ schedule_summary.total_groups }}</strong>
+                <span class="metric-card__label">Filtrdagi guruhlar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--success">
+                <svg><use href="#icon-teachers"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ schedule_summary.total_teachers }}</strong>
+                <span class="metric-card__label">Faol o'qituvchilar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--info">
+                <svg><use href="#icon-subjects"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ schedule_summary.total_subjects }}</strong>
+                <span class="metric-card__label">Fanlar kesimi</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--warning">
+                <svg><use href="#icon-students"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ schedule_summary.total_students }}</strong>
+                <span class="metric-card__label">Jami o'quvchilar</span>
+            </div>
+        </article>
+    </section>
+
     <section class="dashboard-panel">
         <form method="get" class="schedule-filter-bar">
             <label>
@@ -10,7 +49,7 @@
                     <option value="">Barchasi</option>
                     {% for teacher in schedule_teachers %}
                         <option value="{{ teacher.pk }}" {% if selected_teacher == teacher.pk|stringformat:"s" %}selected{% endif %}>
-                            {% if teacher.user %}{{ teacher.user.display_name }}{% else %}Teacher #{{ teacher.pk }}{% endif %}
+                            {% if teacher.user %}{{ teacher.user.display_name }}{% else %}O'qituvchi #{{ teacher.pk }}{% endif %}
                         </option>
                     {% endfor %}
                 </select>
@@ -72,7 +111,7 @@
                         <td>{{ group.start_lesson|time:"H:i" }} - {{ group.end_lesson|time:"H:i" }}</td>
                         <td>{{ group.student_count|default_if_none:group.total_student }} ta</td>
                         <td class="table-actions">
-                            <a href="{% url 'admin:group_group_change' group.pk %}" class="button button-light">Tahrirlash</a>
+                            <a href="{% url 'admin:group_group_change' group.pk %}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
                         </td>
                     </tr>
                 {% empty %}

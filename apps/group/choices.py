@@ -2,13 +2,13 @@ from django.db import models
 
 
 class GROUP_DAYS_CHOICES(models.TextChoices):
-    ODD_DAYS='odd_days','Odd days'
-    EVEN_DAYS='even_days','Even days'
-    EVERAY_DAY='every_day', 'Every day'
+    ODD_DAYS='odd_days','Toq kunlar'
+    EVEN_DAYS='even_days','Juft kunlar'
+    EVERAY_DAY='every_day', 'Har kuni'
 
 class GROUP_STATUS(models.TextChoices):
-    ACTIVE='active','Active'
-    ARCHIVED='archived','Archived'
-    TEST_LESSON='test_lesson','Test lesson'
-    FROZEN='frozen','Frozen'
+    ACTIVE='active','Faol'
+    ARCHIVED='archived','Arxiv'
+    TEST_LESSON='test_lesson','Sinov darsi'
+    FROZEN='frozen','To\'xtatilgan'
     
