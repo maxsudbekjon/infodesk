@@ -1,0 +1,132 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+    <a href="{% url 'admin:index' %}">Bosh sahifa</a>
+    <span>/</span>
+    <a href="{{ back_url }}">Guruhlar</a>
+    <span>/</span>
+    <span>{{ group_overview.group.title }}</span>
+{% endblock %}
+
+{% block content %}
+    <section class="dashboard-panel attendance-hero">
+        <div class="attendance-hero__meta">
+            <div>
+                <h1 class="admin-page-title">{{ group_overview.group.title }}</h1>
+                <p class="admin-page-subtitle">
+                    {{ group_overview.group.course.name }} · {% if group_overview.group.teacher and group_overview.group.teacher.user %}{{ group_overview.group.teacher.user.display_name }}{% else %}O'qituvchi biriktirilmagan{% endif %}
+                </p>
+            </div>
+            <div class="page-heading__actions">
+                <a href="{{ change_url }}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
+                <a href="{{ back_url }}" class="button button-primary">Ro'yxatga qaytish</a>
+            </div>
+        </div>
+        <div class="attendance-month-switcher">
+            <a href="?{{ group_overview.prev_query }}" class="button button-light">Oldingi oy</a>
+            <span>{{ group_overview.month }} / {{ group_overview.year }}</span>
+            <a href="?{{ group_overview.next_query }}" class="button button-light">Keyingi oy</a>
+        </div>
+    </section>
+
+    <section class="metric-grid">
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--primary">
+                <svg><use href="#icon-students"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ group_overview.summary.student_total }}</strong>
+                <span class="metric-card__label">O'quvchilar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--success">
+                <svg><use href="#icon-pulse"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value" data-attendance-summary="present">{{ group_overview.summary.present_total }}</strong>
+                <span class="metric-card__label">Kelgan belgilanishlar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--danger">
+                <svg><use href="#icon-close"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value" data-attendance-summary="absent">{{ group_overview.summary.absent_total }}</strong>
+                <span class="metric-card__label">Kelmagan belgilanishlar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--warning">
+                <svg><use href="#icon-stats"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ group_overview.summary.coin_total }}</strong>
+                <span class="metric-card__label">Joriy coin jami</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel__header">
+            <strong>Guruh bo'yicha oylik davomat</strong>
+            <span>Katakka bossangiz: kelgan, kelmagan yoki belgilanmagan holatga o'tadi.</span>
+        </div>
+        {% if group_overview.rows %}
+            <div class="attendance-board-shell">
+                <table class="attendance-board">
+                    <thead>
+                    <tr>
+                        <th>O'quvchi</th>
+                        {% for day in group_overview.days %}
+                            <th>{{ day }}</th>
+                        {% endfor %}
+                        <th>Kelgan</th>
+                        <th>Kelmagan</th>
+                        <th>Jami coin</th>
+                        <th>Profil</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in group_overview.rows %}
+                        <tr data-attendance-row>
+                            <td class="attendance-board__group">
+                                <strong><a href="{{ row.attendance_url }}">{{ row.student.full_name|default:row.student.phone_number }}</a></strong>
+                                <small>{{ row.student.phone_number|default:"-" }}</small>
+                            </td>
+                            {% for cell in row.cells %}
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="attendance-cell attendance-cell--{{ cell.tone }} js-attendance-cell"
+                                        title="{{ cell.label }}"
+                                        data-attendance-cell
+                                        data-update-url="{{ attendance_update_url }}"
+                                        data-group-id="{{ group_overview.group.pk }}"
+                                        data-student-id="{{ row.student.pk }}"
+                                        data-date="{{ cell.date_iso }}"
+                                        data-state="{{ cell.state }}"
+                                    >
+                                        {{ cell.short }}
+                                    </button>
+                                </td>
+                            {% endfor %}
+                            <td><span class="status-badge status-badge--success" data-attendance-count="present">{{ row.present_count }}</span></td>
+                            <td><span class="status-badge status-badge--danger" data-attendance-count="absent">{{ row.absent_count }}</span></td>
+                            <td>
+                                <span class="status-badge status-badge--info" title="Shu oy: {{ row.monthly_coin }}">
+                                    {{ row.coin }}
+                                </span>
+                            </td>
+                            <td><a href="{{ row.change_url }}" class="button button-light js-admin-modal-trigger">Ko'rish</a></td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">Bu guruhga hali o'quvchilar biriktirilmagan.</div>
+        {% endif %}
+    </section>
+{% endblock %}

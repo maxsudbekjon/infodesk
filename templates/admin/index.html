@@ -38,6 +38,30 @@
         {% endfor %}
     </section>
 
+    {% if admin_dashboard_trends %}
+        <section class="trend-grid">
+            {% for trend in admin_dashboard_trends %}
+                <article class="trend-card">
+                    <div class="trend-card__header">
+                        <div>
+                            <strong>{{ trend.label }}</strong>
+                            <small class="status-text status-text--{{ trend.change_tone }}">{{ trend.change_text }}</small>
+                        </div>
+                        <span class="trend-card__value">{{ trend.current }}</span>
+                    </div>
+                    <div class="trend-bars">
+                        {% for item in trend.items %}
+                            <div class="trend-bars__item">
+                                <span class="trend-bars__bar" style="height: {{ item.height }}%; background: {{ trend.color }};"></span>
+                                <small>{{ item.label }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+
     <section class="quick-link-grid">
         {% for item in admin_dashboard_quick_links %}
             <a href="{{ item.url }}" class="quick-link-card">

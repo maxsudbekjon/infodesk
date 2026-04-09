@@ -138,7 +138,7 @@ class Student(TimeStampedModel):
         return f"Student {self.id}"
 
 
-class StudnetTransfer(models.Model):
+class StudentTransfer(models.Model):
     student=models.ForeignKey(Student,on_delete=models.CASCADE)
     from_group=models.ForeignKey(
         'group.Group',
@@ -187,3 +187,7 @@ class StudnetTransfer(models.Model):
 
     def __str__(self):
         return f"{self.from_group} -> {self.to_group}"
+
+
+# Backward-compatible alias for older imports that still use the typo.
+StudnetTransfer = StudentTransfer

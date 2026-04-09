@@ -1,0 +1,135 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+    <a href="{% url 'admin:index' %}">Bosh sahifa</a>
+    <span>/</span>
+    <a href="{{ back_url }}">O'quvchilar</a>
+    <span>/</span>
+    <span>{{ student_attendance.student.full_name|default:student_attendance.student.phone_number }}</span>
+{% endblock %}
+
+{% block content %}
+    <section class="dashboard-panel attendance-hero">
+        <div class="attendance-hero__meta">
+            <div>
+                <h1 class="admin-page-title">{{ student_attendance.student.full_name|default:student_attendance.student.phone_number }}</h1>
+                <p class="admin-page-subtitle">
+                    {{ student_attendance.month }}-oy / {{ student_attendance.year }} yil bo'yicha umumiy davomat.
+                </p>
+            </div>
+            <div class="page-heading__actions">
+                <a href="{{ change_url }}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
+                <a href="{{ back_url }}" class="button button-primary">Ro'yxatga qaytish</a>
+            </div>
+        </div>
+        <div class="attendance-month-switcher">
+            <a href="?{{ student_attendance.prev_query }}" class="button button-light">Oldingi oy</a>
+            <span>{{ student_attendance.month }} / {{ student_attendance.year }}</span>
+            <a href="?{{ student_attendance.next_query }}" class="button button-light">Keyingi oy</a>
+        </div>
+    </section>
+
+    <section class="metric-grid">
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--success">
+                <svg><use href="#icon-pulse"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value" data-attendance-summary="present">{{ student_attendance.summary.present_total }}</strong>
+                <span class="metric-card__label">Kelgan darslar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--danger">
+                <svg><use href="#icon-close"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value" data-attendance-summary="absent">{{ student_attendance.summary.absent_total }}</strong>
+                <span class="metric-card__label">Qoldirilgan darslar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--info">
+                <svg><use href="#icon-groups"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ student_attendance.summary.group_total }}</strong>
+                <span class="metric-card__label">Biriktirilgan guruhlar</span>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-card__icon metric-card__icon--warning">
+                <svg><use href="#icon-stats"></use></svg>
+            </span>
+            <div>
+                <strong class="metric-card__value">{{ student_attendance.summary.coin_total }}</strong>
+                <span class="metric-card__label">Joriy coin balans</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="dashboard-panel__header">
+            <strong>Oylik davomat</strong>
+            <span>Katakka bossangiz: kelgan, kelmagan yoki belgilanmagan holatga o'tadi.</span>
+        </div>
+        {% if student_attendance.group_rows %}
+            <div class="attendance-board-shell">
+                <table class="attendance-board">
+                    <thead>
+                    <tr>
+                        <th>Guruh</th>
+                        {% for day in student_attendance.days %}
+                            <th>{{ day }}</th>
+                        {% endfor %}
+                        <th>Kelgan</th>
+                        <th>Kelmagan</th>
+                        <th>Jami coin</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in student_attendance.group_rows %}
+                        <tr data-attendance-row>
+                            <td class="attendance-board__group">
+                                <strong>{{ row.group.title }}</strong>
+                                <small>{{ row.group.course.name }} · {{ row.teacher_name }}</small>
+                            </td>
+                            {% for cell in row.cells %}
+                                <td>
+                                    <button
+                                        type="button"
+                                        class="attendance-cell attendance-cell--{{ cell.tone }} js-attendance-cell"
+                                        title="{{ cell.label }}"
+                                        data-attendance-cell
+                                        data-update-url="{{ attendance_update_url }}"
+                                        data-group-id="{{ row.group.pk }}"
+                                        data-student-id="{{ student_attendance.student.pk }}"
+                                        data-date="{{ cell.date_iso }}"
+                                        data-state="{{ cell.state }}"
+                                    >
+                                        {{ cell.short }}
+                                    </button>
+                                </td>
+                            {% endfor %}
+                            <td><span class="status-badge status-badge--success" data-attendance-count="present">{{ row.present_count }}</span></td>
+                            <td><span class="status-badge status-badge--danger" data-attendance-count="absent">{{ row.absent_count }}</span></td>
+                            <td>
+                                <span class="status-badge status-badge--info" title="Shu oy: {{ row.monthly_coin }}">
+                                    {{ row.coin }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="attendance-legend">
+                <span class="attendance-legend__item"><span class="attendance-legend__dot attendance-legend__dot--present"></span> Kelgan</span>
+                <span class="attendance-legend__item"><span class="attendance-legend__dot attendance-legend__dot--absent"></span> Kelmagan</span>
+                <span class="attendance-legend__item"><span class="attendance-legend__dot attendance-legend__dot--neutral"></span> Belgilanmagan yoki dars yo'q</span>
+            </div>
+        {% else %}
+            <div class="empty-state">Bu o'quvchi hali guruhlarga biriktirilmagan.</div>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -2,7 +2,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 
 from apps.pupil.models.note import StudentNote
-from apps.pupil.models.student import StudnetTransfer, Student
+from apps.pupil.models.student import StudentTransfer, Student
 from apps.pupil.serializers.student import (
     StudentChangeGroupSerializer,
     StudentNoteListSerializer,
@@ -11,7 +11,7 @@ from apps.pupil.serializers.student import (
 
 @extend_schema(tags=['Group'])
 class StudentTransferCreateAPIView(generics.CreateAPIView):
-    queryset = StudnetTransfer.objects.all()
+    queryset = StudentTransfer.objects.all()
     serializer_class = StudentChangeGroupSerializer
 
 @extend_schema(tags=['Group'])

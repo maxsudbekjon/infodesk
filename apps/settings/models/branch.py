@@ -38,8 +38,8 @@ class Branch(TimeStampedModel):
     terminal_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     class Meta:
-        verbose_name = "Branch"
-        verbose_name_plural = "Branches"
+        verbose_name = "Filial"
+        verbose_name_plural = "Filiallar"
 
     def __str__(self) -> str:
-        return f"{self.name} ({'Active' if self.is_active else 'Inactive'})"
+        return f"{self.name} ({'Faol' if self.is_active else 'Nofaol'})"

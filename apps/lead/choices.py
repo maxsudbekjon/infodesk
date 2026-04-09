@@ -1,15 +1,15 @@
 from django.db import models
 
 class LEAD_STATUS(models.TextChoices):
-    NEW='new','New'
-    PROCESS='process','Process'
-    CANSELED='canseled','Canseled'
-    SOLD='sold','Sold'
+    NEW='new','Yangi'
+    PROCESS='process','Bog\'langan'
+    CANSELED='canseled','Bekor qilingan'
+    SOLD='sold','Sotilgan'
 
 
 
 class LEAD_TEMPERATURE(models.TextChoices):
-    HOT='hot','Hot'
-    COOL='cool','Cool'
-    WORM='worm','Worm'
+    HOT='hot','Issiq'
+    COOL='cool','Iliq'
+    WORM='worm','Sovuq'
     
