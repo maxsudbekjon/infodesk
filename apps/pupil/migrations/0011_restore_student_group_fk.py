@@ -1,5 +1,4 @@
-from django.db import migrations, models
-import django.db.models.deletion
+from django.db import migrations
 
 
 def restore_student_group_from_m2m(apps, schema_editor):
@@ -29,21 +28,10 @@ def noop_reverse(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("group", "0007_merge_20260407_1703"),
-        ("pupil", "0010_merge_20260407_1703"),
+        ("pupil", "0011_rename_studenttransfer_studnettransfer_student_group"),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name="student",
-            name="group",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                to="group.group",
-            ),
-        ),
         migrations.RunPython(
             restore_student_group_from_m2m,
             reverse_code=noop_reverse,
