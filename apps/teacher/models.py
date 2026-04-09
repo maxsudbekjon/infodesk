@@ -60,4 +60,9 @@ class Teacher(TimeStampedModel):
 
     def __str__(self):
         # fall back if no user
+<<<<<<< HEAD
         return getattr(self.user, 'phone_number', f'Teacher-{self.pk}')
+=======
+        return getattr(self.user, 'full_name', f'Teacher-{self.pk}')
+
+>>>>>>> ed0bc818500aa4833db8c50044e6c92250cd83e2
