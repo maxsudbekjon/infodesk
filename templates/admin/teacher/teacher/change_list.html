@@ -112,7 +112,11 @@
                     </td>
                     <td class="table-actions">
                         <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Ko'rish</a>
-                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost js-admin-modal-trigger">O'chirish</a>
+                        <a href="{% url 'admin:teacher_teacher_quick_delete' result.pk %}?next={{ request.get_full_path|urlencode }}"
+                           onclick="return window.confirm('Oqituvchini ochirishni tasdiqlaysizmi?');"
+                           class="button button-danger button-danger--ghost">
+                            O'chirish
+                        </a>
                     </td>
                 </tr>
             {% empty %}

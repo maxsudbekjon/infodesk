@@ -1,7 +1,13 @@
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.contrib.admin.utils import unquote
+from django.core.exceptions import PermissionDenied
 from django.db.models import NOT_PROVIDED
+from django.db.models.deletion import ProtectedError
+from django.http import Http404, HttpResponseNotAllowed
+from django.shortcuts import redirect
+from django.urls import path, reverse
 
 
 MODAL_REQUEST_PARAM = "_ui_modal"
@@ -158,6 +164,47 @@ class AdminUiResponseMixin:
     def response_delete(self, request, obj_display, obj_id):
         response = super().response_delete(request, obj_display, obj_id)
         return self._preserve_modal_state(request, response, close_modal=True)
+
+    def get_urls(self):
+        custom_urls = [
+            path(
+                "<path:object_id>/quick-delete/",
+                self.admin_site.admin_view(self.quick_delete_view),
+                name=f"{self.model._meta.app_label}_{self.model._meta.model_name}_quick_delete",
+            ),
+        ]
+        return custom_urls + super().get_urls()
+
+    def quick_delete_view(self, request, object_id):
+        if request.method not in {"GET", "POST"}:
+            return HttpResponseNotAllowed(["GET", "POST"])
+
+        obj = self.get_object(request, unquote(object_id))
+        if obj is None:
+            raise Http404(f"{self.model._meta.verbose_name} topilmadi.")
+        if not self.has_delete_permission(request, obj):
+            raise PermissionDenied
+
+        object_label = str(obj)
+        try:
+            obj.delete()
+        except ProtectedError:
+            self.message_user(
+                request,
+                f"{object_label} ni o'chirib bo'lmadi: unga bog'langan himoyalangan yozuvlar mavjud.",
+                level=messages.ERROR,
+            )
+        else:
+            self.message_user(
+                request,
+                f"{self.model._meta.verbose_name.capitalize()} muvaffaqiyatli o'chirildi.",
+                level=messages.SUCCESS,
+            )
+
+        next_url = request.POST.get("next") or request.GET.get("next")
+        if next_url:
+            return redirect(next_url)
+        return redirect(reverse(f"admin:{self.model._meta.app_label}_{self.model._meta.model_name}_changelist"))
 
 
 class FriendlyAdminMixin(AdminUiResponseMixin, admin.ModelAdmin):

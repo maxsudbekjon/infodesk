@@ -342,6 +342,47 @@
         return cookieValue;
     }
 
+    function submitQuickDelete(button) {
+        var action = button.getAttribute("data-quick-delete-url");
+        if (!action) {
+            return;
+        }
+
+        var confirmMessage = button.getAttribute("data-confirm");
+        if (confirmMessage && !window.confirm(confirmMessage)) {
+            return;
+        }
+
+        var csrfToken = getCookie("csrftoken");
+        if (!csrfToken) {
+            var csrfInput = document.querySelector("input[name='csrfmiddlewaretoken']");
+            csrfToken = csrfInput ? csrfInput.value : "";
+        }
+
+        var form = document.createElement("form");
+        form.method = "post";
+        form.action = action;
+        form.style.display = "none";
+
+        var csrfField = document.createElement("input");
+        csrfField.type = "hidden";
+        csrfField.name = "csrfmiddlewaretoken";
+        csrfField.value = csrfToken;
+        form.appendChild(csrfField);
+
+        var nextUrl = button.getAttribute("data-next-url");
+        if (nextUrl) {
+            var nextField = document.createElement("input");
+            nextField.type = "hidden";
+            nextField.name = "next";
+            nextField.value = nextUrl;
+            form.appendChild(nextField);
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
     function attendanceStateMeta(state) {
         if (state === "present") {
             return { label: "Kelgan", short: "K", tone: "present" };
@@ -351,6 +392,16 @@
         }
         return { label: "Belgilanmagan yoki dars yo'q", short: "", tone: "neutral" };
     }
+
+    document.addEventListener("click", function (event) {
+        var quickDeleteButton = event.target.closest("[data-quick-delete-url]");
+        if (!quickDeleteButton) {
+            return;
+        }
+
+        event.preventDefault();
+        submitQuickDelete(quickDeleteButton);
+    });
 
     function nextAttendanceState(state) {
         if (state === "neutral") {

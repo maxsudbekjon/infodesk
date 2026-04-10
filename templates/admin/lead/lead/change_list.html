@@ -101,7 +101,11 @@
                                     <button type="submit" class="button button-danger button-danger--ghost button--small">Rad etish</button>
                                 </form>
                             {% endif %}
-                            <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost button--small js-admin-modal-trigger">O'chirish</a>
+                            <a href="{% url 'admin:lead_lead_quick_delete' result.pk %}?next={{ request.get_full_path|urlencode }}"
+                               onclick="return window.confirm('Buyurtmani ochirishni tasdiqlaysizmi?');"
+                               class="button button-danger button-danger--ghost button--small">
+                                O'chirish
+                            </a>
                         </div>
                     </td>
                 </tr>

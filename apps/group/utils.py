@@ -2,13 +2,16 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.group.models.group import Group
+from apps.pupil.choices import STUDENT_STATUS
 from apps.pupil.models.student import Student
 
 
 def get_group_students_queryset(group_id):
-    return Student.objects.filter(
-        Q(group_id=group_id) | Q(groups__id=group_id)
-    ).distinct()
+    return (
+        Student.objects.filter(Q(group_id=group_id) | Q(groups__id=group_id))
+        .exclude(status=STUDENT_STATUS.ARCHIVED)
+        .distinct()
+    )
 
 
 def get_student_groups_queryset(student):
@@ -18,18 +21,8 @@ def get_student_groups_queryset(student):
 
 
 def get_group_students(group):
-    students_by_id = {}
-
-    for relation_name in ("student_set", "students"):
-        relation = getattr(group, relation_name, None)
-        if relation is None:
-            continue
-
-        for student in relation.all():
-            students_by_id[student.id] = student
-
     return sorted(
-        students_by_id.values(),
+        get_group_students_queryset(group.id),
         key=lambda student: ((student.full_name or "").lower(), student.id),
     )
 
