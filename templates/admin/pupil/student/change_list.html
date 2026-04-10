@@ -59,7 +59,7 @@
                     <td>
                         <strong>
                             <a href="{% url 'admin:pupil_student_attendance' result.pk %}" class="student-name-link">
-                                {{ result.full_name|default:result.phone_number|default:"O'quvchi" }}
+                                {% firstof result.full_name result.phone_number "O'quvchi" %}
                             </a>
                         </strong>
                         <small>{% if result.center %}{{ result.center.name }}{% else %}Markaz kiritilmagan{% endif %}</small>
@@ -85,7 +85,11 @@
                         <a href="{% url 'admin:pupil_student_attendance' result.pk %}" class="button button-light">Davomat</a>
                         <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Ko'rish</a>
                         <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-primary js-admin-modal-trigger">Tahrirlash</a>
-                        <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost js-admin-modal-trigger">O'chirish</a>
+                        <a href="{% url 'admin:pupil_student_quick_delete' result.pk %}?next={{ request.get_full_path|urlencode }}"
+                           onclick="return window.confirm('Talabani ochirishni tasdiqlaysizmi?');"
+                           class="button button-danger button-danger--ghost">
+                            O'chirish
+                        </a>
                     </td>
                 </tr>
             {% empty %}

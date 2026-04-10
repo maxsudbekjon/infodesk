@@ -1,11 +1,15 @@
 import json
 from datetime import date, time
 
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.group.models import Attendance, CourseTemplate, Group
+from apps.pupil.choices import STUDENT_STATUS
+from apps.lead.choices import LEAD_STATUS, LEAD_TEMPERATURE
+from apps.lead.models import Lead, Source
 from apps.pupil.models import Student
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
@@ -67,6 +71,23 @@ class GroupAdminAttendanceTests(TestCase):
         self.assertContains(response, 'data-attendance-cell', html=False)
         self.assertContains(response, reverse("admin:group_attendance_update"))
 
+    def test_group_overview_hides_archived_students(self):
+        archived_student = Student.objects.create(
+            full_name="Archived Student",
+            phone_number="+998900300099",
+            center=self.organization,
+            group=self.group,
+            status=STUDENT_STATUS.ARCHIVED,
+        )
+        self.group.students.add(archived_student)
+
+        response = self.client.get(reverse("admin:group_group_overview", args=[self.group.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        student_ids = [row["student"].pk for row in response.context["group_overview"]["rows"]]
+        self.assertNotIn(archived_student.pk, student_ids)
+        self.assertContains(response, self.student.full_name)
+
     def test_admin_can_update_attendance_state(self):
         target_date = date(2026, 4, 10)
         url = reverse("admin:group_attendance_update")
@@ -93,3 +114,33 @@ class GroupAdminAttendanceTests(TestCase):
                 date=target_date,
             )
             self.assertEqual(attendance.is_present, expected)
+
+    def test_admin_quick_delete_endpoints_work(self):
+        source = Source.objects.create(
+            center=self.organization,
+            name="Instagram",
+            icon=SimpleUploadedFile("source.png", b"filecontent", content_type="image/png"),
+        )
+        lead = Lead.objects.create(
+            full_name="Delete Lead",
+            phone_number="+998900300099",
+            course=self.course,
+            source=source,
+            center=self.organization,
+            status=LEAD_STATUS.NEW,
+            temperature=LEAD_TEMPERATURE.HOT,
+        )
+
+        delete_cases = [
+            ("admin:lead_lead_quick_delete", Lead, lead.pk),
+            ("admin:pupil_student_quick_delete", Student, self.student.pk),
+            ("admin:group_group_quick_delete", Group, self.group.pk),
+            ("admin:teacher_teacher_quick_delete", Teacher, self.teacher.pk),
+            ("admin:group_coursetemplate_quick_delete", CourseTemplate, self.course.pk),
+        ]
+
+        for url_name, model, object_id in delete_cases:
+            response = self.client.post(reverse(url_name, args=[object_id]), {"next": "/admin/"})
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.headers["Location"], "/admin/")
+            self.assertFalse(model.objects.filter(pk=object_id).exists())

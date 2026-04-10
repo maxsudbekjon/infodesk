@@ -57,7 +57,11 @@
                 {% endif %}
                 <div class="subject-card__actions">
                     <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
-                    <a href="{% url opts|admin_urlname:'delete' result.pk|admin_urlquote %}" class="button button-danger button-danger--ghost js-admin-modal-trigger">O'chirish</a>
+                    <a href="{% url 'admin:group_coursetemplate_quick_delete' result.pk %}?next={{ request.get_full_path|urlencode }}"
+                       onclick="return window.confirm('Fanni ochirishni tasdiqlaysizmi?');"
+                       class="button button-danger button-danger--ghost">
+                        O'chirish
+                    </a>
                 </div>
             </article>
         {% empty %}
