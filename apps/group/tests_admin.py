@@ -88,6 +88,23 @@ class GroupAdminAttendanceTests(TestCase):
         self.assertNotIn(archived_student.pk, student_ids)
         self.assertContains(response, self.student.full_name)
 
+    def test_group_overview_hides_frozen_students(self):
+        frozen_student = Student.objects.create(
+            full_name="Frozen Student",
+            phone_number="+998900300098",
+            center=self.organization,
+            group=self.group,
+            status=STUDENT_STATUS.FROZEN,
+        )
+        self.group.students.add(frozen_student)
+
+        response = self.client.get(reverse("admin:group_group_overview", args=[self.group.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        student_ids = [row["student"].pk for row in response.context["group_overview"]["rows"]]
+        self.assertNotIn(frozen_student.pk, student_ids)
+        self.assertContains(response, self.student.full_name)
+
     def test_admin_can_update_attendance_state(self):
         target_date = date(2026, 4, 10)
         url = reverse("admin:group_attendance_update")

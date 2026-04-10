@@ -9,7 +9,7 @@ from apps.pupil.models.student import Student
 def get_group_students_queryset(group_id):
     return (
         Student.objects.filter(Q(group_id=group_id) | Q(groups__id=group_id))
-        .exclude(status=STUDENT_STATUS.ARCHIVED)
+        .exclude(status__in=[STUDENT_STATUS.ARCHIVED, STUDENT_STATUS.FROZEN])
         .distinct()
     )
 

@@ -15,6 +15,7 @@ from apps.group.models.course import CourseTemplate
 from apps.group.models.grade import Grade
 from apps.group.models.group import Group
 from apps.group.models.score import GroupScore
+from apps.pupil.choices import STUDENT_STATUS
 from apps.pupil.models import Student
 from apps.settings.models import Branch, Organization
 from apps.teacher.models import Teacher
@@ -453,6 +454,23 @@ class GroupRolePermissionTests(APITestCase):
         self.assertEqual(third_student["earned_coin"], 75)
         self.assertEqual(third_student["today_coin"], -75)
         self.assertEqual(third_student["today_coin_id"], negative_score.id)
+
+    def test_teacher_group_student_list_hides_frozen_students(self):
+        frozen_student = Student.objects.create(
+            full_name="Frozen Student",
+            phone_number="+998900000099",
+            center=self.organization,
+            group=self.group,
+            status=STUDENT_STATUS.FROZEN,
+        )
+        self.group.students.add(frozen_student)
+        self.client.force_authenticate(user=self.teacher_user)
+
+        response = self.client.get(reverse("group-student", kwargs={"id": self.group.id}))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        student_ids = [student["id"] for student in response.data["students"]]
+        self.assertNotIn(frozen_student.id, student_ids)
 
     def test_group_ranking_returns_student_cards_with_image(self):
         self.client.force_authenticate(user=self.teacher_user)
