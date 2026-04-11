@@ -185,6 +185,9 @@ class StudentTransfer(models.Model):
     )
 
 
+    class Meta:
+        db_table = 'pupil_studnettransfer'
+
     def __str__(self):
         return f"{self.from_group} -> {self.to_group}"
 
