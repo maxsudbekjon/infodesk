@@ -87,6 +87,10 @@ class GroupAdminAttendanceTests(TestCase):
         student_ids = [row["student"].pk for row in response.context["group_overview"]["rows"]]
         self.assertNotIn(archived_student.pk, student_ids)
         self.assertContains(response, self.student.full_name)
+        self.assertContains(
+            response,
+            f"{self.group.title} bo'yicha oylik davomat",
+        )
 
     def test_group_overview_hides_frozen_students(self):
         frozen_student = Student.objects.create(

@@ -1619,6 +1619,22 @@ fieldset.module h2,
     overflow-x: auto;
 }
 
+.attendance-board-panel {
+    position: relative;
+}
+
+.attendance-board-panel__header {
+    position: sticky;
+    top: calc(var(--admin-topbar-height) + 18px);
+    z-index: 8;
+    margin: -22px -22px 18px;
+    padding: 20px 22px 16px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.92);
+    border-radius: var(--admin-radius) var(--admin-radius) 0 0;
+}
+
 .attendance-board {
     width: 100%;
     border-collapse: separate;
