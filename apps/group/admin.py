@@ -17,7 +17,7 @@ from django.utils import timezone
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.group.choices import GROUP_STATUS
 from apps.group.models import Attendance, CourseTemplate, Day, Grade, Group, GroupScore, Room
-from apps.group.utils import get_group_students
+from apps.group.utils import count_group_students, get_group_students
 
 
 @admin.register(CourseTemplate)
@@ -154,7 +154,15 @@ class GroupAdmin(FriendlyAdminMixin):
             "active_groups": queryset.filter(status=GROUP_STATUS.ACTIVE).count(),
             "archived_groups": queryset.filter(status=GROUP_STATUS.ARCHIVED).count(),
         })
-        return super().changelist_view(request, extra_context=extra_context)
+        response = super().changelist_view(request, extra_context=extra_context)
+        try:
+            result_list = response.context_data["cl"].result_list
+        except (AttributeError, KeyError, TypeError):
+            return response
+
+        for group in result_list:
+            group.visible_student_count = count_group_students(group)
+        return response
 
     def overview_view(self, request, object_id):
         group = (
