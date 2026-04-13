@@ -1105,6 +1105,54 @@ fieldset.module,
     color: var(--admin-muted);
 }
 
+.student-coin-badge {
+    min-width: 48px;
+    justify-content: center;
+}
+
+.student-coin-controls {
+    display: grid;
+    grid-template-columns: minmax(72px, 88px) auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.student-coin-controls.is-busy {
+    opacity: 0.7;
+}
+
+.student-coin-controls__input {
+    width: 100%;
+    min-height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--admin-border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--admin-text);
+    font-weight: 600;
+}
+
+.student-coin-controls__input:focus {
+    outline: 0;
+    border-color: rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.student-coin-controls__message {
+    display: block;
+    grid-column: 1 / -1;
+    min-height: 18px;
+    margin-top: 2px;
+}
+
+.student-coin-controls__message.is-success {
+    color: var(--admin-success);
+}
+
+.student-coin-controls__message.is-error {
+    color: var(--admin-danger);
+}
+
 .subject-card-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }

@@ -9,7 +9,7 @@ from django.contrib.admin.sites import AlreadyRegistered
 from django.contrib.admin.utils import unquote
 from django.db.models import Count, Sum
 from django.db.models.functions import Coalesce
-from django.http import Http404
+from django.http import Http404, HttpResponseBadRequest, JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils import timezone
@@ -230,6 +230,11 @@ class StudentAdmin(FriendlyAdminMixin):
                 self.admin_site.admin_view(self.attendance_view),
                 name="pupil_student_attendance",
             ),
+            path(
+                "<path:object_id>/coin/update/",
+                self.admin_site.admin_view(self.quick_coin_update_view),
+                name="pupil_student_coin_update",
+            ),
         ]
         return custom_urls + super().get_urls()
 
@@ -410,6 +415,53 @@ class StudentAdmin(FriendlyAdminMixin):
         label, tone = palette.get(obj.payment_status, (obj.get_payment_status_display(), "info"))
         return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
 
+    def _set_student_total_coin(self, student, target_total_coin: int) -> Student:
+        target_total_coin = max(int(target_total_coin or 0), 0)
+        student.coin_offset = calculate_student_coin_offset(student.pk, target_total_coin)
+        Student.objects.filter(pk=student.pk).update(
+            coin_offset=student.coin_offset,
+            total_coin=target_total_coin,
+        )
+        student.total_coin = target_total_coin
+        return student
+
+    def quick_coin_update_view(self, request, object_id):
+        if request.method != "POST":
+            return HttpResponseBadRequest("Faqat POST so'rovi qabul qilinadi.")
+
+        student = self.get_object(request, unquote(object_id))
+        if student is None:
+            raise Http404("O'quvchi topilmadi.")
+        if not self.has_change_permission(request, student):
+            return HttpResponseBadRequest("O'quvchini o'zgartirishga ruxsat yo'q.")
+
+        action = (request.POST.get("action") or "").strip()
+        try:
+            amount = int(request.POST.get("amount") or 0)
+        except (TypeError, ValueError):
+            return JsonResponse({"ok": False, "error": "Coin miqdorini son ko'rinishida kiriting."}, status=400)
+
+        if action not in {"add", "remove"}:
+            return JsonResponse({"ok": False, "error": "Noto'g'ri amal turi yuborildi."}, status=400)
+        if amount <= 0:
+            return JsonResponse({"ok": False, "error": "Coin miqdori 0 dan katta bo'lishi kerak."}, status=400)
+        if action == "add" and amount > 150:
+            return JsonResponse({"ok": False, "error": "Bir martada ko'pi bilan 150 coin qo'shish mumkin."}, status=400)
+
+        current_total = int(student.total_coin or 0)
+        target_total = current_total + amount if action == "add" else max(current_total - amount, 0)
+        self._set_student_total_coin(student, target_total)
+
+        return JsonResponse(
+            {
+                "ok": True,
+                "student_id": student.pk,
+                "total_coin": int(student.total_coin or 0),
+                "action": action,
+                "amount": amount,
+            }
+        )
+
     def save_model(self, request, obj, form, change):
         previous_total_coin = 0
         if change and obj.pk:
@@ -431,12 +483,7 @@ class StudentAdmin(FriendlyAdminMixin):
             target_total_coin = int(desired_total_coin)
 
         if target_total_coin is not None:
-            obj.coin_offset = calculate_student_coin_offset(obj.pk, target_total_coin)
-            Student.objects.filter(pk=obj.pk).update(
-                coin_offset=obj.coin_offset,
-                total_coin=target_total_coin,
-            )
-            obj.total_coin = target_total_coin
+            self._set_student_total_coin(obj, target_total_coin)
 
         if add_coin or remove_coin:
             parts = []

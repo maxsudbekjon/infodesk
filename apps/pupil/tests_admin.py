@@ -5,6 +5,7 @@ from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import Client
 from django.test import RequestFactory, TestCase
 from datetime import time
+from django.urls import reverse
 
 from apps.group.choices import GROUP_DAYS_CHOICES
 from apps.group.models.course import CourseTemplate
@@ -228,3 +229,41 @@ class StudentAdminTests(TestCase):
         self.assertEqual(response.context["student_attendance"]["summary"]["coin_total"], 205)
         self.assertEqual(response.context["student_attendance"]["group_rows"][0]["coin"], 205)
         self.assertEqual(response.context["student_attendance"]["group_rows"][0]["monthly_coin"], 55)
+
+    def test_quick_coin_update_adds_with_limit(self):
+        response = self.client.post(
+            reverse("admin:pupil_student_coin_update", args=[self.student.pk]),
+            {"action": "add", "amount": 150},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 150)
+        self.assertEqual(response.json()["total_coin"], 150)
+
+    def test_quick_coin_update_rejects_large_add(self):
+        response = self.client.post(
+            reverse("admin:pupil_student_coin_update", args=[self.student.pk]),
+            {"action": "add", "amount": 151},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 0)
+
+    def test_quick_coin_update_removes_without_limit(self):
+        self.student.total_coin = 80
+        self.student.coin_offset = 80
+        self.student.save(update_fields=["total_coin", "coin_offset"])
+
+        response = self.client.post(
+            reverse("admin:pupil_student_coin_update", args=[self.student.pk]),
+            {"action": "remove", "amount": 1000},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.student.refresh_from_db()
+        self.assertEqual(self.student.total_coin, 0)

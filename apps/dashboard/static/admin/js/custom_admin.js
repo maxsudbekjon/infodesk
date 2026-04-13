@@ -342,6 +342,81 @@
         return cookieValue;
     }
 
+    function setCoinControlMessage(root, message, tone) {
+        var messageNode = root.querySelector("[data-student-coin-message]");
+        if (!messageNode) {
+            return;
+        }
+
+        messageNode.textContent = message || "";
+        messageNode.classList.remove("is-success", "is-error");
+        if (tone === "success") {
+            messageNode.classList.add("is-success");
+        } else if (tone === "error") {
+            messageNode.classList.add("is-error");
+        }
+    }
+
+    function updateStudentCoinControl(root, button) {
+        var input = root.querySelector("[data-student-coin-input]");
+        var action = button.getAttribute("data-student-coin-action");
+        var updateUrl = root.getAttribute("data-update-url");
+        if (!input || !action || !updateUrl) {
+            return;
+        }
+
+        var amount = parseInt(input.value || "0", 10);
+        if (!amount || amount < 1) {
+            setCoinControlMessage(root, "Miqdor 0 dan katta bo'lishi kerak.", "error");
+            return;
+        }
+
+        var csrfToken = getCookie("csrftoken");
+        if (!csrfToken) {
+            var csrfInput = document.querySelector("input[name='csrfmiddlewaretoken']");
+            csrfToken = csrfInput ? csrfInput.value : "";
+        }
+
+        root.classList.add("is-busy");
+        setCoinControlMessage(root, "Saqlanmoqda...", null);
+
+        window.fetch(updateUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-CSRFToken": csrfToken,
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: new window.URLSearchParams({
+                action: action,
+                amount: String(amount)
+            })
+        })
+            .then(function (response) {
+                return response.json().then(function (payload) {
+                    return { ok: response.ok, payload: payload };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok || !result.payload.ok) {
+                    setCoinControlMessage(root, result.payload.error || "Coin yangilanmadi.", "error");
+                    return;
+                }
+
+                var coinNode = document.querySelector("[data-student-coin-value='" + result.payload.student_id + "']");
+                if (coinNode) {
+                    coinNode.textContent = result.payload.total_coin;
+                }
+                setCoinControlMessage(root, "Coin yangilandi.", "success");
+            })
+            .catch(function () {
+                setCoinControlMessage(root, "Server bilan bog'lanib bo'lmadi.", "error");
+            })
+            .finally(function () {
+                root.classList.remove("is-busy");
+            });
+    }
+
     function submitQuickDelete(button) {
         var action = button.getAttribute("data-quick-delete-url");
         if (!action) {
@@ -392,6 +467,20 @@
         }
         return { label: "Belgilanmagan yoki dars yo'q", short: "", tone: "neutral" };
     }
+
+    document.addEventListener("click", function (event) {
+        var coinButton = event.target.closest("[data-student-coin-action]");
+        if (!coinButton) {
+            return;
+        }
+
+        event.preventDefault();
+        var root = coinButton.closest("[data-student-coin-controls]");
+        if (!root || root.classList.contains("is-busy")) {
+            return;
+        }
+        updateStudentCoinControl(root, coinButton);
+    });
 
     document.addEventListener("click", function (event) {
         var quickDeleteButton = event.target.closest("[data-quick-delete-url]");
