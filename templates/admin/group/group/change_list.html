@@ -44,19 +44,12 @@
                         <h3><a href="{% url 'admin:group_group_overview' result.pk %}">{{ result.title }}</a></h3>
                         <p>{{ result.course.name }}</p>
                     </div>
-                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="group-card__edit js-admin-modal-trigger">
-                        Tahrirlash
-                    </a>
                 </div>
 
                 <div class="group-card__meta">
                     <div>
                         <span>O'qituvchi</span>
                         <strong>{% if result.teacher and result.teacher.user %}{{ result.teacher.user.display_name }}{% else %}Biriktirilmagan{% endif %}</strong>
-                    </div>
-                    <div>
-                        <span>O'quvchilar</span>
-                        <strong>{{ result.student_count|default_if_none:result.total_student }} ta</strong>
                     </div>
                     <div>
                         <span>Filial</span>
@@ -74,6 +67,10 @@
                             {% endif %}
                             · {{ result.start_lesson|time:"H:i" }} - {{ result.end_lesson|time:"H:i" }}
                         </strong>
+                    </div>
+                    <div>
+                        <span>O'quvchilar</span>
+                        <strong>{{ result.visible_student_count|default:0 }} ta</strong>
                     </div>
                 </div>
 

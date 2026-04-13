@@ -87,6 +87,7 @@ class GroupAdminAttendanceTests(TestCase):
         student_ids = [row["student"].pk for row in response.context["group_overview"]["rows"]]
         self.assertNotIn(archived_student.pk, student_ids)
         self.assertContains(response, self.student.full_name)
+        self.assertContains(response, self.group.title)
 
     def test_group_overview_hides_frozen_students(self):
         frozen_student = Student.objects.create(
@@ -104,6 +105,24 @@ class GroupAdminAttendanceTests(TestCase):
         student_ids = [row["student"].pk for row in response.context["group_overview"]["rows"]]
         self.assertNotIn(frozen_student.pk, student_ids)
         self.assertContains(response, self.student.full_name)
+
+    def test_group_changelist_shows_visible_student_count(self):
+        archived_student = Student.objects.create(
+            full_name="Archived Student",
+            phone_number="+998900300097",
+            center=self.organization,
+            group=self.group,
+            status=STUDENT_STATUS.ARCHIVED,
+        )
+        self.group.students.add(archived_student)
+
+        response = self.client.get(reverse("admin:group_group_changelist"))
+
+        self.assertEqual(response.status_code, 200)
+        result_list = list(response.context["cl"].result_list)
+        self.assertEqual(len(result_list), 1)
+        self.assertEqual(result_list[0].visible_student_count, 1)
+        self.assertContains(response, "1 ta")
 
     def test_admin_can_update_attendance_state(self):
         target_date = date(2026, 4, 10)
