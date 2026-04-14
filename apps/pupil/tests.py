@@ -74,7 +74,7 @@ class StudentDashboardTests(APITestCase):
             course=self.course_math,
             branch=self.branch,
             teacher=self.teacher,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson=time(9, 0),
             end_lesson=time(10, 0),
         )
@@ -83,15 +83,13 @@ class StudentDashboardTests(APITestCase):
             course=self.course_science,
             branch=self.branch,
             teacher=self.teacher,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson=time(10, 0),
             end_lesson=time(11, 0),
         )
 
         self.math_group.students.add(self.student)
         self.science_group.students.add(self.student)
-        self.student.group = self.math_group
-        self.student.save(update_fields=["group"])
 
         self.today_math_attendance = Attendance.objects.create(
             group=self.math_group,
@@ -249,7 +247,7 @@ class StudentDashboardTests(APITestCase):
         self.assertEqual(math_row["teacher_name"], self.teacher_user.full_name)
         self.assertEqual(math_row["room"], None)
         self.assertEqual(math_row["lessons_days"], [])
-        self.assertEqual(math_row["lessons_days_choice"], GROUP_DAYS_CHOICES.EVERAY_DAY)
+        self.assertEqual(math_row["lessons_days_choice"], GROUP_DAYS_CHOICES.EVERY_DAY)
         self.assertEqual(math_row["total_student"], 1)
 
         science_row = next(item for item in groups if item["id"] == self.science_group.id)

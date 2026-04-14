@@ -15,14 +15,12 @@ class ProductAdmin(FriendlyAdminMixin):
     search_help_text = "Mahsulot nomi yoki tavsifi bo'yicha qidiring."
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        ("Asosiy ma'lumotlar", {
-            "fields": ("title", "image", "description"),
+        ("Mahsulot", {
+            "classes": ("tab",),
+            "fields": ("title", "image", "description", "price", "count"),
         }),
-        ("Sotuv ma'lumotlari", {
-            "fields": ("price", "count"),
-        }),
-        ("Texnik ma'lumotlar", {
-            "classes": ("collapse",),
+        ("Texnik", {
+            "classes": ("tab",),
             "fields": ("created_at", "updated_at"),
         }),
     )
@@ -50,6 +48,16 @@ class MarketOrderAdmin(FriendlyAdminMixin):
     actions = ("mark_as_delivered", "cancel_selected_orders")
     readonly_fields = ("secret_code", "price", "created_at", "updated_at")
     date_hierarchy = "created_at"
+    fieldsets = (
+        ("Buyurtma", {
+            "classes": ("tab",),
+            "fields": ("student", "product", "status", "price", "secret_code"),
+        }),
+        ("Texnik", {
+            "classes": ("tab",),
+            "fields": ("created_at", "updated_at"),
+        }),
+    )
 
     @admin.display(description="Telefon")
     def student_phone(self, obj):

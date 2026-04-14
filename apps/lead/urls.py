@@ -38,7 +38,7 @@ urlpatterns = [
         name='lead-delete'
     ),
     path(
-        'api/leads/export/',
+        'leads/export/',
         LeadExportExcelAPIView.as_view(),
         name='lead-exel-export'
     ),

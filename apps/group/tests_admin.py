@@ -53,7 +53,7 @@ class GroupAdminAttendanceTests(TestCase):
             course=self.course,
             branch=self.branch,
             teacher=self.teacher,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson=time(9, 0),
             end_lesson=time(10, 0),
         )

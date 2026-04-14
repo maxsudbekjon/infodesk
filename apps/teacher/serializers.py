@@ -106,7 +106,7 @@ class TeacherGroupSerializer(serializers.ModelSerializer):
             today_value = today_day_value()
             return any(normalize_day_value(day.day) == today_value for day in lessons_days)
 
-        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.EVERAY_DAY:
+        if obj.lessons_days_choice == GROUP_DAYS_CHOICES.EVERY_DAY:
             return True
 
         current_day = timezone.localdate().day

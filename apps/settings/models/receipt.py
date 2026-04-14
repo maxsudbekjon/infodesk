@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 
 from apps.base_models import TimeStampedModel
 from apps.settings.models.branch import Branch
@@ -48,6 +49,12 @@ class ReceiptSettings(TimeStampedModel):
     class Meta:
         verbose_name = "Receipt Settings"
         verbose_name_plural = "Receipt Settings"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(branch__isnull=False) | Q(organization__isnull=False),
+                name="receipt_settings_branch_or_org",
+            ),
+        ]
 
     def __str__(self) -> str:
         target = self.branch.name if self.branch else (self.organization.name if self.organization else "Global")

@@ -40,8 +40,8 @@ class StudentChangeGroupSerializer(serializers.ModelSerializer):
         if not to_group:
             raise serializers.ValidationError("to_group kiritilishi kerak")
 
-        # Student o‘z guruhiga transfer qilinmasligi
-        if student.group and student.group == to_group:
+        # Student o’z guruhiga transfer qilinmasligi
+        if student.groups.filter(pk=to_group.pk).exists():
             raise serializers.ValidationError(
                 "Student allaqachon shu guruhda"
             )
@@ -82,11 +82,10 @@ class StudentChangeGroupSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         student = validated_data["student"]
 
-        # eski group va branch avtomatik olinadi
-        validated_data["from_group"] = student.group
-        validated_data["from_branch"] = (
-            student.group.branch if student.group else None
-        )
+        # eski group va branch avtomatik olinadi (M2M dan birinchi guruh)
+        current_group = student.groups.select_related("branch").first()
+        validated_data["from_group"] = current_group
+        validated_data["from_branch"] = current_group.branch if current_group else None
 
         transfer = StudentTransfer.objects.create(**validated_data)
 
@@ -153,7 +152,7 @@ class StudentReturnToLeadSerializer(serializers.Serializer):
 
 class StudentRemoveFromGroupSerializer(serializers.Serializer):
     student_id = serializers.PrimaryKeyRelatedField(
-        queryset=Student.objects.select_related("group"),
+        queryset=Student.objects.prefetch_related("groups__branch"),
         source="student",
         write_only=True,
     )
@@ -170,7 +169,7 @@ class StudentRemoveFromGroupSerializer(serializers.Serializer):
         if not student:
             raise serializers.ValidationError("student kiritilishi kerak")
 
-        if not student.group and not student.groups.exists():
+        if not student.groups.exists():
             raise serializers.ValidationError("Student guruhga biriktirilmagan")
 
         return attrs
@@ -179,13 +178,15 @@ class StudentRemoveFromGroupSerializer(serializers.Serializer):
         student = validated_data["student"]
         reason = validated_data["reason"]
         reason_choice = validated_data["reason_choice"]
-        from_group_id = student.group_id
+
+        current_group = student.groups.select_related("branch").first()
+        from_group_id = current_group.pk if current_group else None
 
         with transaction.atomic():
             StudentTransfer.objects.create(
                 student=student,
-                from_group=student.group,
-                from_branch=student.group.branch if student.group else None,
+                from_group=current_group,
+                from_branch=current_group.branch if current_group else None,
                 to_group=None,
                 to_branch=None,
                 reason=reason,
@@ -194,11 +195,6 @@ class StudentRemoveFromGroupSerializer(serializers.Serializer):
                 is_debt=False,
             )
 
-            if student.group_id:
-                student.group = None
-                student.save(update_fields=["group_id"])
-
-            # M2M dagi barcha bog'lanishlarni ham tozalaymiz
             student.groups.clear()
 
         self._from_group_id = from_group_id

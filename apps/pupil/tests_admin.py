@@ -67,7 +67,7 @@ class StudentAdminTests(TestCase):
             course=self.course,
             branch=self.branch,
             teacher=self.teacher,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson=time(9, 0),
             end_lesson=time(10, 0),
         )
@@ -144,7 +144,7 @@ class StudentAdminTests(TestCase):
         )
 
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data["status"], "avtive")
+        self.assertEqual(form.cleaned_data["status"], "active")
 
     def test_admin_form_rejects_add_coin_above_limit(self):
         request = self.request_factory.post("/admin/pupil/student/add/")
@@ -155,7 +155,7 @@ class StudentAdminTests(TestCase):
                 "phone_number": "+998900200100",
                 "center": self.organization.pk,
                 "group": self.group.pk,
-                "status": "avtive",
+                "status": "active",
                 "payment_status": "debtor",
                 "balance": "0",
                 "used_coin": "0",

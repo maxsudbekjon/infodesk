@@ -66,13 +66,11 @@ class MarketAPITests(APITestCase):
             title="English-1",
             course=self.course,
             branch=self.branch,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson="09:00:00",
             end_lesson="10:00:00",
         )
         self.group.students.add(self.student)
-        self.student.group = self.group
-        self.student.save(update_fields=["group"])
         GroupScore.objects.create(
             group=self.group,
             student=self.student,

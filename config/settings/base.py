@@ -118,18 +118,18 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    # },
 ]
 
 LANGUAGE_CODE = "uz"
@@ -190,6 +190,10 @@ CELERY_BEAT_SCHEDULE = {
     "daily-lead-job": {
         "task": "apps.lead.tasks.daily_lead_job",
         "schedule": crontab(hour=14, minute=36),
+    },
+    "penalize-stale-leads": {
+        "task": "apps.lead.tasks.penalize_operators_for_stale_leads",
+        "schedule": crontab(hour=9, minute=0),
     },
 }
 

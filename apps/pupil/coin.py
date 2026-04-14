@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 
@@ -31,11 +32,16 @@ def calculate_student_coin_offset(student_id: int, target_balance: int) -> int:
 
 
 def recalculate_student_total_coin(student_id: int) -> int:
-    student = Student.objects.only("id", "used_coin", "coin_offset").get(pk=student_id)
-    earned_coin = get_student_earned_coin(student_id)
-    available_coin = max(
-        int(student.coin_offset or 0) + int(earned_coin) - int(student.used_coin or 0),
-        0,
-    )
-    Student.objects.filter(pk=student_id).update(total_coin=available_coin)
-    return available_coin
+    with transaction.atomic():
+        student = (
+            Student.objects.select_for_update()
+            .only("id", "used_coin", "coin_offset")
+            .get(pk=student_id)
+        )
+        earned_coin = get_student_earned_coin(student_id)
+        available_coin = max(
+            int(student.coin_offset or 0) + int(earned_coin) - int(student.used_coin or 0),
+            0,
+        )
+        Student.objects.filter(pk=student_id).update(total_coin=available_coin)
+        return available_coin

@@ -548,56 +548,57 @@
     function paintAttendanceCell(cell, state) {
         var meta = attendanceStateMeta(state);
         cell.dataset.state = state;
-        cell.classList.remove("attendance-cell--present", "attendance-cell--absent", "attendance-cell--neutral");
-        cell.classList.add("attendance-cell--" + meta.tone);
+        cell.classList.remove("id-att-cell--present", "id-att-cell--absent", "id-att-cell--neutral");
+        cell.classList.add("id-att-cell--" + meta.tone);
         cell.textContent = meta.short;
         cell.title = meta.label;
         cell.setAttribute("aria-label", meta.label);
     }
 
-    Array.prototype.slice.call(document.querySelectorAll("[data-attendance-cell]")).forEach(function (cell) {
-        paintAttendanceCell(cell, cell.dataset.state || "neutral");
+    document.addEventListener("click", function (event) {
+        var cell = event.target.closest("[data-attendance-cell]");
+        if (!cell) {
+            return;
+        }
 
-        cell.addEventListener("click", function () {
-            if (cell.classList.contains("is-saving")) {
-                return;
-            }
+        if (cell.classList.contains("is-saving")) {
+            return;
+        }
 
-            var previousState = cell.dataset.state || "neutral";
-            var nextState = nextAttendanceState(previousState);
+        var previousState = cell.dataset.state || "neutral";
+        var nextState = nextAttendanceState(previousState);
 
-            cell.classList.add("is-saving");
+        cell.classList.add("is-saving");
 
-            window.fetch(cell.dataset.updateUrl, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": getCookie("csrftoken"),
-                    "X-Requested-With": "XMLHttpRequest"
-                },
-                body: JSON.stringify({
-                    group_id: cell.dataset.groupId,
-                    student_id: cell.dataset.studentId,
-                    date: cell.dataset.date,
-                    state: nextState
-                })
+        window.fetch(cell.dataset.updateUrl, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: JSON.stringify({
+                group_id: cell.dataset.groupId,
+                student_id: cell.dataset.studentId,
+                date: cell.dataset.date,
+                state: nextState
             })
-                .then(function (response) {
-                    if (!response.ok) {
-                        throw new Error("Attendance update failed");
-                    }
-                    return response.json();
-                })
-                .then(function (payload) {
-                    paintAttendanceCell(cell, payload.state || nextState);
-                    updateAttendanceCounters(cell, previousState, payload.state || nextState);
-                })
-                .catch(function () {
-                    window.alert("Davomatni saqlashda xatolik yuz berdi.");
-                })
-                .finally(function () {
-                    cell.classList.remove("is-saving");
-                });
-        });
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("Attendance update failed");
+                }
+                return response.json();
+            })
+            .then(function (payload) {
+                paintAttendanceCell(cell, payload.state || nextState);
+                updateAttendanceCounters(cell, previousState, payload.state || nextState);
+            })
+            .catch(function () {
+                window.alert("Davomatni saqlashda xatolik yuz berdi.");
+            })
+            .finally(function () {
+                cell.classList.remove("is-saving");
+            });
     });
 })();

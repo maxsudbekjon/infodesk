@@ -309,14 +309,15 @@ def _build_dashboard_snapshot(request):
 
     if request.user.has_perm("pupil.view_student"):
         students = (
-            Student.objects.select_related("group", "center")
+            Student.objects.select_related("center")
+            .prefetch_related("groups")
             .order_by("-created_at")[:4]
         )
         snapshot["recent_students"] = [
             {
                 "name": student.full_name or student.phone_number or f"Student #{student.pk}",
                 "phone": student.phone_number or "-",
-                "group": getattr(student.group, "title", "Guruhsiz"),
+                "group": (student.groups.first().title if student.groups.all() else "Guruhsiz"),
                 "status": student.get_status_display(),
                 "url": reverse("admin:pupil_student_change", args=[student.pk]),
             }
@@ -399,11 +400,11 @@ def ui_global_search_view(request):
 
     if request.user.has_perm("pupil.view_student"):
         students = (
-            Student.objects.select_related("group")
+            Student.objects.prefetch_related("groups")
             .filter(
                 Q(full_name__icontains=query)
                 | Q(phone_number__icontains=query)
-                | Q(group__title__icontains=query)
+                | Q(groups__title__icontains=query)
             )
             .distinct()[:4]
         )
@@ -411,7 +412,7 @@ def ui_global_search_view(request):
             results.append({
                 "category": "O'quvchilar",
                 "title": student.full_name or student.phone_number or f"Student #{student.pk}",
-                "meta": f"{student.phone_number or '-'} · {getattr(student.group, 'title', 'Guruhsiz')}",
+                "meta": f"{student.phone_number or '-'} · {student.groups.first().title if student.groups.all() else 'Guruhsiz'}",
                 "url": reverse("admin:pupil_student_change", args=[student.pk]),
                 "icon": "students",
             })

@@ -94,13 +94,7 @@ class GroupRolePermissionTests(APITestCase):
             start_lesson=time(9, 0),
             end_lesson=time(10, 0),
         )
-        self.group.students.add(self.student, self.other_student)
-        self.student.group = self.group
-        self.student.save(update_fields=["group"])
-        self.other_student.group = self.group
-        self.other_student.save(update_fields=["group"])
-        self.fk_only_student.group = self.group
-        self.fk_only_student.save(update_fields=["group"])
+        self.group.students.add(self.student, self.other_student, self.fk_only_student)
 
         self.student_attendance = Attendance.objects.create(
             group=self.group,

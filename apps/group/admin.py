@@ -103,20 +103,20 @@ class GroupAdmin(FriendlyAdminMixin):
     ordering = ("-created_at",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        ("Asosiy ma'lumotlar", {
-            "fields": ("title", "course", "branch", "status"),
-        }),
-        ("Teacher va xona", {
-            "fields": ("teacher", "assistant_teacher", "room"),
+        ("Asosiy", {
+            "classes": ("tab",),
+            "fields": ("title", "course", "branch", "status", "teacher", "assistant_teacher", "room"),
         }),
         ("Jadval", {
+            "classes": ("tab",),
             "fields": ("lessons_days_choice", "lessons_days", "start_lesson", "end_lesson", "started_at", "closed_at"),
         }),
         ("Talabalar", {
+            "classes": ("tab",),
             "fields": ("students", "total_student"),
         }),
-        ("Texnik ma'lumotlar", {
-            "classes": ("collapse",),
+        ("Texnik", {
+            "classes": ("tab",),
             "fields": ("created_at", "updated_at"),
         }),
     )

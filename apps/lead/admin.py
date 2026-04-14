@@ -138,7 +138,7 @@ class LeadAdmin(FriendlyAdminMixin):
         lead = self._get_lead_for_action(request, object_id)
         if isinstance(lead, HttpResponseNotAllowed):
             return lead
-        lead.status = LEAD_STATUS.CANSELED
+        lead.status = LEAD_STATUS.CANCELED
         lead.is_active = False
         lead.is_archived = True
         lead.save(update_fields=["status", "is_active", "is_archived"])
@@ -151,7 +151,7 @@ class LeadAdmin(FriendlyAdminMixin):
             LEAD_STATUS.NEW: ("Yangi", "primary"),
             LEAD_STATUS.PROCESS: ("Bog'langan", "warning"),
             LEAD_STATUS.SOLD: ("Konversiya", "success"),
-            LEAD_STATUS.CANSELED: ("Rad etilgan", "danger"),
+            LEAD_STATUS.CANCELED: ("Rad etilgan", "danger"),
         }
         label, tone = palette.get(obj.status, (obj.get_status_display(), "info"))
         return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
@@ -168,7 +168,7 @@ class LeadAdmin(FriendlyAdminMixin):
     @admin.action(description="Tanlangan buyurtmalarni rad etish")
     def reject_selected_orders(self, request, queryset):
         updated = queryset.update(
-            status=LEAD_STATUS.CANSELED,
+            status=LEAD_STATUS.CANCELED,
             is_active=False,
             is_archived=True,
         )

@@ -53,7 +53,15 @@
                     <small class="id-muted">{% if result.center %}{{ result.center.name }}{% else %}—{% endif %}</small>
                 </td>
                 <td>{{ result.phone_number|default:"—" }}</td>
-                <td>{% if result.group %}{{ result.group.title }}{% else %}<span class="id-muted">Guruhsiz</span>{% endif %}</td>
+                <td>
+                    {% with result.groups.all as grps %}
+                    {% if grps %}
+                        {% for g in grps %}<span class="id-badge id-badge--info">{{ g.title }}</span>{% if not forloop.last %} {% endif %}{% endfor %}
+                    {% else %}
+                        <span class="id-muted">—</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
                 <td>
                     {% if result.status == 'active' %}
                         <span class="id-badge id-badge--success">Aktiv</span>
@@ -75,7 +83,7 @@
                     <div class="id-coin-controls"
                          data-student-coin-controls
                          data-update-url="{% url 'admin:pupil_student_coin_update' result.pk %}">
-                        <input type="number" min="1" step="1" value="10"
+                        <input type="number" min="1" step="1" placeholder="Miqdor"
                                class="id-coin-input"
                                data-student-coin-input
                                aria-label="Coin miqdori">
