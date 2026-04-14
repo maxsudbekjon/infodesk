@@ -6,13 +6,15 @@ from django.shortcuts import redirect
 from django.urls import path
 from django.utils.html import format_html
 
+from unfold.admin import TabularInline as UnfoldTabularInline
+
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.lead.choices import LEAD_STATUS
 from apps.lead.models import Lead, Note, Situation, Source
 from apps.lead.services import assign_for_new_lead
 
 
-class NoteInline(admin.TabularInline):
+class NoteInline(UnfoldTabularInline):
     model = Note
     extra = 0
     fields = ("text", "operator", "date")

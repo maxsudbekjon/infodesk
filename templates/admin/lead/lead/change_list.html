@@ -1,48 +1,37 @@
 {% extends "admin/change_list.html" %}
 {% load admin_urls i18n %}
 
-{% block bodyclass %}{{ block.super }} change-list--orders{% endblock %}
-
-{% block object-tools-items %}
-    <li>
-        <a href="{% url opts|admin_urlname:'add' %}" class="addlink js-admin-modal-trigger">+ Yangi buyurtma</a>
-    </li>
-{% endblock %}
-
 {% block content_title %}
-    <div class="page-heading">
-        <div>
-            <h1 class="admin-page-title">Buyurtmalar</h1>
-            <p class="admin-page-subtitle">Yangi leadlarni ko'rib chiqing, bog'laning va konversiyani boshqaring.</p>
+<div class="id-page-head">
+    <div class="id-page-head__info">
+        <h1>Buyurtmalar</h1>
+        <p>Yangi leadlarni ko'rib chiqing, bog'laning va konversiyani boshqaring.</p>
+    </div>
+    <div class="id-page-metrics">
+        <div class="id-page-metric">
+            <strong>{{ lead_page_metrics.total_orders }}</strong>
+            <span>Jami</span>
         </div>
-        <div class="page-heading__actions">
-            <a href="{% url opts|admin_urlname:'add' %}" class="button button-primary js-admin-modal-trigger">+ Yangi buyurtma</a>
+        <div class="id-page-metric id-page-metric--primary">
+            <strong>{{ lead_page_metrics.new_orders }}</strong>
+            <span>Yangi</span>
         </div>
-        <div class="page-metric-inline">
-            <div>
-                <strong>{{ lead_page_metrics.total_orders }}</strong>
-                <span>Jami</span>
-            </div>
-            <div>
-                <strong>{{ lead_page_metrics.new_orders }}</strong>
-                <span>Yangi</span>
-            </div>
-            <div>
-                <strong>{{ lead_page_metrics.contacted_orders }}</strong>
-                <span>Bog'langan</span>
-            </div>
-            <div>
-                <strong>{{ lead_page_metrics.converted_orders }}</strong>
-                <span>Konversiya</span>
-            </div>
+        <div class="id-page-metric id-page-metric--warning">
+            <strong>{{ lead_page_metrics.contacted_orders }}</strong>
+            <span>Bog'langan</span>
+        </div>
+        <div class="id-page-metric id-page-metric--success">
+            <strong>{{ lead_page_metrics.converted_orders }}</strong>
+            <span>Konversiya</span>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block result_list %}
-    <div class="teacher-table-card">
-        <table class="teacher-table order-table">
-            <thead>
+<div class="id-table-wrap">
+    <table class="id-table">
+        <thead>
             <tr>
                 <th>Buyurtmachi</th>
                 <th>Telefon</th>
@@ -52,71 +41,65 @@
                 <th>Sana</th>
                 <th>Amallar</th>
             </tr>
-            </thead>
-            <tbody>
-            {% for result in cl.result_list %}
-                <tr>
-                    <td>
-                        <strong>{{ result.full_name }}</strong>
-                        <small>{% if result.group %}{{ result.group.title }}{% else %}Guruh tanlanmagan{% endif %}</small>
-                    </td>
-                    <td>{{ result.phone_number }}</td>
-                    <td>{% if result.course %}{{ result.course.name }}{% else %}-{% endif %}</td>
-                    <td>
-                        {% if result.operator and result.operator.user %}
-                            {{ result.operator.user.display_name }}
-                        {% else %}
-                            Operator biriktirilmagan
+        </thead>
+        <tbody>
+        {% for result in cl.result_list %}
+            <tr>
+                <td>
+                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}"
+                       class="id-link-strong">{{ result.full_name }}</a>
+                    <br>
+                    <small class="id-muted">
+                        {% if result.group %}{{ result.group.title }}{% else %}Guruh tanlanmagan{% endif %}
+                    </small>
+                </td>
+                <td>{{ result.phone_number }}</td>
+                <td>{% if result.course %}{{ result.course.name }}{% else %}<span class="id-muted">—</span>{% endif %}</td>
+                <td>
+                    {% if result.operator and result.operator.user %}
+                        {{ result.operator.user.display_name }}
+                    {% else %}
+                        <span class="id-muted">Biriktirilmagan</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if result.status == 'new' %}
+                        <span class="id-badge id-badge--primary">Yangi</span>
+                    {% elif result.status == 'process' %}
+                        <span class="id-badge id-badge--warning">Bog'langan</span>
+                    {% elif result.status == 'sold' %}
+                        <span class="id-badge id-badge--success">Konversiya</span>
+                    {% else %}
+                        <span class="id-badge id-badge--danger">Rad etilgan</span>
+                    {% endif %}
+                </td>
+                <td>{{ result.created_at|date:"d M, H:i" }}</td>
+                <td>
+                    <div class="id-actions">
+                        <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}"
+                           class="id-btn id-btn--outline id-btn--sm">Tahrirlash</a>
+                        {% if result.status != 'sold' and result.status != 'canseled' %}
+                            <form action="{% url 'admin:lead_lead_accept' result.pk %}" method="post" style="display:inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="id-btn id-btn--success id-btn--sm">Qabul</button>
+                            </form>
+                            <form action="{% url 'admin:lead_lead_reject' result.pk %}" method="post" style="display:inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button type="submit" class="id-btn id-btn--danger id-btn--sm"
+                                        onclick="return confirm('Rad etishni tasdiqlaysizmi?')">Rad</button>
+                            </form>
                         {% endif %}
-                    </td>
-                    <td>
-                        <span class="status-badge status-badge--{% if result.status == 'new' %}primary{% elif result.status == 'process' %}warning{% elif result.status == 'sold' %}success{% else %}danger{% endif %}">
-                            {% if result.status == 'new' %}
-                                Yangi
-                            {% elif result.status == 'process' %}
-                                Bog'langan
-                            {% elif result.status == 'sold' %}
-                                Konversiya
-                            {% else %}
-                                Rad etilgan
-                            {% endif %}
-                        </span>
-                    </td>
-                    <td>{{ result.created_at|date:"d M, H:i" }}</td>
-                    <td class="table-actions table-actions--stack">
-                        <div class="table-actions__row">
-                            <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Ko'rish</a>
-                            <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-primary js-admin-modal-trigger">Tahrirlash</a>
-                        </div>
-                        <div class="table-actions__row">
-                            {% if result.status != 'sold' and result.status != 'canseled' %}
-                                <form action="{% url 'admin:lead_lead_accept' result.pk %}" method="post" class="inline-action-form">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                    <button type="submit" class="button button-success button--small">Qabul qilish</button>
-                                </form>
-                                <form action="{% url 'admin:lead_lead_reject' result.pk %}" method="post" class="inline-action-form" data-confirm="Buyurtmani rad etishni tasdiqlaysizmi?">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                    <button type="submit" class="button button-danger button-danger--ghost button--small">Rad etish</button>
-                                </form>
-                            {% endif %}
-                            <a href="{% url 'admin:lead_lead_quick_delete' result.pk %}?next={{ request.get_full_path|urlencode }}"
-                               onclick="return window.confirm('Buyurtmani ochirishni tasdiqlaysizmi?');"
-                               class="button button-danger button-danger--ghost button--small">
-                                O'chirish
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state">Filtrlar bo'yicha buyurtma topilmadi.</div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7" class="id-empty">Filtrlar bo'yicha buyurtma topilmadi.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

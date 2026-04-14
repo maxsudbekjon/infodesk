@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
 
 from apps.dashboard.admin_utils import AdminUiResponseMixin, FriendlyAdminMixin
 from apps.user.models import Operator, User
@@ -101,7 +102,7 @@ class OperatorAdmin(FriendlyAdminMixin):
 
 
 @admin.register(User)
-class UserAdmin(AdminUiResponseMixin, BaseUserAdmin):
+class UserAdmin(UnfoldModelAdmin, AdminUiResponseMixin, BaseUserAdmin):
     admin_page_title = "Foydalanuvchilar"
     admin_page_subtitle = "Login va ruxsatlarni boshqarish sahifasi."
     form = UserChangeForm

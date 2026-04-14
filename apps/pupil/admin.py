@@ -15,6 +15,8 @@ from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
+from unfold.admin import TabularInline as UnfoldTabularInline
+
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.pupil.choices import STUDENT_PAYMENT, STUDENT_STATUS
 from apps.pupil.coin import calculate_student_coin_offset, recalculate_student_total_coin
@@ -129,7 +131,7 @@ class LinkedAccountFilter(admin.SimpleListFilter):
         return queryset
 
 
-class ParentInline(admin.TabularInline):
+class ParentInline(UnfoldTabularInline):
     model = Parent
     form = ParentInlineForm
     extra = 0
@@ -138,7 +140,7 @@ class ParentInline(admin.TabularInline):
     verbose_name_plural = "Ota-onalar"
 
 
-class StudentNoteInline(admin.TabularInline):
+class StudentNoteInline(UnfoldTabularInline):
     model = StudentNote
     form = StudentNoteInlineForm
     extra = 0

@@ -11,7 +11,6 @@ from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.dashboard.admin_utils import MODAL_REQUEST_PARAM
 from apps.group.choices import GROUP_STATUS
 from apps.group.models import CourseTemplate, Group
 from apps.lead.choices import LEAD_STATUS
@@ -125,61 +124,6 @@ def _monthly_overview(queryset, *, label: str, color: str, months: int = 6):
         "change_text": change_text,
         "change_tone": change_tone,
     }
-
-
-def _build_sidebar_links(request):
-    candidates = [
-        {
-            "label": "Bosh sahifa",
-            "icon": "dashboard",
-            "url": reverse("admin:index"),
-        },
-        {
-            "label": "Guruhlar",
-            "icon": "groups",
-            "url": reverse("admin:group_group_changelist"),
-            "perm": "group.view_group",
-        },
-        {
-            "label": "O'quvchilar",
-            "icon": "students",
-            "url": reverse("admin:pupil_student_changelist"),
-            "perm": "pupil.view_student",
-        },
-        {
-            "label": "O'qituvchilar",
-            "icon": "teachers",
-            "url": reverse("admin:teacher_teacher_changelist"),
-            "perm": "teacher.view_teacher",
-        },
-        {
-            "label": "Fanlar",
-            "icon": "subjects",
-            "url": reverse("admin:group_coursetemplate_changelist"),
-            "perm": "group.view_coursetemplate",
-        },
-        {
-            "label": "Buyurtmalar",
-            "icon": "orders",
-            "url": reverse("admin:lead_lead_changelist"),
-            "perm": "lead.view_lead",
-        },
-        {
-            "label": "Statistika",
-            "icon": "stats",
-            "url": reverse("admin:ui_statistics"),
-        },
-    ]
-
-    links = []
-    for item in candidates:
-        if item.get("perm") and not request.user.has_perm(item["perm"]):
-            continue
-        links.append({
-            **item,
-            "active": _active_match(request.path, item["url"]),
-        })
-    return links
 
 
 def _build_dashboard_quick_links(request):
@@ -429,40 +373,20 @@ def _choice_breakdown(queryset, field_name, choices, palette):
     return items
 
 
-def build_admin_ui_context(request):
-    resolver = getattr(request, "resolver_match", None)
-    url_name = getattr(resolver, "url_name", "")
-
-    context = {
-        "admin_sidebar_links": _build_sidebar_links(request),
+def dashboard_callback(request, context):
+    """Unfold dashboard callback — adds dashboard data to the index page context."""
+    notifications = _build_notifications(request)
+    context.update({
         "admin_dashboard_quick_links": _build_dashboard_quick_links(request),
-        "admin_notifications": _build_notifications(request),
+        "admin_notifications": notifications,
+        "admin_notification_total": sum(item["value"] for item in notifications),
         "admin_global_metrics": _build_global_metrics(request),
+        "admin_dashboard_snapshot": _build_dashboard_snapshot(request),
+        "admin_dashboard_trends": _build_dashboard_trends(request),
         "admin_search_url": reverse("admin:ui_global_search"),
         "admin_schedule_url": reverse("admin:ui_schedule"),
         "admin_statistics_url": reverse("admin:ui_statistics"),
-        "admin_modal_param": MODAL_REQUEST_PARAM,
-        "is_ui_modal": (
-            request.GET.get(MODAL_REQUEST_PARAM) == "1"
-            or request.POST.get(MODAL_REQUEST_PARAM) == "1"
-        ),
-    }
-    context["admin_notification_total"] = sum(item["value"] for item in context["admin_notifications"])
-
-    if url_name in {"index", "ui_statistics", "ui_schedule"}:
-        context["admin_dashboard_snapshot"] = _build_dashboard_snapshot(request)
-    else:
-        context["admin_dashboard_snapshot"] = {
-            "recent_groups": [],
-            "recent_students": [],
-            "recent_leads": [],
-            "recent_actions": [],
-        }
-
-    if url_name in {"index", "ui_statistics"}:
-        context["admin_dashboard_trends"] = _build_dashboard_trends(request)
-    else:
-        context["admin_dashboard_trends"] = []
+    })
     return context
 
 

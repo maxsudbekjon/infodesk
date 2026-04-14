@@ -1,71 +1,57 @@
 {% extends "admin/change_list.html" %}
 {% load admin_urls i18n %}
 
-{% block bodyclass %}{{ block.super }} change-list--cards change-list--subjects{% endblock %}
-
-{% block object-tools-items %}
-    <li>
-        <a href="{% url opts|admin_urlname:'add' %}" class="addlink js-admin-modal-trigger">+ Yangi fan</a>
-    </li>
-{% endblock %}
-
 {% block content_title %}
-    <div class="page-heading">
-        <div>
-            <h1 class="admin-page-title">Fanlar</h1>
-            <p class="admin-page-subtitle">Yo'nalishlar, davomiylik va narxlarni sodda kartochkalar orqali yangilang.</p>
+<div class="id-page-head">
+    <div class="id-page-head__info">
+        <h1>Fanlar</h1>
+        <p>Yo'nalishlar, davomiylik va narxlarni sodda kartochkalar orqali yangilang.</p>
+    </div>
+    <div class="id-page-metrics">
+        <div class="id-page-metric">
+            <strong>{{ subject_page_metrics.total_subjects }}</strong>
+            <span>Fanlar</span>
         </div>
-        <div class="page-heading__actions">
-            <a href="{% url opts|admin_urlname:'add' %}" class="button button-primary js-admin-modal-trigger">+ Yangi fan</a>
-        </div>
-        <div class="page-metric-inline">
-            <div>
-                <strong>{{ subject_page_metrics.total_subjects }}</strong>
-                <span>Fanlar</span>
-            </div>
-            <div>
-                <strong>{{ subject_page_metrics.total_groups }}</strong>
-                <span>Biriktirilgan guruhlar</span>
-            </div>
+        <div class="id-page-metric id-page-metric--info">
+            <strong>{{ subject_page_metrics.total_groups }}</strong>
+            <span>Biriktirilgan guruhlar</span>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block result_list %}
-    <div class="subject-card-grid">
-        {% for result in cl.result_list %}
-            <article class="subject-card">
-                <div class="subject-card__header">
-                    <div>
-                        <h3>{{ result.name }}</h3>
-                        <p>{% if result.center %}{{ result.center.name }}{% else %}Markaz kiritilmagan{% endif %}</p>
-                    </div>
-                    <span class="status-badge status-badge--info">{{ result.groups_count|default:0 }} ta guruh</span>
-                </div>
-                <div class="subject-card__stats">
-                    <div>
-                        <span>Narx</span>
-                        <strong>{{ result.price }}</strong>
-                    </div>
-                    <div>
-                        <span>Davomiylik</span>
-                        <strong>{{ result.duration_months }} oy</strong>
-                    </div>
-                </div>
-                {% if result.note %}
-                    <p class="subject-card__note">{{ result.note|truncatechars:140 }}</p>
-                {% endif %}
-                <div class="subject-card__actions">
-                    <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
-                    <a href="{% url 'admin:group_coursetemplate_quick_delete' result.pk %}?next={{ request.get_full_path|urlencode }}"
-                       onclick="return window.confirm('Fanni ochirishni tasdiqlaysizmi?');"
-                       class="button button-danger button-danger--ghost">
-                        O'chirish
-                    </a>
-                </div>
-            </article>
-        {% empty %}
-            <div class="empty-state">Fanlar hali kiritilmagan.</div>
-        {% endfor %}
+<div class="id-subject-grid">
+    {% for result in cl.result_list %}
+    <div class="id-subject-card">
+        <div class="id-subject-card__head">
+            <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}"
+               class="id-subject-card__name">{{ result.name }}</a>
+            <span class="id-badge id-badge--info">{{ result.groups_count|default:0 }} ta guruh</span>
+        </div>
+        <div class="id-subject-card__meta">
+            <small class="id-muted">{% if result.center %}{{ result.center.name }}{% else %}Markaz kiritilmagan{% endif %}</small>
+        </div>
+        <div class="id-subject-card__stats">
+            <div>
+                <span>Narx</span>
+                <strong>{{ result.price }}</strong>
+            </div>
+            <div>
+                <span>Davomiylik</span>
+                <strong>{{ result.duration_months }} oy</strong>
+            </div>
+        </div>
+        {% if result.note %}
+            <p class="id-subject-card__note">{{ result.note|truncatechars:120 }}</p>
+        {% endif %}
+        <div class="id-subject-card__actions">
+            <a href="{% url opts|admin_urlname:'change' result.pk|admin_urlquote %}"
+               class="id-btn id-btn--outline id-btn--sm">Tahrirlash</a>
+        </div>
     </div>
+    {% empty %}
+        <div class="id-empty" style="grid-column: 1 / -1;">Fanlar hali kiritilmagan.</div>
+    {% endfor %}
+</div>
 {% endblock %}
