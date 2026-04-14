@@ -125,9 +125,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
             end_lesson=time(10, 0),
         )
         self.teacher_group_1.lessons_days.add(self.today_day)
-        self.teacher_group_1.students.add(self.group_1_m2m_student)
-        self.group_1_fk_only_student.group = self.teacher_group_1
-        self.group_1_fk_only_student.save(update_fields=["group"])
+        self.teacher_group_1.students.add(self.group_1_m2m_student, self.group_1_fk_only_student)
 
         self.teacher_group_2 = Group.objects.create(
             title="English-1",
@@ -146,7 +144,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
             course=self.course_math,
             branch=self.branch,
             teacher=self.other_teacher,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson=time(11, 0),
             end_lesson=time(12, 0),
         )
@@ -248,7 +246,7 @@ class TeacherCourseGroupsEndpointTests(APITestCase):
             branch=self.branch,
             teacher=self.teacher,
             room=self.room_1,
-            lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+            lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
             start_lesson=time(12, 0),
             end_lesson=time(13, 0),
         )

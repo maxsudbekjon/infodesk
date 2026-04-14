@@ -46,4 +46,4 @@ class GroupStudentAPIView(generics.RetrieveAPIView):
 
         return Group.objects.filter(
             models.Q(teacher=teacher) | models.Q(assistant_teacher=teacher)
-        ).prefetch_related("students", "student_set", "scores")
+        ).prefetch_related("students", "scores")

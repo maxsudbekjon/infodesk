@@ -74,6 +74,7 @@ class Student(TimeStampedModel):
                 type(self).objects.filter(pk=self.pk).values("used_coin", "total_coin").first()
             )
 
+        _lead_group = None
         if self.lead:
             if not self.full_name:
                 self.full_name = self.lead.full_name
@@ -81,13 +82,17 @@ class Student(TimeStampedModel):
             if not self.phone_number:
                 self.phone_number = self.lead.phone_number
 
-            if not self.group:
-                self.group = self.lead.group
-
             if not self.center:
                 self.center = self.lead.center
 
+            # Enroll in the lead's group via M2M after save (if not already enrolled)
+            if self.lead.group_id:
+                _lead_group = self.lead.group
+
         super().save(*args, **kwargs)
+
+        if _lead_group and not self.groups.filter(pk=_lead_group.pk).exists():
+            self.groups.add(_lead_group)
 
         should_sync_total_coin = False
         update_fields = kwargs.get("update_fields")
@@ -131,12 +136,15 @@ class Student(TimeStampedModel):
         return max(self.total_coin or 0, 0)
 
     def __str__(self) -> str:
+        username = ""
         if self.full_name:
-            return self.full_name
+            username += str(self.full_name)
         if self.phone_number:
-            return self.phone_number
-        return f"Student {self.id}"
+            username += " | " + str(self.phone_number)
 
+        if not username:
+            return f"Student {self.id}"
+        return username
 
 class StudentTransfer(models.Model):
     student=models.ForeignKey(Student,on_delete=models.CASCADE)

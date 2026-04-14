@@ -6,13 +6,15 @@ from django.shortcuts import redirect
 from django.urls import path
 from django.utils.html import format_html
 
+from unfold.admin import TabularInline as UnfoldTabularInline
+
 from apps.dashboard.admin_utils import FriendlyAdminMixin
 from apps.lead.choices import LEAD_STATUS
 from apps.lead.models import Lead, Note, Situation, Source
 from apps.lead.services import assign_for_new_lead
 
 
-class NoteInline(admin.TabularInline):
+class NoteInline(UnfoldTabularInline):
     model = Note
     extra = 0
     fields = ("text", "operator", "date")
@@ -136,7 +138,7 @@ class LeadAdmin(FriendlyAdminMixin):
         lead = self._get_lead_for_action(request, object_id)
         if isinstance(lead, HttpResponseNotAllowed):
             return lead
-        lead.status = LEAD_STATUS.CANSELED
+        lead.status = LEAD_STATUS.CANCELED
         lead.is_active = False
         lead.is_archived = True
         lead.save(update_fields=["status", "is_active", "is_archived"])
@@ -149,7 +151,7 @@ class LeadAdmin(FriendlyAdminMixin):
             LEAD_STATUS.NEW: ("Yangi", "primary"),
             LEAD_STATUS.PROCESS: ("Bog'langan", "warning"),
             LEAD_STATUS.SOLD: ("Konversiya", "success"),
-            LEAD_STATUS.CANSELED: ("Rad etilgan", "danger"),
+            LEAD_STATUS.CANCELED: ("Rad etilgan", "danger"),
         }
         label, tone = palette.get(obj.status, (obj.get_status_display(), "info"))
         return format_html('<span class="status-badge status-badge--{}">{}</span>', tone, label)
@@ -166,7 +168,7 @@ class LeadAdmin(FriendlyAdminMixin):
     @admin.action(description="Tanlangan buyurtmalarni rad etish")
     def reject_selected_orders(self, request, queryset):
         updated = queryset.update(
-            status=LEAD_STATUS.CANSELED,
+            status=LEAD_STATUS.CANCELED,
             is_active=False,
             is_archived=True,
         )

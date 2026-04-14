@@ -15,13 +15,18 @@ from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 
+from django.contrib.admin.widgets import FilteredSelectMultiple
+
+from unfold.admin import TabularInline as UnfoldTabularInline
+
 from apps.dashboard.admin_utils import FriendlyAdminMixin
+from apps.group.models import Attendance, GroupScore
+from apps.group.models.group import Group
+from apps.group.utils import get_student_groups_queryset
 from apps.pupil.choices import STUDENT_PAYMENT, STUDENT_STATUS
 from apps.pupil.coin import calculate_student_coin_offset, recalculate_student_total_coin
 from apps.pupil.models import Parent, Student, StudentNote
 from apps.pupil.models.student import StudentTransfer
-from apps.group.models import Attendance, GroupScore
-from apps.group.utils import get_student_groups_queryset
 
 
 class StudentAdminForm(forms.ModelForm):
@@ -42,10 +47,23 @@ class StudentAdminForm(forms.ModelForm):
         label="Coin ayirish",
         help_text="Istalgan miqdorda coin ayirish mumkin.",
     )
+    groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.select_related("course", "branch").order_by("title"),
+        required=False,
+        label="Guruhlar",
+        widget=FilteredSelectMultiple("guruhlar", False),
+        help_text="O'quvchi biriktirilgan guruhlar.",
+    )
 
     class Meta:
         model = Student
         fields = "__all__"
+        exclude = ("group",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["groups"].initial = self.instance.groups.values_list("pk", flat=True)
 
     def clean_status(self):
         status = self.cleaned_data.get("status")
@@ -129,18 +147,20 @@ class LinkedAccountFilter(admin.SimpleListFilter):
         return queryset
 
 
-class ParentInline(admin.TabularInline):
+class ParentInline(UnfoldTabularInline):
     model = Parent
     form = ParentInlineForm
+    tab = True
     extra = 0
     fields = ("name", "phone_number")
     verbose_name = "Ota-ona"
     verbose_name_plural = "Ota-onalar"
 
 
-class StudentNoteInline(admin.TabularInline):
+class StudentNoteInline(UnfoldTabularInline):
     model = StudentNote
     form = StudentNoteInlineForm
+    tab = True
     extra = 0
     fields = ("text", "operator", "date")
     autocomplete_fields = ("operator",)
@@ -159,7 +179,7 @@ class StudentAdmin(FriendlyAdminMixin):
         "full_name",
         "phone_number",
         "center",
-        "group",
+        "groups_display",
         "status_badge",
         "payment_status_badge",
         "contract",
@@ -174,7 +194,7 @@ class StudentAdmin(FriendlyAdminMixin):
         "payment_status",
         "contract",
         "center",
-        "group",
+        "groups",
         "created_at",
     )
     search_fields = (
@@ -182,12 +202,12 @@ class StudentAdmin(FriendlyAdminMixin):
         "phone_number",
         "user__phone_number",
         "user__full_name",
-        "group__title",
+        "groups__title",
         "center__name",
     )
     search_help_text = "Talabani ism, telefon, guruh yoki markaz nomi bo'yicha qidiring."
-    autocomplete_fields = ("user", "lead", "group", "center")
-    list_select_related = ("user", "group", "center", "lead")
+    autocomplete_fields = ("user", "lead", "center")
+    list_select_related = ("user", "center", "lead")
     readonly_fields = (
         "created_at",
         "updated_at",
@@ -198,13 +218,16 @@ class StudentAdmin(FriendlyAdminMixin):
     actions = ("recalculate_coin_balance_action", "archive_students", "activate_students")
     inlines = (ParentInline, StudentNoteInline)
     fieldsets = (
-        ("Asosiy ma'lumotlar", {
+        ("Asosiy", {
+            "classes": ("tab",),
             "fields": ("full_name", "phone_number", "user", "lead", "image", "comment"),
         }),
-        ("O'qish holati", {
-            "fields": ("center", "group", "status", "contract"),
+        ("O'qish", {
+            "classes": ("tab",),
+            "fields": ("center", "groups", "status", "contract"),
         }),
-        ("To'lov va coin", {
+        ("To'lov", {
+            "classes": ("tab",),
             "fields": (
                 "payment_status",
                 "next_payment_date",
@@ -217,11 +240,26 @@ class StudentAdmin(FriendlyAdminMixin):
                 "earned_coin_display",
             ),
         }),
-        ("Texnik ma'lumotlar", {
-            "classes": ("collapse",),
+        ("Texnik", {
+            "classes": ("tab",),
             "fields": ("created_at", "updated_at"),
         }),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("groups")
+
+    @admin.display(description="Guruhlar")
+    def groups_display(self, obj):
+        groups = list(obj.groups.all())
+        if not groups:
+            return format_html('<span class="id-muted">—</span>')
+        return format_html(
+            " ".join(
+                '<span class="id-badge id-badge--info">{}</span>'.format(g.title)
+                for g in groups
+            )
+        )
 
     def get_urls(self):
         custom_urls = [
@@ -474,6 +512,10 @@ class StudentAdmin(FriendlyAdminMixin):
         remove_coin = int(form.cleaned_data.get("remove_coin") or 0)
 
         super().save_model(request, obj, form, change)
+
+        # Save M2M groups (handled via custom form field)
+        if "groups" in form.cleaned_data:
+            obj.groups.set(form.cleaned_data["groups"])
 
         target_total_coin = None
         if add_coin or remove_coin:

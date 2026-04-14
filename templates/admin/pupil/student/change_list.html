@@ -1,113 +1,110 @@
 {% extends "admin/change_list.html" %}
 {% load admin_urls i18n %}
 
-{% block bodyclass %}{{ block.super }} change-list--students{% endblock %}
-
-{% block object-tools-items %}
-    <li>
-        <a href="{% url opts|admin_urlname:'add' %}" class="addlink js-admin-modal-trigger">+ Yangi o'quvchi</a>
-    </li>
-{% endblock %}
-
 {% block content_title %}
-    <div class="page-heading">
-        <div>
-            <h1 class="admin-page-title">O'quvchilar</h1>
-            <p class="admin-page-subtitle">Ism, telefon, guruh va coin bo'yicha talabalarni tez boshqaring.</p>
+<div class="id-page-head">
+    <div class="id-page-head__info">
+        <h1>O'quvchilar</h1>
+        <p>Ism, telefon, guruh va coin bo'yicha talabalarni tez boshqaring.</p>
+    </div>
+    <div class="id-page-metrics">
+        <div class="id-page-metric">
+            <strong>{{ student_page_metrics.total_students }}</strong>
+            <span>Jami</span>
         </div>
-        <div class="page-heading__actions">
-            <a href="{% url opts|admin_urlname:'add' %}" class="button button-primary js-admin-modal-trigger">+ Yangi o'quvchi</a>
+        <div class="id-page-metric">
+            <strong>{{ student_page_metrics.active_students }}</strong>
+            <span>Aktiv</span>
         </div>
-        <div class="page-metric-inline">
-            <div>
-                <strong>{{ student_page_metrics.total_students }}</strong>
-                <span>Jami</span>
-            </div>
-            <div>
-                <strong>{{ student_page_metrics.active_students }}</strong>
-                <span>Aktiv</span>
-            </div>
-            <div>
-                <strong>{{ student_page_metrics.inactive_students }}</strong>
-                <span>Nofaol</span>
-            </div>
-            <div>
-                <strong>{{ student_page_metrics.debtor_students }}</strong>
-                <span>Qarzdor</span>
-            </div>
+        <div class="id-page-metric">
+            <strong>{{ student_page_metrics.inactive_students }}</strong>
+            <span>Nofaol</span>
+        </div>
+        <div class="id-page-metric id-page-metric--danger">
+            <strong>{{ student_page_metrics.debtor_students }}</strong>
+            <span>Qarzdor</span>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block result_list %}
-    <div class="teacher-table-card">
-        <table class="teacher-table student-table">
-            <thead>
+<div class="id-table-wrap">
+    <table class="id-table">
+        <thead>
             <tr>
-                <th>Ism</th>
+                <th>F.I.Sh / Markaz</th>
                 <th>Telefon</th>
                 <th>Guruh</th>
+                <th>Status</th>
                 <th>Coin</th>
                 <th>Coin boshqaruvi</th>
                 <th>Davomat</th>
             </tr>
-            </thead>
-            <tbody>
-            {% for result in cl.result_list %}
-                <tr>
-                    <td>
-                        <strong>
-                            <a href="{% url 'admin:pupil_student_attendance' result.pk %}" class="student-name-link">
-                                {% firstof result.full_name result.phone_number "O'quvchi" %}
-                            </a>
-                        </strong>
-                        <small>{% if result.center %}{{ result.center.name }}{% else %}Markaz kiritilmagan{% endif %}</small>
-                    </td>
-                    <td>{{ result.phone_number|default:"-" }}</td>
-                    <td>{% if result.group %}{{ result.group.title }}{% else %}Guruhsiz{% endif %}</td>
-                    <td>
-                        <span class="status-badge status-badge--info student-coin-badge"
-                              data-student-coin-value="{{ result.pk }}"
-                              title="Ishlatilgan coin: {{ result.used_coin|default:0 }}">
-                            {{ result.total_coin|default:0 }}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="student-coin-controls"
-                             data-student-coin-controls
-                             data-update-url="{% url 'admin:pupil_student_coin_update' result.pk %}">
-                            <input type="number"
-                                   min="1"
-                                   step="1"
-                                   value="10"
-                                   class="student-coin-controls__input"
-                                   data-student-coin-input
-                                   aria-label="Coin miqdori">
-                            <button type="button"
-                                    class="button button-success button--small"
-                                    data-student-coin-action="add">
-                                + Qo'shish
-                            </button>
-                            <button type="button"
-                                    class="button button-danger button-danger--ghost button--small"
-                                    data-student-coin-action="remove">
-                                - Ayirish
-                            </button>
-                            <small class="student-coin-controls__message" data-student-coin-message></small>
-                        </div>
-                    </td>
-                    <td class="table-actions">
-                        <a href="{% url 'admin:pupil_student_attendance' result.pk %}" class="button button-light">Davomat</a>
-                    </td>
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="6">
-                        <div class="empty-state">Filtrlar bo'yicha o'quvchi topilmadi.</div>
-                    </td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
+        </thead>
+        <tbody>
+        {% for result in cl.result_list %}
+            <tr>
+                <td>
+                    <a href="{% url 'admin:pupil_student_change' result.pk %}" class="id-link-strong">
+                        {% firstof result.full_name result.phone_number "O'quvchi" %}
+                    </a>
+                    <br>
+                    <small class="id-muted">{% if result.center %}{{ result.center.name }}{% else %}—{% endif %}</small>
+                </td>
+                <td>{{ result.phone_number|default:"—" }}</td>
+                <td>
+                    {% with result.groups.all as grps %}
+                    {% if grps %}
+                        {% for g in grps %}<span class="id-badge id-badge--info">{{ g.title }}</span>{% if not forloop.last %} {% endif %}{% endfor %}
+                    {% else %}
+                        <span class="id-muted">—</span>
+                    {% endif %}
+                    {% endwith %}
+                </td>
+                <td>
+                    {% if result.status == 'active' %}
+                        <span class="id-badge id-badge--success">Aktiv</span>
+                    {% elif result.status == 'frozen' %}
+                        <span class="id-badge id-badge--warning">To'xtatilgan</span>
+                    {% elif result.status == 'archived' %}
+                        <span class="id-badge id-badge--muted">Arxiv</span>
+                    {% else %}
+                        <span class="id-badge id-badge--info">{{ result.get_status_display }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="id-badge id-badge--info"
+                          data-student-coin-value="{{ result.pk }}">
+                        {{ result.total_coin|default:0 }}
+                    </span>
+                </td>
+                <td>
+                    <div class="id-coin-controls"
+                         data-student-coin-controls
+                         data-update-url="{% url 'admin:pupil_student_coin_update' result.pk %}">
+                        <input type="number" min="1" step="1" placeholder="Miqdor"
+                               class="id-coin-input"
+                               data-student-coin-input
+                               aria-label="Coin miqdori">
+                        <button type="button" class="id-btn id-btn--success id-btn--sm"
+                                data-student-coin-action="add">+</button>
+                        <button type="button" class="id-btn id-btn--danger id-btn--sm"
+                                data-student-coin-action="remove">−</button>
+                        <small class="id-coin-msg" data-student-coin-message></small>
+                    </div>
+                </td>
+                <td>
+                    <a href="{% url 'admin:pupil_student_attendance' result.pk %}"
+                       class="id-btn id-btn--outline id-btn--sm">Davomat</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7" class="id-empty">Filtrlar bo'yicha o'quvchi topilmadi.</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}

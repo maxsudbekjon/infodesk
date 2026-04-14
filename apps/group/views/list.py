@@ -80,8 +80,8 @@ class GroupListAPIView(generics.ListAPIView):
             filters["lessons_days_choice"] = lesson_days
 
         return (
-            Group.objects.select_related("course", "teacher", "room", "branch")
-            .prefetch_related("students", "student_set")
+            Group.objects.select_related("course", "teacher__user", "room", "branch")
+            .prefetch_related("students", "lessons_days")
             .filter(**filters)
             .only(
                 "id",

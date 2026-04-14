@@ -2,7 +2,7 @@ import secrets
 import string
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db import models
 
 from apps.base_models import TimeStampedModel
@@ -10,16 +10,15 @@ from apps.pupil.models import Student
 
 
 def generate_secret_code():
+    """Generate a random 6-char alphanumeric code (at least 1 letter + 1 digit)."""
     alphabet = string.ascii_uppercase + string.digits
-
     while True:
         code = "".join(secrets.choice(alphabet) for _ in range(6))
         if not any(char.isalpha() for char in code):
             continue
         if not any(char.isdigit() for char in code):
             continue
-        if not MarketOrder.objects.filter(secret_code=code).exists():
-            return code
+        return code
 
 
 class Product(TimeStampedModel):
@@ -117,19 +116,24 @@ class MarketOrder(TimeStampedModel):
         if self.product_id and not self.price:
             self.price = self.product.price
 
-        if not self.secret_code:
-            self.secret_code = generate_secret_code()
+        for _attempt in range(10):
+            if not self.secret_code:
+                self.secret_code = generate_secret_code()
+            try:
+                with transaction.atomic():
+                    super().save(*args, **kwargs)
 
-        with transaction.atomic():
-            super().save(*args, **kwargs)
-
-            if previous_status == MARKET_ORDER_STATUS.CREATED and self.status == MARKET_ORDER_STATUS.CANCELLED:
-                self._refund_reserved_coin()
-            elif previous_status == MARKET_ORDER_STATUS.CANCELLED and self.status in {
-                MARKET_ORDER_STATUS.CREATED,
-                MARKET_ORDER_STATUS.DELIVERED,
-            }:
-                self._reserve_coin_again()
+                    if previous_status == MARKET_ORDER_STATUS.CREATED and self.status == MARKET_ORDER_STATUS.CANCELLED:
+                        self._refund_reserved_coin()
+                    elif previous_status == MARKET_ORDER_STATUS.CANCELLED and self.status in {
+                        MARKET_ORDER_STATUS.CREATED,
+                        MARKET_ORDER_STATUS.DELIVERED,
+                    }:
+                        self._reserve_coin_again()
+                return
+            except IntegrityError:
+                self.secret_code = ""
+                continue
 
     def __str__(self) -> str:
         return f"{self.student} - {self.product} - {self.secret_code}"

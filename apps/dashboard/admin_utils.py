@@ -8,6 +8,8 @@ from django.db.models.deletion import ProtectedError
 from django.http import Http404, HttpResponseNotAllowed
 from django.shortcuts import redirect
 from django.urls import path, reverse
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
+from unfold.admin import TabularInline as UnfoldTabularInline
 
 
 MODAL_REQUEST_PARAM = "_ui_modal"
@@ -207,7 +209,7 @@ class AdminUiResponseMixin:
         return redirect(reverse(f"admin:{self.model._meta.app_label}_{self.model._meta.model_name}_changelist"))
 
 
-class FriendlyAdminMixin(AdminUiResponseMixin, admin.ModelAdmin):
+class FriendlyAdminMixin(AdminUiResponseMixin, UnfoldModelAdmin):
     list_per_page = 25
     save_on_top = True
     show_full_result_count = True

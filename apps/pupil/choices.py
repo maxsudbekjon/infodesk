@@ -7,7 +7,7 @@ class STUDENT_PAYMENT(models.TextChoices):
     OVER_PAYMENT='over payment','Ortiqcha to\'lov'
     
 class STUDENT_STATUS(models.TextChoices):
-    ACTIVE='avtive','Faol'
+    ACTIVE='active','Faol'
     FROZEN='frozen','To\'xtatilgan'
     ARCHIVED='archived','Arxiv'
     LEAD='lead','Lid'

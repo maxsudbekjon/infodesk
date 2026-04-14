@@ -1,163 +1,164 @@
 {% extends "admin/base_site.html" %}
 
 {% block content %}
-    <section class="metric-grid">
-        {% for metric in admin_global_metrics %}
-            <article class="metric-card">
-                <span class="metric-card__icon metric-card__icon--{{ metric.tone }}">
-                    <svg><use href="#icon-{{ metric.icon }}"></use></svg>
-                </span>
-                <div>
-                    <strong class="metric-card__value">{{ metric.value }}</strong>
-                    <span class="metric-card__label">{{ metric.label }}</span>
-                    <small class="metric-card__helper">{{ metric.helper }}</small>
-                </div>
-            </article>
+<div class="id-metric-grid" style="margin-bottom:1.5rem">
+    {% for metric in admin_global_metrics %}
+    <div class="id-metric-card id-metric-card--{{ metric.tone }}">
+        <div class="id-metric-card__body">
+            <span class="id-metric-card__value">{{ metric.value }}</span>
+            <span class="id-metric-card__label">{{ metric.label }}</span>
+            <small class="id-metric-card__helper">{{ metric.helper }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if admin_dashboard_trends %}
+<div class="id-trend-grid" style="margin-bottom:1.5rem">
+    {% for trend in admin_dashboard_trends %}
+    <div class="id-trend-card">
+        <div class="id-trend-card__header">
+            <div>
+                <strong class="id-trend-card__title">{{ trend.label }}</strong>
+                <small class="id-trend-card__change id-trend-card__change--{{ trend.change_tone }}">{{ trend.change_text }}</small>
+            </div>
+            <span class="id-trend-card__current">{{ trend.current }}</span>
+        </div>
+        <div class="id-trend-bars">
+            {% for item in trend.items %}
+            <div class="id-trend-bars__col">
+                <div class="id-trend-bars__bar" style="height: {{ item.height }}%; background: {{ trend.color }};"></div>
+                <small class="id-trend-bars__lbl">{{ item.label }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="id-stats-grid" style="margin-bottom:1.5rem">
+    <div class="id-panel">
+        <div class="id-panel__head">
+            <strong>O'quvchilar holati</strong>
+            <span>{{ upcoming_payments }} ta yaqin to'lov</span>
+        </div>
+        {% for item in student_status_breakdown %}
+        <div class="id-stats-bar">
+            <div class="id-stats-bar__meta">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+            </div>
+            <div class="id-stats-bar__track">
+                <div class="id-stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></div>
+            </div>
+        </div>
         {% endfor %}
-    </section>
+    </div>
 
-    {% if admin_dashboard_trends %}
-        <section class="trend-grid">
-            {% for trend in admin_dashboard_trends %}
-                <article class="trend-card">
-                    <div class="trend-card__header">
-                        <div>
-                            <strong>{{ trend.label }}</strong>
-                            <small class="status-text status-text--{{ trend.change_tone }}">{{ trend.change_text }}</small>
-                        </div>
-                        <span class="trend-card__value">{{ trend.current }}</span>
-                    </div>
-                    <div class="trend-bars">
-                        {% for item in trend.items %}
-                            <div class="trend-bars__item">
-                                <span class="trend-bars__bar" style="height: {{ item.height }}%; background: {{ trend.color }};"></span>
-                                <small>{{ item.label }}</small>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </article>
+    <div class="id-panel">
+        <div class="id-panel__head">
+            <strong>Guruhlar holati</strong>
+            <span>{{ active_groups }} ta aktiv guruh</span>
+        </div>
+        {% for item in group_status_breakdown %}
+        <div class="id-stats-bar">
+            <div class="id-stats-bar__meta">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+            </div>
+            <div class="id-stats-bar__track">
+                <div class="id-stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="id-panel">
+        <div class="id-panel__head">
+            <strong>Buyurtmalar bosqichi</strong>
+            <span>{{ new_leads }} ta yangi lead</span>
+        </div>
+        {% for item in lead_status_breakdown %}
+        <div class="id-stats-bar">
+            <div class="id-stats-bar__meta">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+            </div>
+            <div class="id-stats-bar__track">
+                <div class="id-stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="id-panel">
+        <div class="id-panel__head">
+            <strong>O'qituvchilar summary</strong>
+            <span>Jamoa holati</span>
+        </div>
+        <div class="id-metric-grid" style="margin:0">
+            <div class="id-metric-card id-metric-card--primary">
+                <div class="id-metric-card__body">
+                    <span class="id-metric-card__value">{{ teacher_summary.total }}</span>
+                    <span class="id-metric-card__label">Jami ustoz</span>
+                </div>
+            </div>
+            <div class="id-metric-card id-metric-card--success">
+                <div class="id-metric-card__body">
+                    <span class="id-metric-card__value">{{ teacher_summary.active }}</span>
+                    <span class="id-metric-card__label">Faol</span>
+                </div>
+            </div>
+            <div class="id-metric-card id-metric-card--muted">
+                <div class="id-metric-card__body">
+                    <span class="id-metric-card__value">{{ teacher_summary.archived }}</span>
+                    <span class="id-metric-card__label">Arxiv</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="id-stats-grid">
+    <div class="id-panel">
+        <div class="id-panel__head">
+            <strong>Eng faol fanlar</strong>
+            <span>Guruh va lead birikmasi</span>
+        </div>
+        <div class="id-panel__list">
+            {% for subject in top_subjects %}
+            <div class="id-panel__row">
+                <div class="id-panel__row-main">
+                    <strong>{{ subject.name }}</strong>
+                    <small>{{ subject.lead_total }} ta lead</small>
+                </div>
+                <span class="id-badge id-badge--info">{{ subject.group_total }} ta guruh</span>
+            </div>
+            {% empty %}
+                <div class="id-empty">Fanlar bo'yicha statistika topilmadi.</div>
             {% endfor %}
-        </section>
-    {% endif %}
+        </div>
+    </div>
 
-    <section class="dashboard-columns">
-        <article class="stats-panel">
-            <div class="stats-panel__header">
-                <strong>O'quvchilar holati</strong>
-                <span>{{ upcoming_payments }} ta yaqin to'lov</span>
-            </div>
-            {% for item in student_status_breakdown %}
-                <div class="stats-bar">
-                    <div class="stats-bar__meta">
-                        <span>{{ item.label }}</span>
-                        <strong>{{ item.value }}</strong>
-                    </div>
-                    <div class="stats-bar__track">
-                        <span class="stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></span>
-                    </div>
+    <div class="id-panel">
+        <div class="id-panel__head">
+            <strong>O'qituvchi yuklamasi</strong>
+            <span>Biriktirilgan guruhlar bo'yicha</span>
+        </div>
+        <div class="id-panel__list">
+            {% for teacher in teacher_workloads %}
+            <div class="id-panel__row">
+                <div class="id-panel__row-main">
+                    <strong>{% if teacher.user %}{{ teacher.user.display_name }}{% else %}O'qituvchi #{{ teacher.pk }}{% endif %}</strong>
+                    <small>{% if teacher.branch %}{{ teacher.branch.name }}{% else %}Filial biriktirilmagan{% endif %}</small>
                 </div>
+                <span class="id-badge id-badge--primary">{{ teacher.group_total }} ta guruh</span>
+            </div>
+            {% empty %}
+                <div class="id-empty">O'qituvchilar bo'yicha yuklama topilmadi.</div>
             {% endfor %}
-        </article>
-
-        <article class="stats-panel">
-            <div class="stats-panel__header">
-                <strong>Guruhlar holati</strong>
-                <span>{{ active_groups }} ta aktiv guruh</span>
-            </div>
-            {% for item in group_status_breakdown %}
-                <div class="stats-bar">
-                    <div class="stats-bar__meta">
-                        <span>{{ item.label }}</span>
-                        <strong>{{ item.value }}</strong>
-                    </div>
-                    <div class="stats-bar__track">
-                        <span class="stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></span>
-                    </div>
-                </div>
-            {% endfor %}
-        </article>
-    </section>
-
-    <section class="dashboard-columns">
-        <article class="stats-panel">
-            <div class="stats-panel__header">
-                <strong>Buyurtmalar bosqichi</strong>
-                <span>{{ new_leads }} ta yangi lead</span>
-            </div>
-            {% for item in lead_status_breakdown %}
-                <div class="stats-bar">
-                    <div class="stats-bar__meta">
-                        <span>{{ item.label }}</span>
-                        <strong>{{ item.value }}</strong>
-                    </div>
-                    <div class="stats-bar__track">
-                        <span class="stats-bar__fill" style="width: {{ item.width }}%; background: {{ item.color }};"></span>
-                    </div>
-                </div>
-            {% endfor %}
-        </article>
-
-        <article class="stats-panel">
-            <div class="stats-panel__header">
-                <strong>O'qituvchilar summary</strong>
-                <span>Jamoa holati</span>
-            </div>
-            <div class="teacher-summary-grid">
-                <div class="teacher-summary-tile">
-                    <strong>{{ teacher_summary.total }}</strong>
-                    <span>Jami ustoz</span>
-                </div>
-                <div class="teacher-summary-tile">
-                    <strong>{{ teacher_summary.active }}</strong>
-                    <span>Faol</span>
-                </div>
-                <div class="teacher-summary-tile">
-                    <strong>{{ teacher_summary.archived }}</strong>
-                    <span>Arxiv</span>
-                </div>
-            </div>
-        </article>
-    </section>
-
-    <section class="dashboard-columns">
-        <article class="stats-panel">
-            <div class="stats-panel__header">
-                <strong>Eng faol fanlar</strong>
-                <span>Guruh va lead birikmasi</span>
-            </div>
-            <div class="leaderboard-list">
-                {% for subject in top_subjects %}
-                    <div class="leaderboard-item">
-                        <div>
-                            <strong>{{ subject.name }}</strong>
-                            <small>{{ subject.lead_total }} ta lead</small>
-                        </div>
-                        <span class="status-badge status-badge--info">{{ subject.group_total }} ta guruh</span>
-                    </div>
-                {% empty %}
-                    <div class="empty-state">Fanlar bo'yicha statistika topilmadi.</div>
-                {% endfor %}
-            </div>
-        </article>
-
-        <article class="stats-panel">
-            <div class="stats-panel__header">
-                <strong>O'qituvchi yuklamasi</strong>
-                <span>Biriktirilgan guruhlar bo'yicha</span>
-            </div>
-            <div class="leaderboard-list">
-                {% for teacher in teacher_workloads %}
-                    <div class="leaderboard-item">
-                        <div>
-                            <strong>{% if teacher.user %}{{ teacher.user.display_name }}{% else %}O'qituvchi #{{ teacher.pk }}{% endif %}</strong>
-                            <small>{% if teacher.branch %}{{ teacher.branch.name }}{% else %}Filial biriktirilmagan{% endif %}</small>
-                        </div>
-                        <span class="status-badge status-badge--primary">{{ teacher.group_total }} ta guruh</span>
-                    </div>
-                {% empty %}
-                    <div class="empty-state">O'qituvchilar bo'yicha yuklama topilmadi.</div>
-                {% endfor %}
-            </div>
-        </article>
-    </section>
+        </div>
+    </div>
+</div>
 {% endblock %}

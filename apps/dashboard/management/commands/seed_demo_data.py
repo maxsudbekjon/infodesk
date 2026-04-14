@@ -203,7 +203,7 @@ class Command(BaseCommand):
                 branch=branch,
                 teacher=teacher,
                 room=room,
-                lessons_days_choice=GROUP_DAYS_CHOICES.EVERAY_DAY,
+                lessons_days_choice=GROUP_DAYS_CHOICES.EVERY_DAY,
                 status=GROUP_STATUS.ACTIVE if index < 6 else GROUP_STATUS.TEST_LESSON,
                 start_lesson=start_at,
                 end_lesson=end_at,
@@ -289,7 +289,7 @@ class Command(BaseCommand):
 
         score_reasons = ["Faollik", "Uyga vazifa", "Mini test", "Vaqtida kelgan"]
         for index, student in enumerate(students):
-            student_groups = list(student.groups.all()) or ([student.group] if student.group else [])
+            student_groups = list(student.groups.all())
             if index % 3 != 0:
                 for _ in range(rng.randint(2, 5)):
                     group = rng.choice(student_groups)
@@ -319,8 +319,8 @@ class Command(BaseCommand):
                     text="Demo izoh: o'quvchi bilan aloqa yaxshi, davomati nazoratda.",
                 )
 
-        lead_statuses = [LEAD_STATUS.NEW, LEAD_STATUS.PROCESS, LEAD_STATUS.SOLD, LEAD_STATUS.CANSELED]
-        lead_temps = [LEAD_TEMPERATURE.HOT, LEAD_TEMPERATURE.COOL, LEAD_TEMPERATURE.WORM]
+        lead_statuses = [LEAD_STATUS.NEW, LEAD_STATUS.PROCESS, LEAD_STATUS.SOLD, LEAD_STATUS.CANCELED]
+        lead_temps = [LEAD_TEMPERATURE.HOT, LEAD_TEMPERATURE.COOL, LEAD_TEMPERATURE.COLD]
         for index in range(12):
             full_name = f"Lead {first_names[index]} {last_names[(index + 3) % len(last_names)]}"
             course = courses[index % len(courses)]
@@ -338,7 +338,7 @@ class Command(BaseCommand):
                 status=status,
                 temperature=lead_temps[index % len(lead_temps)],
                 is_active=status in {LEAD_STATUS.NEW, LEAD_STATUS.PROCESS, LEAD_STATUS.SOLD},
-                is_archived=status == LEAD_STATUS.CANSELED,
+                is_archived=status == LEAD_STATUS.CANCELED,
                 comment="Demo buyurtma",
             )
 

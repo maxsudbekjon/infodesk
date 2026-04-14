@@ -166,7 +166,7 @@ class StudentGroupListAPIView(generics.GenericAPIView):
         groups = (
             get_student_groups_queryset(student)
             .select_related("course", "branch", "room", "teacher__user", "assistant_teacher__user")
-            .prefetch_related("lessons_days", "students", "student_set")
+            .prefetch_related("lessons_days", "students")
             .order_by("-created_at")
         )
 

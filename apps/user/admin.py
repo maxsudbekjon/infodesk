@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.admin.sites import AlreadyRegistered
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import ReadOnlyPasswordHashField
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
 
 from apps.dashboard.admin_utils import AdminUiResponseMixin, FriendlyAdminMixin
 from apps.user.models import Operator, User
@@ -75,14 +76,16 @@ class OperatorAdmin(FriendlyAdminMixin):
     list_select_related = ("user", "center")
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        ("Asosiy ma'lumotlar", {
+        ("Asosiy", {
+            "classes": ("tab",),
             "fields": ("user", "center", "image", "is_archived"),
         }),
-        ("Ish ko'rsatkichlari", {
+        ("KPI", {
+            "classes": ("tab",),
             "fields": ("monthly_salary", "kpi", "penalty_point", "bonus_point"),
         }),
-        ("Texnik ma'lumotlar", {
-            "classes": ("collapse",),
+        ("Texnik", {
+            "classes": ("tab",),
             "fields": ("created_at", "updated_at"),
         }),
     )
@@ -101,7 +104,7 @@ class OperatorAdmin(FriendlyAdminMixin):
 
 
 @admin.register(User)
-class UserAdmin(AdminUiResponseMixin, BaseUserAdmin):
+class UserAdmin(UnfoldModelAdmin, AdminUiResponseMixin, BaseUserAdmin):
     admin_page_title = "Foydalanuvchilar"
     admin_page_subtitle = "Login va ruxsatlarni boshqarish sahifasi."
     form = UserChangeForm
@@ -116,12 +119,22 @@ class UserAdmin(AdminUiResponseMixin, BaseUserAdmin):
     empty_value_display = "-"
     date_hierarchy = "date_joined"
     fieldsets = (
-        ("Login ma'lumotlari", {"fields": ("phone_number", "phone_number2", "password")}),
-        ("Shaxsiy ma'lumotlar", {
+        ("Login", {
+            "classes": ("tab",),
+            "fields": ("phone_number", "phone_number2", "password"),
+        }),
+        ("Shaxsiy", {
+            "classes": ("tab",),
             "fields": ("full_name", "first_name", "last_name", "email", "role", "gender", "birthday"),
         }),
-        ("Ruxsatlar", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
-        ("Muhim sanalar", {"fields": ("last_login", "date_joined")}),
+        ("Ruxsatlar", {
+            "classes": ("tab",),
+            "fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions"),
+        }),
+        ("Sanalar", {
+            "classes": ("tab",),
+            "fields": ("last_login", "date_joined"),
+        }),
     )
     add_fieldsets = (
         (None, {

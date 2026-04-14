@@ -41,7 +41,7 @@ def get_teacher_groups_queryset(teacher, course_id=None):
     if course_id is not None:
         queryset = queryset.filter(course_id=course_id)
 
-    return queryset.prefetch_related("lessons_days", "students", "student_set").order_by("-created_at")
+    return queryset.prefetch_related("lessons_days", "students").order_by("-created_at")
 
 
 def count_distinct_teacher_courses(groups_queryset):
@@ -121,7 +121,6 @@ class TeacherDetailAPIView(generics.RetrieveAPIView):
         ).prefetch_related(
             'specialty',
             'main_groups__students',
-            'main_groups__student_set',
             'main_groups__course',
             'main_groups__lessons_days',
             'main_groups__room',

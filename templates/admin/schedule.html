@@ -2,127 +2,126 @@
 {% load admin_urls %}
 
 {% block content %}
-    <section class="metric-grid metric-grid--compact">
-        <article class="metric-card">
-            <span class="metric-card__icon metric-card__icon--primary">
-                <svg><use href="#icon-groups"></use></svg>
-            </span>
-            <div>
-                <strong class="metric-card__value">{{ schedule_summary.total_groups }}</strong>
-                <span class="metric-card__label">Filtrdagi guruhlar</span>
-            </div>
-        </article>
-        <article class="metric-card">
-            <span class="metric-card__icon metric-card__icon--success">
-                <svg><use href="#icon-teachers"></use></svg>
-            </span>
-            <div>
-                <strong class="metric-card__value">{{ schedule_summary.total_teachers }}</strong>
-                <span class="metric-card__label">Faol o'qituvchilar</span>
-            </div>
-        </article>
-        <article class="metric-card">
-            <span class="metric-card__icon metric-card__icon--info">
-                <svg><use href="#icon-subjects"></use></svg>
-            </span>
-            <div>
-                <strong class="metric-card__value">{{ schedule_summary.total_subjects }}</strong>
-                <span class="metric-card__label">Fanlar kesimi</span>
-            </div>
-        </article>
-        <article class="metric-card">
-            <span class="metric-card__icon metric-card__icon--warning">
-                <svg><use href="#icon-students"></use></svg>
-            </span>
-            <div>
-                <strong class="metric-card__value">{{ schedule_summary.total_students }}</strong>
-                <span class="metric-card__label">Jami o'quvchilar</span>
-            </div>
-        </article>
-    </section>
-
-    <section class="dashboard-panel">
-        <form method="get" class="schedule-filter-bar">
-            <label>
-                <span>O'qituvchi</span>
-                <select name="teacher">
-                    <option value="">Barchasi</option>
-                    {% for teacher in schedule_teachers %}
-                        <option value="{{ teacher.pk }}" {% if selected_teacher == teacher.pk|stringformat:"s" %}selected{% endif %}>
-                            {% if teacher.user %}{{ teacher.user.display_name }}{% else %}O'qituvchi #{{ teacher.pk }}{% endif %}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label>
-                <span>Fan</span>
-                <select name="subject">
-                    <option value="">Barchasi</option>
-                    {% for subject in schedule_subjects %}
-                        <option value="{{ subject.pk }}" {% if selected_subject == subject.pk|stringformat:"s" %}selected{% endif %}>
-                            {{ subject.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-            <div class="schedule-filter-bar__actions">
-                <button type="submit" class="button button-primary">Qo'llash</button>
-                <a href="{% url 'admin:ui_schedule' %}" class="button button-light">Tozalash</a>
-            </div>
-        </form>
-    </section>
-
-    <section class="dashboard-panel">
-        <div class="dashboard-panel__header">
-            <strong>Dars jadvali</strong>
-            <span>{{ schedule_groups|length }} ta guruh</span>
+<div class="id-metric-grid" style="margin-bottom:1.5rem">
+    <div class="id-metric-card id-metric-card--primary">
+        <div class="id-metric-card__body">
+            <span class="id-metric-card__value">{{ schedule_summary.total_groups }}</span>
+            <span class="id-metric-card__label">Filtrdagi guruhlar</span>
         </div>
-        <div class="schedule-table-shell">
-            <table class="teacher-table schedule-table">
-                <thead>
+    </div>
+    <div class="id-metric-card id-metric-card--success">
+        <div class="id-metric-card__body">
+            <span class="id-metric-card__value">{{ schedule_summary.total_teachers }}</span>
+            <span class="id-metric-card__label">Faol o'qituvchilar</span>
+        </div>
+    </div>
+    <div class="id-metric-card id-metric-card--info">
+        <div class="id-metric-card__body">
+            <span class="id-metric-card__value">{{ schedule_summary.total_subjects }}</span>
+            <span class="id-metric-card__label">Fanlar kesimi</span>
+        </div>
+    </div>
+    <div class="id-metric-card id-metric-card--warning">
+        <div class="id-metric-card__body">
+            <span class="id-metric-card__value">{{ schedule_summary.total_students }}</span>
+            <span class="id-metric-card__label">Jami o'quvchilar</span>
+        </div>
+    </div>
+</div>
+
+<div class="id-panel" style="margin-bottom:1.5rem">
+    <div class="id-panel__head">
+        <strong>Filtr</strong>
+    </div>
+    <form method="get" class="id-filter-bar">
+        <div class="id-filter-bar__group">
+            <label>O'qituvchi</label>
+            <select name="teacher" class="id-select">
+                <option value="">Barchasi</option>
+                {% for teacher in schedule_teachers %}
+                    <option value="{{ teacher.pk }}"
+                            {% if selected_teacher == teacher.pk|stringformat:"s" %}selected{% endif %}>
+                        {% if teacher.user %}{{ teacher.user.display_name }}{% else %}O'qituvchi #{{ teacher.pk }}{% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="id-filter-bar__group">
+            <label>Fan</label>
+            <select name="subject" class="id-select">
+                <option value="">Barchasi</option>
+                {% for subject in schedule_subjects %}
+                    <option value="{{ subject.pk }}"
+                            {% if selected_subject == subject.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ subject.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="id-filter-bar__actions">
+            <button type="submit" class="id-btn id-btn--primary">Qo'llash</button>
+            <a href="{% url 'admin:ui_schedule' %}" class="id-btn id-btn--outline">Tozalash</a>
+        </div>
+    </form>
+</div>
+
+<div class="id-panel">
+    <div class="id-panel__head">
+        <strong>Dars jadvali</strong>
+        <span>{{ schedule_groups|length }} ta guruh</span>
+    </div>
+    <div class="id-table-wrap">
+        <table class="id-table">
+            <thead>
                 <tr>
-                    <th>Guruh</th>
+                    <th>Guruh / Filial</th>
                     <th>Fan</th>
                     <th>O'qituvchi</th>
                     <th>Kunlar</th>
                     <th>Vaqt</th>
                     <th>O'quvchilar</th>
-                    <th>Amallar</th>
+                    <th>Amal</th>
                 </tr>
-                </thead>
-                <tbody>
-                {% for group in schedule_groups %}
-                    <tr>
-                        <td>
-                            <strong>{{ group.title }}</strong>
-                            <small>{% if group.branch %}{{ group.branch.name }}{% else %}Filialsiz{% endif %}</small>
-                        </td>
-                        <td>{{ group.course.name }}</td>
-                        <td>{% if group.teacher and group.teacher.user %}{{ group.teacher.user.display_name }}{% else %}Biriktirilmagan{% endif %}</td>
-                        <td>
-                            {% if group.lessons_days.all %}
-                                {% for day in group.lessons_days.all %}
-                                    {{ day.day }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                {{ group.get_lessons_days_choice_display }}
-                            {% endif %}
-                        </td>
-                        <td>{{ group.start_lesson|time:"H:i" }} - {{ group.end_lesson|time:"H:i" }}</td>
-                        <td>{{ group.student_count|default_if_none:group.total_student }} ta</td>
-                        <td class="table-actions">
-                            <a href="{% url 'admin:group_group_change' group.pk %}" class="button button-light js-admin-modal-trigger">Tahrirlash</a>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="7">
-                            <div class="empty-state">Tanlangan filtrlar bo'yicha jadval topilmadi.</div>
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
+            </thead>
+            <tbody>
+            {% for group in schedule_groups %}
+                <tr>
+                    <td>
+                        <strong>{{ group.title }}</strong>
+                        <br>
+                        <small class="id-muted">{% if group.branch %}{{ group.branch.name }}{% else %}Filialsiz{% endif %}</small>
+                    </td>
+                    <td>{{ group.course.name }}</td>
+                    <td>
+                        {% if group.teacher and group.teacher.user %}
+                            {{ group.teacher.user.display_name }}
+                        {% else %}
+                            <span class="id-muted">Biriktirilmagan</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if group.lessons_days.all %}
+                            {% for day in group.lessons_days.all %}
+                                {{ day.day }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {{ group.get_lessons_days_choice_display }}
+                        {% endif %}
+                    </td>
+                    <td>{{ group.start_lesson|time:"H:i" }}–{{ group.end_lesson|time:"H:i" }}</td>
+                    <td>{{ group.student_count|default_if_none:group.total_student }} ta</td>
+                    <td>
+                        <a href="{% url 'admin:group_group_change' group.pk %}"
+                           class="id-btn id-btn--outline id-btn--sm">Tahrirlash</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7" class="id-empty">Tanlangan filtrlar bo'yicha jadval topilmadi.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

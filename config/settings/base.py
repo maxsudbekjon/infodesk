@@ -1,6 +1,8 @@
 from pathlib import Path
 from environs import Env
 
+from django.templatetags.static import static
+from django.urls import reverse_lazy
 from django.utils.timezone import timedelta
 from django.utils.translation import gettext_lazy as _
 from celery.schedules import crontab
@@ -38,7 +40,10 @@ SECURE_BROWSER_XSS_FILTER = env.bool("SECURE_BROWSER_XSS_FILTER", True)
 X_FRAME_OPTIONS = env.str("X_FRAME_OPTIONS", "DENY")
 
 INSTALLED_APPS = [
-    "jazzmin",
+    "unfold",
+    "unfold.contrib.filters",
+    "unfold.contrib.forms",
+    "unfold.contrib.inlines",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -113,18 +118,18 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+    # },
+    # {
+    #     "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+    # },
 ]
 
 LANGUAGE_CODE = "uz"
@@ -186,6 +191,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.lead.tasks.daily_lead_job",
         "schedule": crontab(hour=14, minute=36),
     },
+    "penalize-stale-leads": {
+        "task": "apps.lead.tasks.penalize_operators_for_stale_leads",
+        "schedule": crontab(hour=9, minute=0),
+    },
 }
 
 SIMPLE_JWT = {
@@ -235,252 +244,242 @@ SIMPLE_JWT = {
 }
 
 # =============================================================================
-# JAZZMIN — Production Admin Panel Configuration
+# UNFOLD — Admin Panel Configuration
 # =============================================================================
 
-JAZZMIN_SETTINGS = {
+UNFOLD = {
     # ── Branding ──────────────────────────────────────────────────────────────
-    "site_title": "Admin panel",
-    "site_header": "Boshqaruv paneli",
-    "site_brand": "Infodesk",
-    "site_logo": None,
-    "login_logo": None,
-    "login_logo_dark": None,
-    "site_logo_classes": "img-circle",
-    "site_icon": None,
-    "welcome_sign": "Infodesk Boshqaruv Paneliga Xush Kelibsiz",
-    "copyright": "Infodesk © 2025",
+    "SITE_TITLE": "Infodesk",
+    "SITE_HEADER": "Boshqaruv Paneli",
+    "SITE_URL": "/",
+    "SITE_SYMBOL": "school",  # Material Symbols icon
+    "SHOW_HISTORY": True,
+    "SHOW_BACK_BUTTON": True,
+    "SHOW_VIEW_ON_SITE": True,
 
-    # ── Global Search ─────────────────────────────────────────────────────────
-    # Models that appear in the top search bar
-    "search_model": [
-        "user.User",
-        "pupil.Student",
-        "lead.Lead",
-        "teacher.Teacher",
+    # ── Dashboard ─────────────────────────────────────────────────────────────
+    "DASHBOARD_CALLBACK": "apps.dashboard.admin_ui.dashboard_callback",
+
+    # ── Custom assets ─────────────────────────────────────────────────────────
+    "STYLES": [
+        lambda request: static("admin/css/custom_admin.css"),
+    ],
+    "SCRIPTS": [
+        lambda request: static("admin/js/custom_admin.js"),
     ],
 
-    # Field on user model for avatar (None = use default gravatar)
-    "user_avatar": None,
-
-    # ── Top Menu ──────────────────────────────────────────────────────────────
-    "topmenu_links": [
-        {
-            "name": "Bosh sahifa",
-            "url": "admin:index",
-            "permissions": ["auth.view_user"],
-            "icon": "fas fa-home",
+    # ── Colors (blue theme) ───────────────────────────────────────────────────
+    "COLORS": {
+        "font": {
+            "subtle-light": "107 114 128",
+            "subtle-dark": "156 163 175",
+            "default-light": "17 24 39",
+            "default-dark": "243 244 246",
+            "important-light": "17 24 39",
+            "important-dark": "249 250 251",
         },
-        {
-            "name": "API hujjatlari",
-            "url": "/api/docs/",
-            "new_window": True,
-            "icon": "fas fa-book",
+        "primary": {
+            "50": "239 246 255",
+            "100": "219 234 254",
+            "200": "191 219 254",
+            "300": "147 197 253",
+            "400": "96 165 250",
+            "500": "59 130 246",
+            "600": "37 99 235",
+            "700": "29 78 216",
+            "800": "30 64 175",
+            "900": "30 58 138",
+            "950": "23 37 84",
         },
-        {"app": "lead"},
-        {"app": "pupil"},
-        {"app": "group"},
-    ],
+    },
 
-    # ── User Dropdown Menu ────────────────────────────────────────────────────
-    "usermenu_links": [
-        {
-            "name": "API hujjatlari",
-            "url": "/api/docs/",
-            "new_window": True,
-            "icon": "fas fa-book-open",
-        },
-        {"model": "user.user"},
-    ],
-
-    # ── Sidebar ───────────────────────────────────────────────────────────────
-    "show_sidebar": True,
-    "navigation_expanded": True,
-    "hide_apps": [],
-    "hide_models": [],
-
-    # App ordering in sidebar
-    "order_with_respect_to": [
-        "settings",
-        "user",
-        "teacher",
-        "lead",
-        "pupil",
-        "group",
-        "market",
-        "django_celery_beat",
-        "auth",
-    ],
-
-    # Custom quick links per app section
-    "custom_links": {
-        "pupil": [
+    # ── Sidebar Navigation ────────────────────────────────────────────────────
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_links": False,
+        "navigation": [
             {
-                "name": "O'quvchilar ro'yxati",
-                "url": "admin:pupil_student_changelist",
-                "icon": "fas fa-list-ul",
-                "permissions": ["pupil.view_student"],
+                "title": _("Asosiy"),
+                "items": [
+                    {
+                        "title": _("Bosh sahifa"),
+                        "icon": "home",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                    {
+                        "title": _("Statistika"),
+                        "icon": "bar_chart",
+                        "link": reverse_lazy("admin:ui_statistics"),
+                    },
+                    {
+                        "title": _("Jadval"),
+                        "icon": "calendar_month",
+                        "link": reverse_lazy("admin:ui_schedule"),
+                    },
+                ],
+            },
+            {
+                "title": _("O'quv jarayoni"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Guruhlar"),
+                        "icon": "groups",
+                        "link": reverse_lazy("admin:group_group_changelist"),
+                        "permission": lambda request: request.user.has_perm("group.view_group"),
+                    },
+                    {
+                        "title": _("Fanlar"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:group_coursetemplate_changelist"),
+                        "permission": lambda request: request.user.has_perm("group.view_coursetemplate"),
+                    },
+                    {
+                        "title": _("O'quvchilar"),
+                        "icon": "school",
+                        "link": reverse_lazy("admin:pupil_student_changelist"),
+                        "permission": lambda request: request.user.has_perm("pupil.view_student"),
+                    },
+                    {
+                        "title": _("O'qituvchilar"),
+                        "icon": "person_raised_hand",
+                        "link": reverse_lazy("admin:teacher_teacher_changelist"),
+                        "permission": lambda request: request.user.has_perm("teacher.view_teacher"),
+                    },
+                    {
+                        "title": _("Davomat"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:group_attendance_changelist"),
+                        "permission": lambda request: request.user.has_perm("group.view_attendance"),
+                    },
+                    {
+                        "title": _("Baholar"),
+                        "icon": "grade",
+                        "link": reverse_lazy("admin:group_grade_changelist"),
+                        "permission": lambda request: request.user.has_perm("group.view_grade"),
+                    },
+                    {
+                        "title": _("Coin tarixi"),
+                        "icon": "token",
+                        "link": reverse_lazy("admin:group_groupscore_changelist"),
+                        "permission": lambda request: request.user.has_perm("group.view_groupscore"),
+                    },
+                    {
+                        "title": _("Xonalar"),
+                        "icon": "meeting_room",
+                        "link": reverse_lazy("admin:group_room_changelist"),
+                        "permission": lambda request: request.user.has_perm("group.view_room"),
+                    },
+                ],
+            },
+            {
+                "title": _("Sotish va buyurtmalar"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Buyurtmalar (Lead)"),
+                        "icon": "filter_alt",
+                        "link": reverse_lazy("admin:lead_lead_changelist"),
+                        "permission": lambda request: request.user.has_perm("lead.view_lead"),
+                    },
+                    {
+                        "title": _("Manbalar"),
+                        "icon": "sensors",
+                        "link": reverse_lazy("admin:lead_source_changelist"),
+                        "permission": lambda request: request.user.has_perm("lead.view_source"),
+                    },
+                    {
+                        "title": _("Vaziyatlar"),
+                        "icon": "layers",
+                        "link": reverse_lazy("admin:lead_situation_changelist"),
+                        "permission": lambda request: request.user.has_perm("lead.view_situation"),
+                    },
+                ],
+            },
+            {
+                "title": _("Market"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Mahsulotlar"),
+                        "icon": "inventory_2",
+                        "link": reverse_lazy("admin:market_product_changelist"),
+                        "permission": lambda request: request.user.has_perm("market.view_product"),
+                    },
+                    {
+                        "title": _("Market buyurtmalari"),
+                        "icon": "shopping_cart",
+                        "link": reverse_lazy("admin:market_marketorder_changelist"),
+                        "permission": lambda request: request.user.has_perm("market.view_marketorder"),
+                    },
+                ],
+            },
+            {
+                "title": _("Sozlamalar"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Tashkilotlar"),
+                        "icon": "business",
+                        "link": reverse_lazy("admin:settings_organization_changelist"),
+                        "permission": lambda request: request.user.has_perm("settings.view_organization"),
+                    },
+                    {
+                        "title": _("Filiallar"),
+                        "icon": "location_on",
+                        "link": reverse_lazy("admin:settings_branch_changelist"),
+                        "permission": lambda request: request.user.has_perm("settings.view_branch"),
+                    },
+                    {
+                        "title": _("To'lov usullari"),
+                        "icon": "credit_card",
+                        "link": reverse_lazy("admin:settings_paymentmethod_changelist"),
+                        "permission": lambda request: request.user.has_perm("settings.view_paymentmethod"),
+                    },
+                    {
+                        "title": _("Dam olish kunlari"),
+                        "icon": "event_busy",
+                        "link": reverse_lazy("admin:settings_weekend_changelist"),
+                        "permission": lambda request: request.user.has_perm("settings.view_weekend"),
+                    },
+                    {
+                        "title": _("Chek sozlamalari"),
+                        "icon": "receipt",
+                        "link": reverse_lazy("admin:settings_receiptsettings_changelist"),
+                        "permission": lambda request: request.user.has_perm("settings.view_receiptsettings"),
+                    },
+                ],
+            },
+            {
+                "title": _("Foydalanuvchilar"),
+                "separator": True,
+                "items": [
+                    {
+                        "title": _("Foydalanuvchilar"),
+                        "icon": "manage_accounts",
+                        "link": reverse_lazy("admin:user_user_changelist"),
+                        "permission": lambda request: request.user.has_perm("user.view_user"),
+                    },
+                    {
+                        "title": _("Operatorlar"),
+                        "icon": "support_agent",
+                        "link": reverse_lazy("admin:user_operator_changelist"),
+                        "permission": lambda request: request.user.has_perm("user.view_operator"),
+                    },
+                    {
+                        "title": _("Yo'nalishlar"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:teacher_specialty_changelist"),
+                        "permission": lambda request: request.user.has_perm("teacher.view_specialty"),
+                    },
+                    {
+                        "title": _("Ruxsat guruhlari"),
+                        "icon": "shield",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                        "permission": lambda request: request.user.has_perm("auth.view_group"),
+                    },
+                ],
             },
         ],
-        "lead": [
-            {
-                "name": "Lidlar ro'yxati",
-                "url": "admin:lead_lead_changelist",
-                "icon": "fas fa-list-ul",
-                "permissions": ["lead.view_lead"],
-            },
-        ],
-        "group": [
-            {
-                "name": "Guruhlar ro'yxati",
-                "url": "admin:group_group_changelist",
-                "icon": "fas fa-list-ul",
-                "permissions": ["group.view_group"],
-            },
-        ],
     },
-
-    # ── Icons (FontAwesome 5 Free) ────────────────────────────────────────────
-    "icons": {
-        # Built-in Django auth
-        "auth":                              "fas fa-users-cog",
-        "auth.user":                         "fas fa-user-shield",
-        "auth.group":                        "fas fa-users",
-
-        # django-celery-beat
-        # "django_celery_beat":                "fas fa-clock",
-        # "django_celery_beat.periodictask":   "fas fa-tasks",
-        # "django_celery_beat.crontabschedule":"fas fa-calendar-alt",
-        # "django_celery_beat.intervalschedule":"fas fa-stopwatch",
-        # "django_celery_beat.solarschedule":  "fas fa-sun",
-        # "django_celery_beat.clockedschedule":"fas fa-bell",
-
-        # user app
-        "user":                              "fas fa-user-circle",
-        "user.user":                         "fas fa-user",
-        "user.operator":                     "fas fa-headset",
-
-        # settings app  (app label: "settings")
-        # "settings":                          "fas fa-cogs",
-        # "settings.organization":             "fas fa-building",
-        # "settings.branch":                   "fas fa-code-branch",
-        # "settings.receiptsettings":          "fas fa-receipt",
-        # "settings.paymentmethod":            "fas fa-credit-card",
-        # "settings.weekend":                  "fas fa-calendar-times",
-
-        # teacher app
-        "teacher":                           "fas fa-chalkboard-teacher",
-        "teacher.teacher":                   "fas fa-chalkboard-teacher",
-        "teacher.specialty":                 "fas fa-graduation-cap",
-
-        # lead app
-        # "lead":                              "fas fa-filter",
-        # "lead.lead":                         "fas fa-funnel-dollar",
-        # "lead.note":                         "fas fa-comment-alt",
-        # "lead.situation":                    "fas fa-sitemap",
-        # "lead.source":                       "fas fa-broadcast-tower",
-
-        # pupil app
-        "pupil":                             "fas fa-user-graduate",
-        "pupil.student":                     "fas fa-user-graduate",
-        "pupil.parent":                      "fas fa-users",
-        "pupil.studentnote":                 "fas fa-sticky-note",
-        "pupil.studnettransfer":             "fas fa-exchange-alt",
-
-        # group app
-        "group":                             "fas fa-layer-group",
-        # "group.group":                       "fas fa-layer-group",
-        # "group.coursetemplate":              "fas fa-book",
-        # "group.day":                         "fas fa-calendar-day",
-        # "group.room":                        "fas fa-door-open",
-        # "group.attendance":                  "fas fa-clipboard-check",
-        # "group.grade":                       "fas fa-star",
-        # "group.groupscore":                  "fas fa-coins",
-        # "group.groupnote":                   "fas fa-clipboard",
-        # "group.groupdiscount":               "fas fa-tags",
-        # "group.groupfreeze":                 "fas fa-snowflake",
-        # "group.grouphistory":                "fas fa-history",
-        # "group.grouprankingcomment":         "fas fa-medal",
-        # "group.exam":                        "fas fa-file-alt",
-
-        # market app
-        "market":                            "fas fa-store",
-        "market.product":                    "fas fa-box",
-        "market.marketorder":                "fas fa-shopping-cart",
-    },
-
-    # Fallback icons for apps/models without explicit icon
-    "default_icon_parents": "fas fa-chevron-circle-right",
-    "default_icon_children": "fas fa-circle",
-
-    # ── UX Options ────────────────────────────────────────────────────────────
-    # Open related object in a modal instead of a new page
-    "related_modal_active": True,
-
-    # Custom static assets
-    "custom_css": "admin/css/custom_admin.css",
-    "custom_js": "admin/js/custom_admin.js",
-    "use_google_fonts_cdn": True,
-
-    # Disable the UI builder in production (prevents accidental style changes)
-    "show_ui_builder": False,
-
-    # ── Change Form Layout ────────────────────────────────────────────────────
-    # Options: single | horizontal_tabs | vertical_tabs | collapsible | carousel
-    "changeform_format": "horizontal_tabs",
-    "changeform_format_override": {
-        "user.user":      "collapsible",
-        "pupil.student":  "collapsible",
-        "teacher.teacher":"collapsible",
-        "group.group":    "collapsible",
-        "lead.lead":      "collapsible",
-    },
-
-    "language_chooser": False,
-}
-
-JAZZMIN_UI_TWEAKS = {
-    # Matn o'lchami
-    "navbar_small_text": False,
-    "footer_small_text": False,
-    "body_small_text": False,
-    "brand_small_text": False,
-
-    # Rang sxemasi — oq/yengil interfeys
-    "brand_colour": "navbar-white",
-    "accent": "accent-primary",
-    "navbar": "navbar-white navbar-light",
-    "no_navbar_border": False,
-
-    # Joylashuv
-    "navbar_fixed": True,
-    "layout_boxed": False,
-    "footer_fixed": False,
-    "sidebar_fixed": True,
-
-    # Yon panel — yorqin va oddiy
-    "sidebar": "sidebar-light-primary",
-    "sidebar_nav_small_text": False,
-    "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
-    "sidebar_nav_compact_style": False,
-    "sidebar_nav_legacy_style": False,
-    "sidebar_nav_flat_style": True,
-
-    # Mavzu — eng sodda va toza ko'rinish
-    "theme": "default",
-    "dark_mode_theme": None,
-
-    # Tugma stillari — oddiy to'liq tugmalar
-    "button_classes": {
-        "primary": "btn-primary",
-        "secondary": "btn-secondary",
-        "info": "btn-info",
-        "warning": "btn-warning",
-        "danger": "btn-danger",
-        "success": "btn-success",
-    },
-
-    # Amallar paneli doim ko'rinib tursin
-    "actions_sticky_top": True,
 }
